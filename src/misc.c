@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.25 2002-06-16 14:13:59 themnemonic Exp $
+ * $Id: misc.c,v 1.26 2002-07-12 23:26:32 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -111,7 +111,7 @@ int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen)
   return 0;
 }
 
-/* fills the buffer pointed to by `str' with the formatted value of `number' */
+/* Fills the buffer pointed to by `str' with the formatted value of `number' */
 
 int netcat_snprintnum(char *str, size_t size, unsigned long number)
 {
@@ -124,7 +124,8 @@ int netcat_snprintnum(char *str, size_t size, unsigned long number)
   return snprintf(str, size, "%lu%c", number, *p);
 }
 
-/* ... */
+/* This is an advanced function for printing normal and errors messages for the
+   user.  It supports various types and flags declared in the misc.h file. */
 
 void ncprint(int type, const char *fmt, ...)
 {
@@ -186,7 +187,11 @@ void ncprint(int type, const char *fmt, ...)
     exit(EXIT_FAILURE);
 }
 
-/* ... */
+/* This is a safe string split function.  It will return a valid pointer
+   whatever input parameter was used.  In normal behaviour, it will return a
+   null-terminated string containing the first word of the string pointer to by
+   `buf', while the `buf' pointer will be updated to point to the following
+   char which may also be a space.  Leading spaces are ignored. */
 
 char *netcat_string_split(char **buf)
 {
@@ -218,13 +223,13 @@ void netcat_commandline_read(int *argc, char ***argv)
   fprintf(stderr, "%s ", _("Cmd line:"));
   fflush(stderr);			/* this isn't needed, but on ALL OS? */
   p = fgets(buf, sizeof(buf), stdin);
-  my_argv = malloc(128 * sizeof(char *));
+  my_argv = malloc(128 * sizeof(char *));	/* FIXME: 128? */
   my_argv[0] = saved_argv0;		/* leave the program name intact */
 
   do {
     rest = netcat_string_split(&p);
     my_argv[my_argc++] = (rest[0] ? strdup(rest) : NULL);
-  } while (rest[0]);
+  } while (rest[0] && (my_argc < 128));
 
   /* now my_argc counts one more, because we have a NULL element at
    * the end of the list */
@@ -243,7 +248,7 @@ void netcat_commandline_read(int *argc, char ***argv)
 #endif
 }
 
-/* ... */
+/* Prints the help screen to stdout */
 
 void netcat_printhelp(char *argv0)
 {
@@ -291,7 +296,7 @@ void netcat_printhelp(char *argv0)
   printf("\n");
 }
 
-/* ... */
+/* Prints version and license information to stdout */
 
 void netcat_printversion(void)
 {
