@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.4 2002-04-26 21:33:58 themnemonic Exp $
+ * $Id: netcat.h,v 1.5 2002-04-27 12:43:53 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -108,6 +108,20 @@ struct port_poop
 #define Debug(x) printf x; printf ("\n"); fflush (stdout); sleep (1);
 #else
 #define Debug(x)		/* nil... */
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+#ifndef __cplusplus
+#ifndef bool
+#define bool unsigned char
+#endif
 #endif
 
 /* misc.c */
