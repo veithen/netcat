@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.55 2002-08-21 00:47:42 themnemonic Exp $
+ * $Id: netcat.c,v 1.56 2002-09-16 21:43:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -112,8 +112,6 @@ static void got_int(int z)
 #endif
 }
 
-#ifdef BETA_NCEXEC
-#warning "Using beta code for ncexec"
 /* ... */
 
 static void ncexec(nc_sock_t *ncsock)
@@ -145,7 +143,6 @@ static void ncexec(nc_sock_t *ncsock)
   ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't execute %s: %s"),
 	  opt_exec, strerror(errno));
 }				/* end of ncexec() */
-#endif
 
 /* main: handle command line arguments and listening status */
 
@@ -498,12 +495,10 @@ int main(int argc, char *argv[])
        otherwise now it's the time to connect to the target host and tunnel
        them together (which means passing to the next section. */
     if (netcat_mode == NETCAT_LISTEN) {
-#ifdef BETA_NCEXEC
       if (opt_exec) {
 	ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
 	ncexec(&listen_sock);		/* this won't return */
       }
-#endif
       core_readwrite(&listen_sock, &stdio_sock);
       debug_dv("Listen: EXIT");
     }
@@ -572,6 +567,7 @@ int main(int argc, char *argv[])
     memcpy(&connect_sock.host, &remote_host, sizeof(connect_sock.host));
     netcat_getport(&connect_sock.port, NULL, c);
 
+    /* FIXME: in udp mode and NETCAT_CONNECT, opt_zero is senseless */
     connect_ret = core_connect(&connect_sock);
 
     /* connection failure? (we cannot get this in UDP mode) */
@@ -592,12 +588,10 @@ int main(int argc, char *argv[])
       close(connect_ret);
     }
     else {
-#ifdef BETA_NCEXEC
       if (opt_exec) {
 	ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
 	ncexec(&connect_sock);		/* this won't return */
       }
-#endif
       core_readwrite(&connect_sock, &stdio_sock);
       debug_v("Connect: EXIT");
     }

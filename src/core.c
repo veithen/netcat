@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.27 2002-08-21 00:47:42 themnemonic Exp $
+ * $Id: core.c,v 1.28 2002-09-16 21:43:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -50,8 +50,9 @@ static int core_udp_connect(nc_sock_t *ncsock)
 
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
-  myaddr.sin_port = htons(ncsock->local_port.num);
-  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0], sizeof(myaddr.sin_addr));
+  myaddr.sin_port = ncsock->local_port.netnum;
+  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+	 sizeof(myaddr.sin_addr));
   /* only call bind if it is really needed */
   if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
@@ -61,7 +62,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
 
   /* now prepare myaddr for the connect() call */
   myaddr.sin_family = AF_INET;
-  myaddr.sin_port = htons(ncsock->port.num);
+  myaddr.sin_port = ncsock->port.netnum;
   memcpy(&myaddr.sin_addr, &ncsock->host.iaddrs[0], sizeof(myaddr.sin_addr));
   ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
   if (ret < 0)
@@ -94,7 +95,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
   sockbuf[0] = 1;
   sockbuf[1] = sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
 #else
-  sock = udphelper_sockets_open(&sockbuf, htons(ncsock->local_port.num));
+  sock = udphelper_sockets_open(&sockbuf, ncsock->local_port.netnum);
 #endif
   if (sock < 0)
     goto err;
@@ -102,8 +103,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
 #ifdef USE_PKTINFO
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
-  myaddr.sin_port = htons(ncsock->local_port.num);
-  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0], sizeof(myaddr.sin_addr));
+  myaddr.sin_port = ncsock->local_port.num;
+  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+	sizeof(myaddr.sin_addr));
   /* bind() MUST be called in this function, since it's the final call for this
      type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
   ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
@@ -147,7 +149,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
      a remote address and a local address (in case we bound to INADDR_ANY).
      Wait here until a packet is received, and use its source and destination
      addresses as default endpoints.  If we have the zero-I/O option set, we
-     just eat the packet and will never return (if a timeout is not set). */
+     just eat the packet and return when timeout is elapsed (maybe never). */
   tt.tv_sec = timeout;
   tt.tv_usec = 0;
 
@@ -161,6 +163,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
       FD_SET(sockbuf[socks_loop], &ins);
     }
 
+    /* automatically use remaining timeout time if in zero-I/O mode */
     ret = select(sock_max, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
     if (ret == 0)
       break;
@@ -308,8 +311,8 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   /* since we are nonblocking now, we could start as many connections as we
      want but it's not a great idea connecting more than one host at time */
   sock = netcat_socket_new_connect(PF_INET, SOCK_STREAM,
-			&ncsock->host.iaddrs[0], ncsock->port.num,
-			&ncsock->local_host.iaddrs[0], ncsock->local_port.num);
+		&ncsock->host.iaddrs[0], ncsock->port.netnum,
+		&ncsock->local_host.iaddrs[0], ncsock->local_port.netnum);
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",

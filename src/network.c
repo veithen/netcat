@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.29 2002-09-07 01:31:51 themnemonic Exp $
+ * $Id: network.c,v 1.30 2002-09-16 21:43:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -188,12 +188,13 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
   if (!port_string) {
     if (port_num == 0)
       return FALSE;
-    servent = getservbyport((int)htons(port_num), get_proto);
+    dst->num = port_num;
+    dst->netnum = htons(port_num);
+    servent = getservbyport((int)dst->netnum, get_proto);
     if (servent) {
-      assert(port_num == ntohs(servent->s_port));
+      assert(dst->netnum == servent->s_port);
       strncpy(dst->name, servent->s_name, sizeof(dst->name));
     }
-    dst->num = port_num;
     goto end;
   }
   else {
@@ -210,7 +211,7 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
     if (!endptr[0]) {
       /* pure numeric value, check it out */
       if ((port > 0) && (port < 65536))
-        return netcat_getport(dst, NULL, (unsigned short) port);
+        return netcat_getport(dst, NULL, (in_port_t)port);
       else
         return FALSE;
     }
@@ -221,7 +222,8 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
     servent = getservbyname(port_string, get_proto);
     if (servent) {
       strncpy(dst->name, servent->s_name, sizeof(dst->name));
-      dst->num = ntohs(servent->s_port);
+      dst->netnum = servent->s_port;
+      dst->num = ntohs(dst->netnum);
       goto end;
     }
     return FALSE;
@@ -344,21 +346,22 @@ int netcat_socket_new(int domain, int type)
    If `local_addr' is NULL and `local_port' is 0 the bind(2) call is skipped.
    Returns the descriptor referencing the new socket on success, otherwise
    returns -1 or -2 if the socket(2) call failed (see netcat_socket_new()),
-   or -3 if the bind(2) call failed, or -4 if the fcntl(2) call failed, or -5
+   or -3 if the bind(2) call failed, -4 if the fcntl(2) call failed, or -5
    if the connect(2) call failed. */
 
 int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
-		unsigned short port, const struct in_addr *local_addr,
-		unsigned short local_port)
+		in_port_t port, const struct in_addr *local_addr,
+		in_port_t local_port)
 {
   int sock, ret;
   struct sockaddr_in rem_addr;
 
-  debug_dv("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local"
-	   "_port=%hu)", (void *)addr, port, (void *)local_addr, local_port);
+  debug_dv("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local_"
+	   "port=%hu)", (void *)addr, ntohs(port), (void *)local_addr,
+	   ntohs(local_port));
 
   rem_addr.sin_family = AF_INET;			/* FIXME */
-  rem_addr.sin_port = htons(port);
+  rem_addr.sin_port = port;
   memcpy(&rem_addr.sin_addr, addr, sizeof(rem_addr.sin_addr));
 
   /* create the socket and fix the options */
@@ -371,7 +374,7 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
     struct sockaddr_in my_addr;
 
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(local_port);
+    my_addr.sin_port = local_port;
     /* local_addr may not be specified because the user may want to only
        enforce the local source port */
     if (local_addr)
@@ -421,7 +424,7 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
 
 /* ... */
 
-int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
+int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port)
 {
   int sock, ret;
   struct sockaddr_in my_addr;

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.33 2002-08-21 00:47:42 themnemonic Exp $
+ * $Id: proto.h,v 1.34 2002-09-16 21:43:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -64,9 +64,9 @@ int netcat_inet_pton(const char *src, void *dst);
 const char *netcat_inet_ntop(const void *src);
 int netcat_socket_new(int domain, int type);
 int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
-		unsigned short port, const struct in_addr *local_addr,
-		unsigned short local_port);
-int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
+		in_port_t port, const struct in_addr *local_addr,
+		in_port_t local_port);
+int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port);
 int netcat_socket_accept(int fd, int timeout);
 
 /* telnet.c */

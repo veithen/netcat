@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.29 2002-08-16 11:59:12 themnemonic Exp $
+ * $Id: netcat.h,v 1.30 2002-09-16 21:43:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -47,12 +47,6 @@
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
 #endif
 
-/* special beta code that must be explicitely included */
-#if defined DEBUG && defined USE_TESTCODE
-# define BETA_NCEXEC
-# define BETA_SIGHANDLER
-#endif
-
 /* These are useful to keep the source readable */
 #ifndef STDIN_FILENO
 # define STDIN_FILENO 0
@@ -79,7 +73,7 @@
    string notation. */
 #define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
 
-/* FIXME: I should search more about this portnames standards. Currently
+/* FIXME: I should search more about this portnames standards.  At the moment
    i'll fix my own size for this */
 #define NETCAT_MAXPORTNAMELEN 64
 
@@ -120,6 +114,11 @@
 # ifndef bool
 #  define bool unsigned char
 # endif
+#endif
+
+/* there are some OS that still doesn't support POSIX standards */
+#ifndef HAVE_IN_PORT_T
+typedef unsigned short in_port_t;
 #endif
 
 /* Netcat basic operating modes */
@@ -166,9 +165,11 @@ typedef struct {
    empty, and the port number both as number and as string. */
 
 typedef struct {
-  char name[NETCAT_MAXPORTNAMELEN];
-  char ascnum[8];
-  unsigned short num;
+  char name[NETCAT_MAXPORTNAMELEN];	/* canonical port name */
+  char ascnum[8];			/* ascii port number */
+  unsigned short num;			/* port number */
+  /* FIXME: this is just a test! */
+  in_port_t netnum;			/* port number in network byte order */
 } nc_port_t;
 
 /* This is a more complex struct that holds socket records. [...] */
