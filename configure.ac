@@ -23,7 +23,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat,0.3.1)
+AM_INIT_AUTOMAKE(netcat,0.4.0+cvs)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
@@ -71,18 +71,44 @@ dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
 
+dnl the non-debug CFLAGS should include -DNDEBUG in a more stable context
+
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 	[enable use of Memory Debug (default: no)]),
-	[CFLAGS="$CFLAGS -O0 -Wall -g3 -ggdb3 -DDEBUG"],
-	[CFLAGS="$CFLAGS -Wall -DNDEBUG"])
+	[CFLAGS="$CFLAGS -Wall -O0 -g3 -ggdb3 -DDEBUG"],
+	[CFLAGS="$CFLAGS -Wall"])
+
+AC_ARG_ENABLE(compat, AC_HELP_STRING([--enable-compat],
+	[enable all old compatibility switches (default: no)]),
+	nc_enab_compat=yes
+	nc_enab_oldhexdump=yes
+	nc_enab_oldtelnet=yes)
 
 AC_ARG_ENABLE(oldhexdump, AC_HELP_STRING([--enable-oldhexdump],
 	[use the old style hexdump format (default: no)]),
-	AC_DEFINE(USE_OLD_HEXDUMP,  , use the old style hexdump format))
+	nc_enab_oldhexdump=yes)
+
+AC_ARG_ENABLE(oldtelnet, AC_HELP_STRING([--enable-oldtelnet],
+	[use old telnet codes parsing policy (default: no)]),
+	nc_enab_oldtelnet=yes)
 
 AC_ARG_WITH(included-getopt, AC_HELP_STRING([--with-included-getopt],
 	[use the internal getopt library (default: auto)]),
 	nc_need_getopt=yes)
+
+
+# apply the acquired enable options
+if test "x$nc_enab_compat" == "xyes"; then
+  AC_DEFINE(USE_OLD_COMPAT,  , misc old compat behaviours)
+fi
+
+if test "x$nc_enab_oldhexdump" == "xyes"; then
+  AC_DEFINE(USE_OLD_HEXDUMP,  , use the old style hexdump format)
+fi
+
+if test "x$nc_enab_oldtelnet" == "xyes"; then
+  AC_DEFINE(USE_OLD_TELNET,  , use the old telnet codes parsing policy)
+fi
 
 dnl *********************************************************************
 dnl ** SPECIAL FUNCTIONS VALIDITY CHECKING ******************************
