@@ -14,3 +14,29 @@ installed in your system:
 Any version above the specified is accepted. Lower versions may or may
 not work, but if you use an older version of one of those tools please
 do not send bug reports about compilation failures.
+
+
+
+Howto checkout the source tree
+==============================
+
+The repository can be checked out by using the following syntax:
+
+ $ cvs -d:pserver:anonymous@cvs.netcat.sourceforge.net:/cvsroot/netcat \
+      login
+
+ (just press enter to the password prompt)
+
+ $ cvs -d:pserver:anonymous@cvs.netcat.sourceforge.net:/cvsroot/netcat \
+      co netcat
+
+After you checked out the repository a first time, you won't need the
+above commands any more.
+To sync your local repository with the server repository you can use
+this command:
+
+ $ cd netcat
+ $ cvs update -dP
+
+(note that the -dP is very important to keep your repository directory
+structured sync with the server's one)
