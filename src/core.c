@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.30 2002-10-13 17:24:19 themnemonic Exp $
+ * $Id: core.c,v 1.31 2002-11-20 21:24:14 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -596,25 +596,29 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	exit(EXIT_FAILURE);
       }
       else if (read_ret == 0) {
-	debug_v("EOF Received from stdin! (removing from lookups..)");
-	/* kill everything if this is a tunnel */
-	if (netcat_mode == NETCAT_TUNNEL)
+	/* when we receive EOF and this is a tunnel say goodbye, otherwise
+	   it means that stdin has finished its input. */
+	if ((netcat_mode == NETCAT_TUNNEL) || (opt_eofclose)) {
+	  debug_v("EOF Received from stdin! (exiting from loop..)");
 	  inloop = FALSE;
-	else
+	}
+	else {
+	  debug_v("EOF Received from stdin! (removing from lookups..)");
 	  use_stdin = FALSE;
+	}
       }
       else {
-	/* we can overwrite safely since if the receive queue is busy this fd is not
-	   watched at all. */
+	/* we can overwrite safely since if the receive queue is busy this fd
+	   is not watched at all. */
         nc_slave->recvq.len = read_ret;
         nc_slave->recvq.head = NULL;
         nc_slave->recvq.pos = buf;
       }
     }
 
-    /* for optimization reasons we have a common buffer for both receiving queues,
-       because of this, handle the data now so the buffer is available for the other
-       socket events. */
+    /* for optimization reasons we have a common buffer for both receiving
+       queues, because of this, handle the data now so the buffer is available
+       for the other socket events. */
     if (nc_slave->recvq.len > 0) {
       nc_buffer_t *my_recvq = &nc_slave->recvq;
       nc_buffer_t *rem_sendq = &nc_main->sendq;

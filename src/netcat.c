@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.58 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: netcat.c,v 1.59 2002-11-20 21:24:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -43,6 +43,7 @@ bool signal_handler = TRUE;	/* handle the signals externally */
 
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
+bool opt_eofclose = FALSE;	/* close connection on EOF from stdin */
 bool opt_debug = FALSE;		/* debugging output */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;		/* use random ports */
@@ -196,6 +197,7 @@ int main(int argc, char *argv[])
   while (TRUE) {
     int option_index = 0;
     static const struct option long_options[] = {
+	{ "close",	no_argument,		NULL, 'c' },
 	{ "debug",	no_argument,		NULL, 'd' },
 	{ "exec",	required_argument,	NULL, 'e' },
 	{ "gateway",	required_argument,	NULL, 'g' },
@@ -227,12 +229,15 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "de:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
+    c = getopt_long(argc, argv, "cde:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
 		    long_options, &option_index);
     if (c == -1)
       break;
 
     switch (c) {
+    case 'c':			/* close connection on EOF from stdin */
+      opt_eofclose = TRUE;
+      break;
     case 'd':			/* enable debugging */
       opt_debug = TRUE;
       break;

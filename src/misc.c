@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.30 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: misc.c,v 1.31 2002-11-20 21:24:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -269,14 +269,15 @@ void netcat_printhelp(char *argv0)
   printf("\n");
   printf(_("Mandatory arguments to long options are mandatory for short options too.\n"));
   printf(_("Options:\n"
+"  -c, --close                close connection on EOF from stdin\n"
 "  -e, --exec=PROGRAM         program to exec after connect\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
-"  -l, --listen               listen mode, for inbound connects\n"
-"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"));
+"  -l, --listen               listen mode, for inbound connects\n"));
   printf(_(""
+"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
