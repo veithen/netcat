@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.3 2002-04-29 18:02:39 themnemonic Exp $
+# $Id: Makefile.am,v 1.4 2002-04-30 08:24:22 themnemonic Exp $
 
 info_TEXINFOS = netcat.texi
 
@@ -16,7 +16,7 @@ netcat.pod: $(srcdir)/netcat.texi $(TEXI2POD)
 $(man_MANS): netcat.pod
 	$(POD2MAN) --center="Netcat" --release="GNU Netcat @VERSION@" $? > $@
 
-CLEANFILES = netcat.1
+CLEANFILES = netcat.1 netcat.pod
 
 ## EXTRA_DIST = 
 
