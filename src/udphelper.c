@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.9 2002-12-11 20:36:25 themnemonic Exp $
+ * $Id: udphelper.c,v 1.10 2003-02-28 21:47:23 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -45,6 +45,10 @@
 #endif
 
 #if !defined(SIOCGLIFADDR) || !defined(SIOCGLIFFLAGS)
+/* FIXME The following warning occurs on FreeBSD:
+    udphelper.c:48: warning: `SIOCGLIFADDR' redefined
+    /usr/include/sys/sockio.h:78: warning: this is the location of the previous definition
+ */
 # define SIOCGLIFADDR SIOCGIFADDR
 # define SIOCGLIFFLAGS SIOCGIFFLAGS
 # define SIOCGLIFDSTADDR SIOCGIFDSTADDR
@@ -76,7 +80,7 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
        the right one, checking the index type. */
     for (get_cmsg = CMSG_FIRSTHDR(my_hdr); get_cmsg;
 	 get_cmsg = CMSG_NXTHDR(my_hdr, get_cmsg)) {
-      debug_v("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type);
+      debug_v(("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type));
 
       if (get_cmsg->cmsg_type == IP_PKTINFO) {
 	struct in_pktinfo *get_pktinfo;
@@ -195,8 +199,8 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     if (!(nc_ifreq->lifr_flags & IFF_UP))
       continue;
 
-    debug("(udphelper) Found interface %s (IP address: %s)\n",
-	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr.sin_addr));
+    debug(("(udphelper) Found interface %s (IP address: %s)\n",
+	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr.sin_addr)));
 
     newsock = socket(PF_INET, SOCK_DGRAM, 0);
     if (newsock < 0)
@@ -245,7 +249,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
   my_sockbuf[0] = sock_total;
   *sockbuf = my_sockbuf;
 
-  debug("(udphelper) Successfully created %d socket(s)\n", sock_total);
+  debug(("(udphelper) Successfully created %d socket(s)\n", sock_total));
 
   /* On success, return the first socket for the application use, while if no
      valid interefaces were found step forward to the error handling */
