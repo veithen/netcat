@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.19 2002-05-06 18:42:02 themnemonic Exp $
+ * $Id: misc.c,v 1.20 2002-05-06 20:37:44 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -170,22 +170,6 @@ void ncprint(int type, const char *fmt, ...)
     exit(EXIT_FAILURE);
 }
 
-
-/* ... */
-
-void debug_output(bool wrap, const char *fmt, ...)
-{
-  va_list args;
-
-  va_start(args, fmt);
-  if (wrap)
-    printf("(debug) ");
-  vprintf(fmt, args);
-  if (wrap)
-    printf("\n");
-  va_end(args);
-}
-
 /* ... */
 
 char *netcat_string_split(char **buf)
@@ -194,8 +178,10 @@ char *netcat_string_split(char **buf)
 
   if (!buf)
     return *buf = "";
-  for (o = *buf; isspace(*o); o++);	/* split all initial spaces */
-  for (r = o; *o && !isspace(*o); o++);	/* save the pointer and move to the next token */
+  /* skip all initial spaces */
+  for (o = *buf; isspace((int)*o); o++);
+  /* save the pointer and move to the next token */
+  for (r = o; *o && !isspace((int)*o); o++);
   if (*o)
     *o++ = 0;
   *buf = o;
