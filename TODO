@@ -37,6 +37,12 @@ to mail me if you need any further information.
    UDP connection is broken. I need a work-around like binding to
    all the interfaces (see: ISC BIND9)
 
+ o Currently the telnet codes parsing function overrides the
+   send queue for the remote socket if it has to reply to some
+   telnet codes found in the incoming data.  Check what the RFC
+   says about this, since with the `-i' option this could be
+   a very important difference.
+
 
 
     Future features/Planning
