@@ -1,7 +1,13 @@
 
-[*] Tue May  7 2002 - netcat (cvs)
+[*] Wed May  8 2002 - netcat (cvs)
 
   o Now "make install" also symlinks "nc" to the program file "netcat".
+  o More careful use of stderr/stdout for printing messages
+  o Updated file doc/migration
+  o Now it is possible to force the local source port when connecting to
+    somewhere using the -p option (this is not yet possible in tunnel
+    mode).
+  o Fixed some output messages in netcat.c
 
 
 [*] Mon May  6 2002 - netcat v0.3.0
