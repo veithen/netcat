@@ -19,9 +19,6 @@ to mail me if you need any further information.
    so I can give credits to the right people for the design and
    the original code.
 
- o The configure script must properly check res_init() by including
-   the <resolv.h> file.
-
  o Netcat should be ported on Win32 too, but I haven't Win32 coding
    experience unfortunately.  Anyone is willing to help?
 
@@ -44,6 +41,9 @@ to mail me if you need any further information.
  o In core_udp_listen() there is a socket duplication that may cause
    data loss in the receive queue.  Remove that code and solve that
    issue in some other way.
+
+ o doc/Makefile.am is missing the dependency on texi2pod.pl.in for
+   texi2pod.pl.
 
 
 
