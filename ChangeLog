@@ -1,5 +1,5 @@
 
-[*] Sat Jan  3 2004 - netcat v0.7.1
+[*] Sun Jan 11 2004 - netcat v0.7.1
 
   o Fixed bug in UDP connection code, using pktinfo support. [BUG #796765]
   o Fixed a segfault in the DNS lookup routines, caused by invalid DNS
