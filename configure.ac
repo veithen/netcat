@@ -23,7 +23,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat,0.5.0)
+AM_INIT_AUTOMAKE(netcat,0.5.1)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
@@ -56,8 +56,12 @@ ALL_LINGUAS="it"
 AM_GNU_GETTEXT([external], need-ngettext)
 AM_INTL_SUBDIR
 
+dnl find the socket library on some broken OS
+AC_LBL_LIBRARY_NET
+
 dnl check for the resolver function
-AC_CHECK_FUNC(res_init, , AC_CHECK_LIB(resolv, res_init, [LIBRESOLV="-lresolv"], , $LIBSOCKET))
+AC_CHECK_FUNC(res_init, ,
+    AC_CHECK_LIB(resolv, res_init, LIBS="-lresolv $LIBS"))
 
 AC_CHECK_FUNCS(srandom random)
 if test $ac_cv_func_srandom = no; then
@@ -120,7 +124,7 @@ dnl *********************************************************************
 dnl Try to see if we need the included getopt
 dnl NOTE: with this configuration, it could happen on a really broken
 dnl       system, that we have the header file but not the library
-dnl       functio, and i don't know what would happen.
+dnl       function, and I don't know what would happen.
 dnl AC_CHECK_HEADER(getopt.h)
 dnl AM_CONDITIONAL(NEED_GETOPT_H, test ac_cv_header_getopt_h = no)
 
@@ -143,7 +147,7 @@ dnl *********************************************************************
 dnl ** OUTPUT SECTION ***************************************************
 dnl *********************************************************************
 	
-dnl add here all your Makefiles. These will be created by configure.
+dnl add here all the Makefiles.  These will be created by configure.
 dnl
 AC_CONFIG_FILES(Makefile m4/Makefile lib/Makefile lib/contrib/Makefile
 	src/Makefile doc/Makefile po/Makefile.in)
