@@ -29,3 +29,8 @@ to mail me if you need any further information.
 
  o It would be nice to add IPv6 support, maybe a command line
    switch like `-6'.
+
+ o If some more critical uncompatibilities will jump out, add
+   a configure option `--enable-compat' that implies ALL other
+   single options like `--enable-oldhexdump'.
+
