@@ -1,11 +1,11 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.8 2002-05-04 13:42:15 themnemonic Exp $
+# $Id: Makefile.am,v 1.9 2002-05-06 14:53:59 themnemonic Exp $
 
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"\$(localedir)\" @DEFS@
 
 if NEED_GETOPT
-INCLUDES = -I../contrib
+INCLUDES = -I../lib/contrib
 endif
 
 bin_PROGRAMS = netcat
