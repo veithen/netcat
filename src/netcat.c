@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.63.2.1 2004-02-28 01:39:40 themnemonic Exp $
+ * $Id: netcat.c,v 1.63.2.2 2004-07-03 08:55:35 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
   int c, glob_ret = EXIT_FAILURE;
   int total_ports, left_ports, accept_ret = -1, connect_ret = -1;
   struct sigaction sv;
+  const char *remote_hostname = NULL;
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
   nc_host_t remote_host;
@@ -392,10 +393,10 @@ int main(int argc, char *argv[])
 
   /* try to get an hostname parameter */
   if (optind < argc) {
-    const char *myhost = argv[optind++];
-    if (!netcat_resolvehost(&remote_host, myhost))
+    remote_hostname = argv[optind++];
+    if (!netcat_resolvehost(&remote_host, remote_hostname))
       ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve host \"%s\""),
-	      myhost);
+	      remote_hostname);
   }
 
   /* now loop all the other (maybe optional) parameters for port-ranges */
@@ -527,10 +528,7 @@ int main(int argc, char *argv[])
   netcat_mode = NETCAT_CONNECT;
 
   /* first check that a host parameter was given */
-  if (!remote_host.iaddrs[0].s_addr) {
-    /* FIXME: The Networking specifications state that host address "0" is a
-       valid host to connect to but this broken check will assume as not
-       specified. */
+  if (!remote_hostname) {
     ncprint(NCPRINT_NORMAL, _("%s: missing hostname argument"), argv[0]);
     ncprint(NCPRINT_EXIT, _("Try `%s --help' for more information."), argv[0]);
   }
