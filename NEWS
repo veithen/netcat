@@ -8,6 +8,24 @@
 
 
 
+* Netcat 0.7.0 - 21 Aug 2003 - Release Notes
+
+This new Netcat version was supposed to be released as 0.6.2, but
+a lot of time passed since the previous release, so I decided
+to release it as 0.7.0, including some new core handler code and
+various bugfixes.
+Because of the planned version number, this release should be quite
+stable and usable, but only time will show it.
+
+Main introduced features are:
+- Command line switch `-c' to terminate on EOF from stdin
+- New signal handling code.  You can now "kill -USR1 netcat's pid"
+  to make it printing partial statistics (sent/received bytes).
+- New DNS resolver functions, which will now print more precise
+  information about the target host if ran in verbose mode.
+
+
+
 * Netcat 0.6.1 - 15 Sep 2002 - Release Notes
 
 A bugfix release for the 0.6 major version.  This version may be
