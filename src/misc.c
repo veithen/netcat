@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.13 2002-05-01 16:04:45 themnemonic Exp $
+ * $Id: misc.c,v 1.14 2002-05-04 22:21:36 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,7 +33,8 @@
    This function was written by Johnny Mnemonic for the netcat project,
    credits must be given for any use of this code outside this project */
 
-int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
+int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
+		    size_t datalen)
 {
   size_t pos;
   char buf[80], *ascii_dump, *p = NULL;
@@ -57,7 +58,7 @@ int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
 #ifndef USE_OLD_HEXDUMP
       p += sprintf(p, "%08X  ", (unsigned int) pos);
 #else
-      p += sprintf(p, "? %08X ", (unsigned int) pos);
+      p += sprintf(p, "%c %08X ", c, (unsigned int) pos);
 #endif
     }
 
@@ -144,7 +145,7 @@ char *netcat_string_split(char **buf)
 
 /* construct an argv, and hand anything left over to readwrite(). */
 
-void netcat_commandline(int *argc, char ***argv)
+void netcat_commandline_read(int *argc, char ***argv)
 {
   int my_argc = 1;
   char **my_argv = *argv;
