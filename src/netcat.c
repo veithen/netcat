@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.52 2002-08-15 17:30:07 themnemonic Exp $
+ * $Id: netcat.c,v 1.53 2002-08-15 22:26:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -41,6 +41,7 @@ bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
 
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
+bool opt_debug = FALSE;		/* debugging output */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;		/* use random ports */
 bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
@@ -64,13 +65,13 @@ static void printstats(void)
   netcat_snprintnum(str_recv, 32, bytes_recv);
   assert(str_recv[0]);
   for (p = str_recv; *(p + 1); p++);	/* find the last char */
-  if ((bytes_recv > 0) && !isdigit(*p))
+  if ((bytes_recv > 0) && !isdigit((int)*p))
     snprintf(++p, sizeof(str_recv) - 32, " (%lu)", bytes_recv);
 
   netcat_snprintnum(str_sent, 32, bytes_sent);
   assert(str_sent[0]);
   for (p = str_sent; *(p + 1); p++);	/* find the last char */
-  if ((bytes_sent > 0) && !isdigit(*p))
+  if ((bytes_sent > 0) && !isdigit((int)*p))
     snprintf(++p, sizeof(str_sent) - 32, " (%lu)", bytes_sent);
 
   ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
@@ -164,6 +165,7 @@ int main(int argc, char *argv[])
   while (TRUE) {
     int option_index = 0;
     static const struct option long_options[] = {
+	{ "debug",	no_argument,		NULL, 'd' },
 	{ "exec",	required_argument,	NULL, 'e' },
 	{ "gateway",	required_argument,	NULL, 'g' },
 	{ "pointer",	required_argument,	NULL, 'G' },
@@ -194,12 +196,15 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "e:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z", long_options,
+    c = getopt_long(argc, argv, "de:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z", long_options,
 		    &option_index);
     if (c == -1)
       break;
 
     switch (c) {
+    case 'd':			/* enable debugging */
+      opt_debug = TRUE;
+      break;
     case 'e':			/* prog to exec */
       if (opt_exec)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
@@ -329,13 +334,20 @@ int main(int argc, char *argv[])
   /* initialize the flag buffer to keep track of the specified ports */
   netcat_flag_init(65535);
 
+#ifndef DEBUG
+  /* check for debugging support */
+  if (opt_debug)
+    ncprint(NCPRINT_WARNING,
+	    _("Debugging support not compiled, option `-d' discarded."));
+#endif
+
   /* randomize only if needed */
   if (opt_random)
 #ifdef USE_RANDOM
     SRAND(time(0));
 #else
     ncprint(NCPRINT_WARNING,
-	    _("Random support not compiled, option `-r' discarded"));
+	    _("Random support not compiled, option `-r' discarded."));
 #endif
 
   /* handle the -o option. exit on failure */
@@ -537,4 +549,4 @@ int main(int argc, char *argv[])
 
   printstats();
   return 0;
-}				/* end of main */
+}				/* end of main() */

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.24 2002-07-03 13:10:17 themnemonic Exp $
+ * $Id: core.c,v 1.25 2002-08-15 22:26:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -188,7 +188,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
       memset(&my_hdr, 0, sizeof(my_hdr));
       memset(&rem_addr, 0, sizeof(rem_addr));
       memset(&local_addr, 0, sizeof(local_addr));
-      my_hdr.msg_name = &rem_addr;
+      my_hdr.msg_name = (void *)&rem_addr;
       my_hdr.msg_namelen = sizeof(rem_addr);
       /* initialize the vector struct and then the vectory member of the header */
       my_hdr_vec.iov_base = buf;
@@ -532,7 +532,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
        happening (for example the target sending queue is delaying the output
        and so requires some more time to free up. */
     if (nc_main->recvq.len == 0) {
-      debug_v("watching main sock for incoming data");
+      debug_v("watching main sock for incoming data (recvq is empty)");
       FD_SET(fd_sock, &ins);
     }
     else
@@ -540,7 +540,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
     /* same thing for the other socket */
     if (nc_slave->recvq.len == 0) {
-      debug_v("watching slave sock for incoming data");
+      debug_v("watching slave sock for incoming data (recvq is empty)");
       if (use_stdin || (netcat_mode == NETCAT_TUNNEL))
         FD_SET(fd_stdin, &ins);
     }
@@ -759,7 +759,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	else
 	  fprintf(output_fd, "Received %d bytes from the socket\n", write_ret);
 #endif
-	netcat_fhexdump(output_fd, '<', buf, write_ret);
+	netcat_fhexdump(output_fd, '<', data, write_ret);
       }
       /* update the queue */
       my_sendq->len -= data_len;

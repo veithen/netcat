@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.27 2002-07-10 11:16:55 themnemonic Exp $
+ * $Id: netcat.h,v 1.28 2002-08-15 22:26:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,8 +33,8 @@
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+#include <sys/types.h>		/* basic types definition */
 #include <sys/time.h>		/* timeval, time_t */
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>		/* needed for reading/writing vectors */
 #include <sys/param.h>		/* defines MAXHOSTNAMELEN and other stuff */

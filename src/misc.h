@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.h,v 1.3 2002-05-07 18:49:24 themnemonic Exp $
+ * $Id: misc.h,v 1.4 2002-08-15 22:26:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -37,21 +37,28 @@
 /* normal message to stdout */
 #define NCPRINT_NORMAL		0x0000
 
-/* special debug message. prepends "(debug)" before the actual string */
+/* debug message.  This type of message is only printed if opt_debug is true */
 #define NCPRINT_DEBUG		0x1000
 
+/* special debug message.  Prepends "(debug)" before the actual string */
+#define NCPRINT_DEBUG_V		0x1100
+
 /* prepends "Error:" and sends the string to stderr */
-#define NCPRINT_ERROR		0x1100
+#define NCPRINT_ERROR		0x1200
 
 /* prepends "Warning:" and sends the string to stderr */
-#define NCPRINT_WARNING		0x1200
+#define NCPRINT_WARNING		0x1300
 
 /* Debugging output routines */
 #ifdef DEBUG
-# define debug(fmt, args...) ncprint(NCPRINT_NONEWLINE, fmt, ## args)
-# define debug_d(fmt, args...) ncprint(NCPRINT_DELAY | NCPRINT_NONEWLINE, fmt, ## args)
-# define debug_v(fmt, args...) ncprint(NCPRINT_DEBUG, fmt, ## args)
-# define debug_dv(fmt, args...) ncprint(NCPRINT_DEBUG | NCPRINT_DELAY, fmt, ## args)
+# define debug(fmt, args...) \
+  ncprint(NCPRINT_NONEWLINE | NCPRINT_DEBUG, fmt, ## args)
+# define debug_d(fmt, args...) \
+  ncprint(NCPRINT_NONEWLINE | NCPRINT_DEBUG | NCPRINT_DELAY, fmt, ## args)
+# define debug_v(fmt, args...) \
+  ncprint(NCPRINT_DEBUG_V, fmt, ## args)
+# define debug_dv(fmt, args...) \
+  ncprint(NCPRINT_DEBUG_V | NCPRINT_DELAY, fmt, ## args)
 #else
 # define debug(fmt, args...)
 # define debug_d(fmt, args...)

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.26 2002-07-12 23:26:32 themnemonic Exp $
+ * $Id: misc.c,v 1.27 2002-08-15 22:26:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -139,11 +139,13 @@ void ncprint(int type, const char *fmt, ...)
 
 #ifndef DEBUG
   /* return if this requires some verbosity levels and we haven't got it */
-  if ((flags & NCPRINT_VERB2) && (opt_verbose < 2))
-    goto end;
+  if (opt_debug) {
+    if ((flags & NCPRINT_VERB2) && (opt_verbose < 2))
+      goto end;
 
-  if ((flags & NCPRINT_VERB1) && (opt_verbose < 1))
-    goto end;
+    if ((flags & NCPRINT_VERB1) && (opt_verbose < 1))
+      goto end;
+  }
 #endif
 
   /* known flags */
@@ -152,9 +154,10 @@ void ncprint(int type, const char *fmt, ...)
   else if (flags & NCPRINT_NONEWLINE)
     newline = '\0';
 
-  /* from now on, we are sure that we will need the string formatted */
+  /* from now on, it's very probable that we will need the string formatted */
   va_start(args, fmt);
   vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
 
   switch (type) {
   case NCPRINT_NORMAL:
@@ -162,7 +165,16 @@ void ncprint(int type, const char *fmt, ...)
     break;
 #ifdef DEBUG
   case NCPRINT_DEBUG:
-    fprintf(fstream, "(debug) %s%c", buf, newline);
+    if (opt_debug)
+      fprintf(fstream, "%s%c", buf, newline);
+    else
+      return;		/* other flags has no effect with this flag */
+    break;
+  case NCPRINT_DEBUG_V:
+    if (opt_debug)
+      fprintf(fstream, "(debug) %s%c", buf, newline);
+    else
+      return;		/* other flags has no effect with this flag */
     break;
 #endif
   case NCPRINT_ERROR:

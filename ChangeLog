@@ -8,6 +8,11 @@
   o Fixes and additions to the configure script.
   o Now compiles even if random support is not present in the OS.
   o Fixed `-V' option not working. [BUG #588761]
+  o Fixed a compilation (a missing header) error on some older BSD4 machines.
+  o Fixed hexdump of incoming data that was showing the wrong memory section.
+    This bug was introduced with the queues model in core.c.
+  o Now it is possible to disable the debugging support at runtime if it was
+    compiled in.
 
 
 [*] Tue Jun 18 2002 - netcat v0.5.2
