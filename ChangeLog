@@ -1,7 +1,12 @@
 
-[*] Thu Jan 15 2004 - netcat (cvs)
+[*] Sun Oct 24 2004 - netcat (cvs)
 
   o Updated gettext support to 0.13.1
+  o Updated documentation material.
+  o Added `-N' `--convert' command line switch, for ASCII conversions.
+  o Implemented totally new ports range manager which replaces the old memory
+    hog manager module "flagset".
+  o GNU Netcat now supports IPv6 protocol.
 
 
 [*] Sun Jan 11 2004 - netcat v0.7.1
