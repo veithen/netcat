@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.6 2002-06-10 10:02:33 themnemonic Exp $
+@c $Id: netcat.texi,v 1.7 2002-06-17 11:42:02 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -194,15 +194,25 @@ If this option is not specified, the OS will assign a random available port.
 
 @item -s ADDRESS
 @itemx --source=ADDRESS
-under writing ...
+Specifies the source address used for creating sockets.  In listen mode and
+tunnel mode this switch specifies the bound address, and it is generally a
+good idea not to specify this, which causes Netcat to bind to a generic
+interface.
+In the connect mode, this switch is used to specify the source address for
+connecting to the outside world. Again, if it's not specified a proper
+address for the destination route will be used.
 
 @item -P NUM
 @itemx --tunnel-port=NUM
-under writing ...
+Same as --port, but affects only the connect phase (thus this has no effects
+in listen mode). This switch is useful in tunnel mode for specifying the
+source port for the connecting socket.
 
 @item -S ADDRESS
 @itemx --tunnel-source=ADDRESS
-under writing ...
+Same as --source, but affects only the connect phase (thus this has no effects
+in listen mode). This switch is useful in tunnel mode for specifying the
+source address for the connecting socket.
 
 @end table
 
@@ -224,7 +234,10 @@ specified it will randomize the ports in the whole range.
 
 @item -w
 @itemx --wait=SECS
-under writing...
+Specifies the starting inactivity delay after which Netcat will exit with an
+error status. In connect mode and in tunnel mode this specifies the timeout for
+the connecting socket, while in listen mode it specifies the time to wait for
+a VALID incoming connection (see listen mode).
 
 @item -T
 @itemx --telnet
@@ -235,7 +248,14 @@ or with --enable-oldtelnet).
 
 @item -z
 @itemx --zero
-under writing...
+Sets the zero I/O flag for the selected mode. In connect mode it means that
+as soon as the port is open it is immediately shutdown and closed. This may
+be useful for probing or scanning (even if there are better portscanners
+out there, but this may be useful for scripting purposes).
+In listen mode, it makes netcat refusing all the incoming connections thus
+running in timeout (if set), or waiting forever.
+In both cases, no data is transfered.
+This option is uncompatible with the tunnel mode.
 
 @end table
 @c man end
@@ -293,6 +313,8 @@ under writing ...
 netcat [options] hostname port [port] @dots{}
 
 netcat -l -p port [options] [hostname] [port] @dots{}
+
+netcat -L hostname:port -p port [options] @dots{}
 @c man end
 
 @bye

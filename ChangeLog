@@ -1,5 +1,5 @@
 
-[*] Sun Jun 16 2002 - netcat (cvs)
+[*] Mon Jun 17 2002 - netcat v0.5.2
 
   o Fixed a bug in UDP listen mode with unspecified port where Netcat was not
     actually listening.
@@ -8,15 +8,16 @@
   o More code cleanup.  Added a global variable netcat_mode to specify in which
     mode netcat was launched.
   o Fixed a preprocessor warning on some OSes.
-  o Many fixes to the resolver functions.  Now all weird DNS things that you may
-    find in the net are reported with the `-v' command line switch.
+  o Many fixes to the resolver functions.  Now all weird DNS things that you
+    may find in the net are reported with the `-v' command line switch.
   o Fixed a bug with some redirected input stream where it didn't check other
     streams for new data anymore.
   o Error messages on connect failure (both in connecting mode and tunneling
     mode) were totally wrong.
-  o Fixed tunnel mode exit not printing statistics.
-  o Statistics now use a human readable output and are printed even in the listen
-    mode and tunnel mode. [BUG #569618]
+  o Statistics now use a human readable output and are printed even in the
+    listen mode and tunnel mode. [BUG #569618]
+  o Minor fixes on the errors output.
+  o More updates to the documentation.
 
 
 [*] Mon Jun 10 2002 - netcat v0.5.1
