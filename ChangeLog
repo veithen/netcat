@@ -1,4 +1,12 @@
 
+[*] Thu Jun 13 2002 - netcat (cvs)
+
+  o Fixed a bug in UDP listen mode with unspecified port where Netcat was not
+    actually listening.
+  o Now a verbosity level 2 message is printed on listening.
+  o Made netcat_strid() public in network.c with some minor changes.
+
+
 [*] Mon Jun 10 2002 - netcat v0.5.1
 
   o Completely rewritten the function core_readwrite() in order to allow more
