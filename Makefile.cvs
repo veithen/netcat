@@ -1,4 +1,4 @@
-# $Id: Makefile.cvs,v 1.7 2002-06-08 17:34:51 themnemonic Exp $
+# $Id: Makefile.cvs,v 1.7.2.1 2004-02-28 01:41:17 themnemonic Exp $
 
 default: all
 
@@ -11,12 +11,10 @@ dist:
 	@if [ -f config.cache ]; then \
 		rm -f config.cache; \
 	fi
-	@#LIST=`find ./po -name "*.po"`; \
-	@#@for i in $$LIST; do \
-	@# file2=`echo $$i | sed -e "s#\.po#\.gmo#"`; \
-	@# msgfmt -o $$file2 $$i; \
-	@#done 
-	@#@rm -f Makefile.cvs
+	@if [ ! -f mkinstalldirs ]; then \
+		echo "Restoring compat mkinstalldirs"; \
+		cp -a compat-mkinstalldirs; \
+	fi
 	@echo "Reminder: Update release dates and tag cvs"
 
 all:
@@ -26,6 +24,10 @@ all:
 	@autoconf
 	@if [ -f config.cache ]; then \
 		rm -f config.cache; \
+	fi
+	@if [ ! -f mkinstalldirs ]; then \
+		echo "Restoring compat mkinstalldirs"; \
+		cp -a compat-mkinstalldirs; \
 	fi
 
 clean:
