@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-05-11 22:32+0200\n"
+"POT-Creation-Date: 2002-05-15 23:03+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,12 +15,12 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:189
+#: src/core.c:191
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr ""
 
-#: src/core.c:194
+#: src/core.c:196
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr ""
@@ -102,14 +102,14 @@ msgid ""
 "Written by Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 msgstr ""
 
-#: src/netcat.c:72
+#: src/netcat.c:68
 #, c-format
 msgid ""
 "Total received bytes: %ld\n"
 "Total sent bytes: %ld\n"
 msgstr ""
 
-#: src/netcat.c:96
+#: src/netcat.c:98
 msgid "Exiting."
 msgstr ""
 
@@ -159,17 +159,17 @@ msgstr ""
 msgid "Couldn't resolve host \"%s\""
 msgstr ""
 
-#: src/netcat.c:345
+#: src/netcat.c:348
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr ""
 
-#: src/netcat.c:379
+#: src/netcat.c:382
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr ""
 
-#: src/netcat.c:423
+#: src/netcat.c:426
 #, c-format
 msgid "%s open"
 msgstr ""
@@ -179,17 +179,17 @@ msgstr ""
 msgid "inverse host lookup failed for %s"
 msgstr ""
 
-#: src/network.c:89 src/network.c:115
+#: src/network.c:89 src/network.c:114
 #, c-format
 msgid "this host mismatch! %s - %s"
 msgstr ""
 
-#: src/network.c:106
+#: src/network.c:105
 #, c-format
 msgid "Inverse name lookup failed for `%s'"
 msgstr ""
 
-#: src/network.c:112
+#: src/network.c:111
 #, c-format
 msgid "direct host lookup failed for %s"
 msgstr ""

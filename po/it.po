@@ -5,21 +5,21 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: netcat 0.4.0+cvs\n"
-"POT-Creation-Date: 2002-05-11 22:32+0200\n"
-"PO-Revision-Date: 2002-05-11 22:33+0200\n"
+"Project-Id-Version: netcat 0.4.0\n"
+"POT-Creation-Date: 2002-05-15 23:03+0200\n"
+"PO-Revision-Date: 2002-05-15 23:04+0200\n"
 "Last-Translator: Giovanni Giacobbi <johnny@themnemonic.org>\n"
 "Language-Team: Italian <johnny@themnemonic.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=iso-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:189
+#: src/core.c:191
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr "Connessione non voluta da %s:%hu (rifiutata)"
 
-#: src/core.c:194
+#: src/core.c:196
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr "Connessione da %s:%hu"
@@ -103,11 +103,11 @@ msgstr ""
 "  -t, --telnet               rispondi alle negoziazioni TELNET\n"
 "  -u, --udp                  modalità UDP\n"
 "  -v, --verbose              dettagli (due volte significa più dettagli)\n"
-"  -V, --version              output version information and exit\n"
-"  -x, --hexdump              hexdump incoming and outgoing traffic\n"
+"  -V, --version              mostra informazioni sulla versione ed esce\n"
+"  -x, --hexdump              mostra l'hexdump dei dati in entrata e uscita\n"
 "  -w, --wait=SECS            tempo di scadenza per i tentativi di "
 "connessioni\n"
-"  -z, --zero                 zero-I/O mode (used for scanning)\n"
+"  -z, --zero                 modalità di zero-I/O (usata per lo scanning)\n"
 
 #: src/misc.c:261
 msgid "Remote port number can also be specified as range.  Example: '1-1024'\n"
@@ -137,7 +137,7 @@ msgstr ""
 "Design e idea originale di Avian Research <hobbit@avian.org>,\n"
 "Scritto da Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 
-#: src/netcat.c:72
+#: src/netcat.c:68
 #, c-format
 msgid ""
 "Total received bytes: %ld\n"
@@ -146,7 +146,7 @@ msgstr ""
 "Totale byte ricevuti: %ld\n"
 "Totale byte inviati: %ld\n"
 
-#: src/netcat.c:96
+#: src/netcat.c:98
 msgid "Exiting."
 msgstr "Uscita."
 
@@ -196,17 +196,17 @@ msgstr "Impossibile aprire il file di output"
 msgid "Couldn't resolve host \"%s\""
 msgstr "Impossibile risolvere l'host \"%s\""
 
-#: src/netcat.c:345
+#: src/netcat.c:348
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr "Specificazione porta non valida: %s"
 
-#: src/netcat.c:379
+#: src/netcat.c:382
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr "Modalità di attesa fallita: %s"
 
-#: src/netcat.c:423
+#: src/netcat.c:426
 #, c-format
 msgid "%s open"
 msgstr "%s è aperto"
@@ -216,17 +216,17 @@ msgstr "%s è aperto"
 msgid "inverse host lookup failed for %s"
 msgstr "fallita risoluzione inversa per %s"
 
-#: src/network.c:89 src/network.c:115
+#: src/network.c:89 src/network.c:114
 #, c-format
 msgid "this host mismatch! %s - %s"
 msgstr "questo hostname non rispecchia! %s - %s"
 
-#: src/network.c:106
+#: src/network.c:105
 #, c-format
 msgid "Inverse name lookup failed for `%s'"
 msgstr "Risoluzione inversa fallita per `%s'"
 
-#: src/network.c:112
+#: src/network.c:111
 #, c-format
 msgid "direct host lookup failed for %s"
 msgstr "Risoluzione fallita per %s"
