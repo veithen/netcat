@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.34 2003-01-11 22:46:49 themnemonic Exp $
+ * $Id: network.c,v 1.35 2003-02-28 22:13:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -47,7 +47,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
   struct in_addr res_addr;
 
   assert(name[0]);
-  debug_v("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name);
+  debug_v(("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name));
 
   /* reset all fields of the dst struct */
   memset(dst, 0, sizeof(*dst));
@@ -70,8 +70,8 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
        for the output purpose (the user doesn't want to see something he didn't
        type.  So assume the lookup name as the "official" name and fetch the
        ips for the reverse lookup. */
-    debug("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
-	  hostent->h_name);
+    debug(("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
+	  hostent->h_name));
     strncpy(dst->name, name, MAXHOSTNAMELEN - 1);
 
     /* now save all the available ip addresses (no more than MAXINETADDRS) */
@@ -81,7 +81,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 	      sizeof(dst->addrs[0]));
     }				/* end of foreach addr, part A */
 
-    /* since the invalid dns warning is only shown with verbose level 1,
+    /* since the invalid DNS warnings are only shown with verbosity level 1,
        we may skip them (which would speed up the thing) */
     if (!opt_debug && (opt_verbose < 1))
       return TRUE;
@@ -93,7 +93,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 
       if (!hostent || !hostent->h_name) {
 	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("Inverse host lookup failed for %s"), dst->addrs[i]);
+		_("Inverse name lookup failed for `%s'"), dst->addrs[i]);
 	continue;
       }
 
@@ -206,8 +206,8 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
   const char *get_proto = (opt_proto == NETCAT_PROTO_UDP ? "udp" : "tcp");
   struct servent *servent;
 
-  debug_v("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
-	  (void *)dst, port_string, port_num);
+  debug_v(("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
+	  (void *)dst, port_string, port_num));
 
 /* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
    Despite this, we still have to treat it as a short when copying it around.
@@ -324,7 +324,7 @@ const char *netcat_inet_ntop(const void *src)
 #endif
   const char *ret;
 
-  debug_v("netcat_inet_ntop(src=%p)", src);
+  debug_v(("netcat_inet_ntop(src=%p)", src));
 
 #ifdef HAVE_INET_NTOP
   /* FIXME: Since inet_ntop breaks on IPv6-mapped IPv4 addresses i'll need to
@@ -390,9 +390,9 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
   struct sockaddr_in rem_addr;
   assert(addr);
 
-  debug_dv("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local_"
+  debug_dv(("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local_"
 	   "port=%hu)", (void *)addr, ntohs(port), (void *)local_addr,
-	   ntohs(local_port));
+	   ntohs(local_port)));
 
   /* selects the currently supported domains */
   if (domain == PF_INET)
@@ -481,7 +481,7 @@ int netcat_socket_new_listen(int domain, const struct in_addr *addr,
   int sock, ret, my_family;
   struct sockaddr_in my_addr;
 
-  debug_dv("netcat_socket_new_listen(addr=%p, port=%hu)", (void *)addr, port);
+  debug_dv(("netcat_socket_new_listen(addr=%p, port=%hu)", (void *)addr, port));
 
   /* selects the currently supported domains */
   if (domain == PF_INET)
@@ -551,7 +551,7 @@ int netcat_socket_accept(int s, int timeout)
   static bool timeout_init = FALSE;
   static struct timeval timest;
 
-  debug_v("netcat_socket_accept(s=%d, timeout=%d)", s, timeout);
+  debug_v(("netcat_socket_accept(s=%d, timeout=%d)", s, timeout));
 
   /* initialize the select() variables */
   FD_ZERO(&in);
@@ -583,7 +583,7 @@ int netcat_socket_accept(int s, int timeout)
     int new_sock;
 
     new_sock = accept(s, NULL, NULL);
-    debug_v("Connection received (new fd=%d)", new_sock);
+    debug_v(("Connection received (new fd=%d)", new_sock));
 
     /* NOTE: as accept() could fail, new_sock might also be a negative value.
        It's application's work to handle the right errno. */
