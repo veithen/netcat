@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.32 2002-12-08 19:00:32 themnemonic Exp $
+ * $Id: misc.c,v 1.33 2003-01-03 22:44:40 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -151,7 +151,7 @@ void ncprint(int type, const char *fmt, ...)
   if (flags & NCPRINT_STDOUT)
     fstream = stdout;
   if (flags & NCPRINT_NONEWLINE)
-    newline = '\0';
+    newline = 0;
 
   /* from now on, it's very probable that we will need the string formatted */
   va_start(args, fmt);
@@ -181,6 +181,9 @@ void ncprint(int type, const char *fmt, ...)
     break;
   case NCPRINT_WARNING:
     fprintf(fstream, "%s %s%c", _("Warning:"), buf, newline);
+    break;
+  case NCPRINT_NOTICE:
+    fprintf(fstream, "%s %s%c", _("Notice:"), buf, newline);
     break;
   }
   /* discard unknown types */
@@ -337,7 +340,7 @@ void netcat_printhelp(char *argv0)
 void netcat_printversion(void)
 {
   printf("netcat (The GNU Netcat) %s\n", VERSION);
-  printf(_("Copyright (C) 2002  Giovanni Giacobbi\n\n"
+  printf(_("Copyright (C) 2002 - 2003  Giovanni Giacobbi\n\n"
 "This program comes with NO WARRANTY, to the extent permitted by law.\n"
 "You may redistribute copies of this program under the terms of\n"
 "the GNU General Public License.\n"
