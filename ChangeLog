@@ -21,6 +21,9 @@
   o Updated internal gettext support to version 0.11.5.
   o The hexdump function now doesn't buffer more than one data block anymore.
     This caused some packets not to be logged if Netcat dead unexpectedly.
+  o Fixed compiling/linking error on some BSD machines with external intl
+    library.
+  o Included significant rfcs in the distribution package.
 
 
 [*] Tue Jun 18 2002 - netcat v0.5.2
@@ -105,7 +108,7 @@
   o Rewritten telnet support.  Now we have a more reliable implementation of
     the RFC0854.  Netcat will also rewrite the incoming buffer with the telnet
     codes stripped.
-  o Updated doc/migration with new uncompatibilities found.
+  o Updated doc/migration with new incompatibilities found.
   o Added configure option `--enable-oldtelnet', which restores the old nc110
     telnet codes parsing policy.
   o Added configure option `--enable-compat', which turnes on ALL the other

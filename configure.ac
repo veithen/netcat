@@ -139,6 +139,7 @@ if test "x$nc_need_getopt" != "xyes"; then
   if test $ac_cv_func_getopt_long = no; then
     # automatically use the internal getopt library
     nc_need_getopt=yes
+    CONTRIBLIBS="../lib/contrib/libcontrib.a"
   fi
 fi
 
@@ -146,6 +147,7 @@ dnl *********************************************************************
 dnl ** AUTOMAKE CONDITIONALS ********************************************
 dnl *********************************************************************
 
+AC_SUBST(CONTRIBLIBS)
 AM_CONDITIONAL(NEED_GETOPT, test "x$nc_need_getopt" = "xyes")
 
 dnl *********************************************************************
@@ -155,7 +157,7 @@ dnl *********************************************************************
 dnl add here all the Makefiles.  These will be created by configure.
 dnl
 AC_CONFIG_FILES(Makefile m4/Makefile lib/Makefile lib/contrib/Makefile
-	src/Makefile doc/Makefile po/Makefile.in)
+	src/Makefile doc/Makefile doc/drafts/Makefile po/Makefile.in)
 
 dnl this one is special, it needs the executable flag
 dnl

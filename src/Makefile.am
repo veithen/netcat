@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.12 2002-06-27 00:18:47 themnemonic Exp $
+# $Id: Makefile.am,v 1.13 2002-08-22 21:14:42 themnemonic Exp $
 
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"\$(localedir)\" @DEFS@
@@ -18,10 +18,7 @@ netcat_SOURCES = \
 	telnet.c \
 	udphelper.c
 
-if NEED_GETOPT
-netcat_LDADD = \
-	../lib/contrib/libcontrib.a
-endif
+netcat_LDADD = @CONTRIBLIBS@ @INTLLIBS@
 
 EXTRA_DIST = *.h
 
