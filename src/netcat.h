@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.1 2002-04-26 16:21:55 themnemonic Exp $
+ * $Id: netcat.h,v 1.2 2002-04-26 16:40:36 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -31,7 +31,7 @@
 
 
 
-// #include "generic.h"		/* same as with L5, skey, etc */
+// #include "generic.h"         /* same as with L5, skey, etc */
 
 /* conditional includes -- a very messy section which you may have to dink
    for your own architecture [and please send diffs...]: */
@@ -52,7 +52,7 @@
 /* have to do this *before* including types.h. xxx: Linux still has it wrong */
 #ifdef FD_SETSIZE		/* should be in types.h, butcha never know. */
 #undef FD_SETSIZE		/* if we ever need more than 16 active */
-#endif				/* fd's, something is horribly wrong! */
+#endif /* fd's, something is horribly wrong! */
 #define FD_SETSIZE 16		/* <-- this'll give us a long anyways, wtf */
 #include <sys/types.h>		/* *now* do it.  Sigh, this is broken */
 
@@ -96,18 +96,22 @@
 #endif
 #define MAXHOSTNAMELEN 256
 
-struct host_poop {
+struct host_poop
+{
   char name[MAXHOSTNAMELEN];	/* dns name */
   char addrs[8][24];		/* ascii-format IP addresses */
   struct in_addr iaddrs[8];	/* real addresses: in_addr.s_addr: ulong */
 };
+
 #define HINF struct host_poop
 
-struct port_poop {
-  char name [64];		/* name in /etc/services */
-  char anum [8];		/* ascii-format number */
+struct port_poop
+{
+  char name[64];		/* name in /etc/services */
+  char anum[8];			/* ascii-format number */
   USHORT num;			/* real host-order number */
 };
+
 #define PINF struct port_poop
 
 /* Debug macro: squirt whatever message and sleep a bit so we can see it go
@@ -116,5 +120,5 @@ struct port_poop {
 #ifdef DEBUG
 #define Debug(x) printf x; printf ("\n"); fflush (stdout); sleep (1);
 #else
-#define Debug(x)	/* nil... */
+#define Debug(x)		/* nil... */
 #endif
