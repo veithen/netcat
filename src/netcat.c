@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.47 2002-06-16 14:13:59 themnemonic Exp $
+ * $Id: netcat.c,v 1.48 2002-06-17 21:52:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -34,7 +34,7 @@
 /* int gatesidx = 0; */		/* LSRR hop count */
 /* int gatesptr = 4; */		/* initial LSRR pointer, settable */
 /* nc_host_t **gates = NULL; */	/* LSRR hop hostpoop */
-char *optbuf = NULL;		/* LSRR or sockopts */
+/* char *optbuf = NULL; */	/* LSRR or sockopts */
 FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
 bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
 
@@ -57,10 +57,21 @@ nc_proto_t opt_proto = NETCAT_PROTO_TCP;	/* protocol to use for connections */
 
 static void printstats(void)
 {
-  char str_recv[32], str_sent[32];
+  char *p, str_recv[64], str_sent[64];
 
-  netcat_snprintnum(str_recv, sizeof(str_recv), bytes_recv);
-  netcat_snprintnum(str_sent, sizeof(str_sent), bytes_sent);
+  /* fill in the buffers but preserve the space for adding the label */
+  netcat_snprintnum(str_recv, 32, bytes_recv);
+  assert(str_recv[0]);
+  for (p = str_recv; *(p + 1); p++);	/* find the last char */
+  if ((bytes_recv > 0) && !isdigit(*p))
+    snprintf(++p, sizeof(str_recv) - 32, " (%lu)", bytes_recv);
+
+  netcat_snprintnum(str_sent, 32, bytes_sent);
+  assert(str_sent[0]);
+  for (p = str_sent; *(p + 1); p++);	/* find the last char */
+  if ((bytes_sent > 0) && !isdigit(*p))
+    snprintf(++p, sizeof(str_sent) - 32, " (%lu)", bytes_sent);
+
   ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
 	  _("Total received bytes: %s\nTotal sent bytes: %s\n"),
 	  str_recv, str_sent);
@@ -309,8 +320,7 @@ int main(int argc, char *argv[])
       opt_zero = TRUE;
       break;
     default:
-      fprintf(stderr, _("Try `%s --help' for more information.\n"), argv[0]);
-      exit(EXIT_FAILURE);
+      ncprint(NCPRINT_EXIT, _("Try `%s --help' for more information."), argv[0]);
     }
   }
 
@@ -458,13 +468,20 @@ int main(int argc, char *argv[])
   }				/* end of listen and tunnel mode handling */
 
   /* we need to connect outside, this is the connect mode */
+  netcat_mode = NETCAT_CONNECT;
+
+  /* first check that a host parameter was given */
+  if (!remote_host.iaddrs[0].s_addr) {
+    ncprint(NCPRINT_NORMAL, _("%s: missing hostname argument"), argv[0]);
+    ncprint(NCPRINT_EXIT, _("Try `%s --help' for more information."), argv[0]);
+  }
 
   /* since ports are the second argument, checking ports might be enough */
-  if (netcat_flag_count() == 0)
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-	_("No ports specified for connection"));
-
   total_ports = netcat_flag_count();
+  if (total_ports == 0)
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+	    _("No ports specified for connection"));
+
   c = 0;			/* must be set to 0 for netcat_flag_next() */
   while (total_ports > 0) {
     /* `c' is the port number independently of the sorting method (linear

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.20 2002-06-16 10:07:59 themnemonic Exp $
+ * $Id: core.c,v 1.21 2002-06-17 21:52:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -108,6 +108,21 @@ static int core_udp_listen(nc_sock_t *ncsock)
 #else
 # warning "Couldn't setup ancillary data helpers"
 #endif
+
+  /* if the port was set to 0 this means that it is assigned randomly by the
+     OS.  Find out which port they assigned to us. */
+  if (ncsock->local_port.num == 0) {
+    struct sockaddr_in myaddr;
+    unsigned int myaddr_len = sizeof(myaddr);
+
+    ret = getsockname(sock, (struct sockaddr *)&myaddr, &myaddr_len);
+    if (ret < 0)
+      goto err;
+    netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
+  }
+
+  ncprint(NCPRINT_VERB2, _("Listening on %s"),
+	netcat_strid(&ncsock->local_host, &ncsock->local_port));
 
   /* since this protocol is connectionless, we need a special handling here.
      We want to simulate a two-ends connection but in order to do this we need
@@ -361,10 +376,15 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   /* if the port was set to 0 this means that it is assigned randomly by the
      OS.  Find out which port they assigned to us. */
   if (ncsock->local_port.num == 0) {
+    int ret;
     struct sockaddr_in myaddr;
     unsigned int myaddr_len = sizeof(myaddr);
 
-    getsockname(sock_listen, (struct sockaddr *)&myaddr, &myaddr_len);
+    ret = getsockname(sock_listen, (struct sockaddr *)&myaddr, &myaddr_len);
+    if (ret < 0) {
+      close(sock_listen);
+      return -1;
+    }
     netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
   }
 
@@ -740,6 +760,11 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       }
     }				/* end of reading from the socket section */
   }				/* end of while (inloop) */
+
+  /* we've got an EOF from the net, close the socket */
+  shutdown(fd_sock, 2);
+  close(fd_sock);
+  nc_main->fd = -1;
 
   return 0;
 }				/* end of core_readwrite() */
