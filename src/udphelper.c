@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.3 2002-09-15 22:07:25 themnemonic Exp $
+ * $Id: udphelper.c,v 1.4 2002-09-16 21:38:35 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -31,6 +31,9 @@
 #ifndef USE_PKTINFO
 #include <sys/ioctl.h>
 #include <net/if.h>
+#ifdef HAVE_SYS_SOCKIO_H
+#include <sys/sockio.h>
+#endif
 
 /* Support Solaris extended GIFCONF */
 #ifndef SIOCGLIFCONF
