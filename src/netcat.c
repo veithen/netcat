@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.42 2002-06-04 22:09:36 themnemonic Exp $
+ * $Id: netcat.c,v 1.43 2002-06-09 08:56:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -406,6 +406,7 @@ int main(int argc, char *argv[])
 
   debug_dv("Arguments parsing complete! Total ports=%d", netcat_flag_count());
 #if 0
+  /* pure debug code */
   c = 0;
   while ((c = netcat_flag_next(c))) {
     printf("Got port=%d\n", c);
@@ -424,27 +425,26 @@ int main(int argc, char *argv[])
       use_stdin = FALSE;
     }
 
-    /* prepare the socket var */
+    /* prepare the socket var and start listening */
     listen_sock.proto = opt_proto;
     listen_sock.timeout = opt_wait;
     memcpy(&listen_sock.local_host, &local_host, sizeof(listen_sock.local_host));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
     memcpy(&listen_sock.host, &remote_host, sizeof(listen_sock.host));
-
     sock_accept = core_listen(&listen_sock);
 
     /* in zero I/O mode the core_tcp_listen() call will always return -1
        (ETIMEDOUT) since no connections are accepted, because of this our job
        is completed now. */
-    /* FIXME: *FIRST* handle sock_accept < 0 and THEN sort out the "REASON"
-       that caused this error to happen. i'm planning to make -z compatible
-       with -L, so this is broken. */
-    if (opt_zero)
-      exit(0);
+    if (sock_accept < 0) {
+      /* since i'm planning to make `-z' compatible with `-L' I need to check
+         the exact error that caused this failure. */
+      if (opt_zero && (errno == ETIMEDOUT))
+        exit(0);
 
-    if (sock_accept < 0)
       ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),
 	      strerror(errno));
+    }
 
     /* if we are in listen mode, run the core loop and exit when it returns.
        otherwise now it's the time to connect to the target host and tunnel
@@ -481,7 +481,7 @@ int main(int argc, char *argv[])
 	_("No ports specified for connection"));
 
   total_ports = netcat_flag_count();
-  c = 0;	/* must be set to 0 for netcat_flag_next() */
+  c = 0;			/* must be set to 0 for netcat_flag_next() */
   while (total_ports > 0) {
     /* `c' is the port number independently of the sorting method (linear
        or random).  While in linear mode it is also used to fetch the next

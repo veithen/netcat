@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.16 2002-06-06 21:05:54 themnemonic Exp $
+ * $Id: core.c,v 1.17 2002-06-09 08:56:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -34,6 +34,10 @@
 unsigned long bytes_sent = 0;		/* total bytes received */
 unsigned long bytes_recv = 0;		/* total bytes sent */
 
+/* Creates a UDP socket with a default destination address. It also calls
+   bind(2) if it is needed in order to specify the source address.
+   Returns the new socket number. */
+
 static int core_udp_connect(nc_sock_t *ncsock)
 {
   int ret, sock;
@@ -48,7 +52,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = htons(ncsock->local_port.num);
   memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0], sizeof(myaddr.sin_addr));
-  /* only call bind if it really needed */
+  /* only call bind if it is really needed */
   if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
     ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
     if (ret < 0)
@@ -125,11 +129,14 @@ static int core_udp_listen(nc_sock_t *ncsock)
     if (FD_ISSET(sock, &ins)) {
       int recv_ret, write_ret;
       struct msghdr my_hdr;
-      unsigned char buf[1024], anc_buf[512];
+      bool local_fetch = FALSE;
+      unsigned char buf[1024];
       struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
       struct sockaddr_in local_addr;
-      bool local_fetch = FALSE;
+#ifdef USE_PKTINFO
+      unsigned char anc_buf[512];
+#endif
 
       /* I've looked for this code for a lot of hours, and finally found the
          RFC 2292 which provides a socket API for fetching the destination
@@ -144,9 +151,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
       my_hdr_vec.iov_len = sizeof(buf);
       my_hdr.msg_iov = &my_hdr_vec;
       my_hdr.msg_iovlen = 1;
+#ifdef USE_PKTINFO
       /* now the most important part: the ancillary data, used to recovering the dst */
       my_hdr.msg_control = anc_buf;
       my_hdr.msg_controllen = sizeof(anc_buf);
+#endif
 
       /* now check the remote address.  If we are simulating a routing then
          use the MSG_PEEK flag, which leaves the received packet untouched */
@@ -155,6 +164,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
       debug_v("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
 		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest"));
 
+#ifdef USE_PKTINFO
       /* let's hope that there is some ancillary data! */
       if (my_hdr.msg_controllen > 0) {
 	struct cmsghdr *get_cmsg;
@@ -166,7 +176,6 @@ static int core_udp_listen(nc_sock_t *ncsock)
 		get_cmsg = CMSG_NXTHDR(&my_hdr, get_cmsg)) {
 	  debug_v("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type);
 
-#ifdef USE_PKTINFO
 	  if (get_cmsg->cmsg_type == IP_PKTINFO) {
 	    struct in_pktinfo *get_pktinfo;
 
@@ -178,9 +187,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	    local_addr.sin_family = myaddr.sin_family;
 	    local_fetch = TRUE;
 	  }
-#endif
 	}
       }
+#endif
 
       if (local_fetch) {
 	char tmpbuf[127];
@@ -205,7 +214,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	  exit(EXIT_FAILURE);
 	}
 
-	/* FIXME: handle write_ret != read_ret */
+	/* FIXME: unhandled exception */
+	assert(write_ret == recv_ret);
 
 	/* if the hexdump option is set, hexdump the received data */
 	if (opt_hexdump) {
@@ -253,6 +263,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
   close(sock);
   return -1;
 }				/* end of core_udp_listen() */
+
+/* Creates an outgoing tcp connection to the remote host.  If a local address
+   or port is also specified in the socket object, it calls bind(2).
+   Returns the new socket descriptor or -1 on error. */
 
 static int core_tcp_connect(nc_sock_t *ncsock)
 {
@@ -548,7 +562,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
        handle it so that it can be reused. If we must delay it some more, copy it
        in an allocated space. */
     if (nc_main->sendq.len > 0) {
-      char *data = nc_main->sendq.pos;
+      unsigned char *data = nc_main->sendq.pos;
       int data_len = nc_main->sendq.len;
       nc_buffer_t *my_sendq = &nc_main->sendq;
 
@@ -670,7 +684,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     }
 
     if (nc_slave->sendq.len > 0) {
-      char *data = nc_slave->sendq.pos;
+      unsigned char *data = nc_slave->sendq.pos;
       int data_len = nc_slave->sendq.len;
       nc_buffer_t *my_sendq = &nc_slave->sendq;
 

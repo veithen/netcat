@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.22 2002-06-03 21:08:53 themnemonic Exp $
+ * $Id: netcat.h,v 1.23 2002-06-09 08:56:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -109,8 +109,8 @@
 #endif
 
 typedef struct {
-  char *head;
-  char *pos;
+  unsigned char *head;
+  unsigned char *pos;
   int len;
 } nc_buffer_t;
 
