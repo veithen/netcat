@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.12 2002-05-01 13:47:29 themnemonic Exp $
+ * $Id: misc.c,v 1.13 2002-05-01 16:04:45 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -189,6 +189,7 @@ void netcat_printhelp(char *argv0)
   printf(_("listen for inbound:    %s -l -p port [options] [hostname] [port]\n"), argv0);
   printf("\n");
   printf(_("Mandatory arguments to long options are mandatory for short options too.\n"));
+  /* "  -e, --exec=PROGRAM         program to exec after connect [dangerous!!]\n" */
   printf(_("Options:\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
@@ -199,13 +200,18 @@ void netcat_printhelp(char *argv0)
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
+"  -s, --source=ADDRESS       local source address (ip or hostname)\n"
 "  -t, --telnet               answer using TELNET negotiation\n"
 "  -u, --udp                  UDP mode\n"
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
 "  -V, --version              output version information and exit\n"
 "  -x, --hexdump              hexdump incoming and outgoing traffic\n"
 "  -w, --wait=SECS            timeout for connects and final net reads\n"
-"  -z, --zero                 zero-I/O mode (used for scanning)\n\n"));
+"  -z, --zero                 zero-I/O mode (used for scanning)\n"));
+  printf("\n");
+  printf(_("Remote port number can also be specified as range.  "
+	   "Example: '1-1024'\n"));
+  printf("\n");
 }
 
 /* ... */
@@ -218,12 +224,6 @@ void netcat_printversion(void)
 "You may redistribute copies of this program under the terms of\n"
 "the GNU General Public License.\n"
 "For more information about these matters, see the file named COPYING.\n\n"
-"Original design by Avian Research,\n"
-"Written by Johnny Mnemonic.\n"));
+"Original idea and design by Avian Research <hobbit@avian.org>,\n"
+"Written by Johnny Mnemonic <johnny@themnemonic.org>.\n"));
 }
-
-
- /* "	-e prog			program to exec after connect [dangerous!!]\n"
-"	-s addr			local source address\n"
-
-"port numbers can be individual or ranges: lo-hi [inclusive]"); */

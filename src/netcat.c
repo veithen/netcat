@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.18 2002-04-30 20:47:59 themnemonic Exp $
+ * $Id: netcat.c,v 1.19 2002-05-01 16:04:45 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -60,7 +60,6 @@ unsigned int insaved = 0;	/* stdin-buffer size for multi-mode */
 unsigned int wrote_out = 0;	/* total stdout bytes */
 unsigned int wrote_net = 0;	/* total net bytes */
 static char wrote_txt[] = " sent %d, rcvd %d";
-char hexnibs[20] = "0123456789abcdef  ";
 
 /* will malloc up the following globals: */
 struct timeval *timer1 = NULL;
@@ -879,6 +878,7 @@ int main(int argc, char *argv[])
   USHORT hiport = 0;
   USHORT curport = 0;
   char *randports = NULL;
+  netcat_port local_port;
 
   int c;
 
@@ -933,6 +933,7 @@ int main(int argc, char *argv[])
 	{ "output",	required_argument,	NULL, 'o' },
 	{ "local-port",	required_argument,	NULL, 'p' },
 	{ "randomize",	no_argument,		NULL, 'r' },
+	{ "source",	required_argument,	NULL, 's' },
 	{ "telnet",	no_argument,		NULL, 't' },
 	{ "udp",		no_argument,		NULL, 'u' },
 	{ "verbose",	no_argument,		NULL, 'v' },
@@ -943,7 +944,8 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "g:G:hi:lno:p:rtuvxw:z", long_options, &option_index);
+    c = getopt_long(argc, argv, "g:G:hi:lno:p:rs:tuvxw:z", long_options,
+		    &option_index);
     if (c == -1)
       break;
 
@@ -984,23 +986,22 @@ int main(int argc, char *argv[])
     case 'n':			/* numeric-only, no DNS lookups */
       opt_numeric++;
       break;
-    case 'o':			/* hexdump log */
+    case 'o':			/* output hexdump log to file */
       opt_outputfile = strdup(optarg);
       opt_hexdump = TRUE;	/* implied */
       break;
     case 'p':			/* local source port */
-      netcat_getport(&portpoop, optarg, 0);
-      o_lport = portpoop.num;
-      if (o_lport == 0)
-	bail("invalid local port %s", optarg);
+      if (!netcat_getport(&local_port, optarg, 0)) {
+	fprintf(stderr, _("Error: invalid local port: %s\n"), optarg);
+	exit(EXIT_FAILURE);
+      }
+      o_lport = local_port.num;
       break;
     case 'r':			/* randomize various things */
       opt_random = TRUE;
       break;
     case 's':			/* local source address */
-/* do a full lookup [since everything else goes through the same mill],
-   unless -n was previously specified.  In fact, careful placement of -n can
-   be useful, so we'll still pass opt_numeric here instead of forcing numeric.  */
+      /* lookup the source address and assign it to the connection address */
       wherefrom = malloc(sizeof(*wherefrom)); /* FIXME: temporary hack */
       netcat_resolvehost(wherefrom, optarg);
       ouraddr = &wherefrom->iaddrs[0];
@@ -1020,7 +1021,7 @@ int main(int argc, char *argv[])
     case 'w':			/* wait time */
       opt_wait = atoi(optarg);
       if (opt_wait <= 0) {
-	fprintf(stderr, "Error: invalid wait-time: %s\n", optarg);
+	fprintf(stderr, _("Error: invalid wait-time: %s\n"), optarg);
 	exit(EXIT_FAILURE);
       }
       timer1 = (struct timeval *) Hmalloc(sizeof(struct timeval));
