@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.19 2002-05-23 18:30:15 themnemonic Exp $
+ * $Id: proto.h,v 1.20 2002-05-23 20:56:27 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -50,8 +50,6 @@ extern bool opt_listen, opt_tunnel, opt_numeric, opt_random, opt_hexdump,
 extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern FILE *output_fd;
-extern netcat_host local_host, remote_host;
-extern netcat_port local_port, remote_port;
 extern unsigned long bytes_sent, bytes_recv;
 
 /* network.c */
