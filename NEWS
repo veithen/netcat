@@ -23,6 +23,8 @@ Main introduced features are:
   to make it printing partial statistics (sent/received bytes).
 - New DNS resolver functions, which will now print more precise
   information about the target host if ran in verbose mode.
+- Support for large amount of data, you can now dump big files or
+  streams on fast lines.
 
 
 
