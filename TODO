@@ -19,9 +19,6 @@ to mail me if you need any further information.
    so I can give credits to the right people for the design and
    the original code.
 
- o The configure script must properly check res_init() by including
-   the <resolv.h> file.
-
  o Netcat should be ported on Win32 too, but I haven't Win32 coding
    experience unfortunately.  Anyone is willing to help?
 
