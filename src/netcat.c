@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.62 2003-08-19 12:15:16 themnemonic Exp $
+ * $Id: netcat.c,v 1.63 2003-08-21 15:27:18 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -41,6 +41,7 @@ bool signal_handler = TRUE;	/* handle the signals externally */
 bool got_sigterm = FALSE;	/* when this TRUE the application must exit */
 bool got_sigint = FALSE;	/* when this TRUE the application should exit */
 bool got_sigusr1 = FALSE;	/* when set, the application should print stats */
+bool commandline_need_newline = FALSE;	/* fancy output handling */
 
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
@@ -81,6 +82,8 @@ static void got_int(int z)
 	  BOOL_TO_STR(signal_handler)));
   got_sigint = TRUE;
   if (signal_handler) {			/* default action */
+    if (commandline_need_newline)	/* if we were waiting for input */
+      printf("\n");
     netcat_printstats(FALSE);
     exit(EXIT_FAILURE);
   }

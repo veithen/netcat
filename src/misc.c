@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.35 2003-08-17 21:51:48 themnemonic Exp $
+ * $Id: misc.c,v 1.36 2003-08-21 15:27:18 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -242,7 +242,7 @@ char *netcat_string_split(char **buf)
 {
   register char *o, *r;
 
-  if (!buf)
+  if (!buf || (*buf == NULL))
     return *buf = "";
   /* skip all initial spaces */
   for (o = *buf; isspace((int)*o); o++);
@@ -267,10 +267,16 @@ void netcat_commandline_read(int *argc, char ***argv)
      down everything while playing with c-format */
   fprintf(stderr, "%s ", _("Cmd line:"));
   fflush(stderr);			/* this isn't needed, but on ALL OS? */
+  commandline_need_newline = TRUE;	/* fancy output handling */
   p = fgets(buf, sizeof(buf), stdin);
   my_argv = malloc(128 * sizeof(char *));	/* FIXME: 128? */
+  memset(my_argv, 0, 128 * sizeof(char *));
   my_argv[0] = saved_argv0;		/* leave the program name intact */
+  if (!buf[0])				/* there is no input (ctrl+d?) */
+    printf("\n");
+  commandline_need_newline = FALSE;
 
+  /* fgets() returns a newline, which is stripped by netcat_string_split() */
   do {
     rest = netcat_string_split(&p);
     my_argv[my_argc++] = (rest[0] ? strdup(rest) : NULL);
@@ -286,7 +292,7 @@ void netcat_commandline_read(int *argc, char ***argv)
 
 #if 0
   /* debug this routine */
-  debug_v("new argc is: %d", *argc);
+  printf("new argc is: %d\n", *argc);
   for (my_argc = 0; my_argc < *argc; my_argc++) {
     printf("my_argv[%d] = \"%s\"\n", my_argc, my_argv[my_argc]);
   }
