@@ -1,5 +1,13 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.1 2002-08-22 21:10:42 themnemonic Exp $
+# $Id: Makefile.am,v 1.2 2002-11-28 20:59:41 themnemonic Exp $
+
+corerw.png: $(srcdir)/corerw.xml
+	dia -e $@ $(srcdir)/corerw.xml
+
+docs: corerw.png
+
+# clean images generated at packaging time, and DIA's backup files
+MAINTAINERCLEANFILES = *.png *.xml~
 
 EXTRA_DIST = *.txt
 
