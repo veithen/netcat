@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.19 2002-06-13 23:09:22 themnemonic Exp $
+ * $Id: core.c,v 1.20 2002-06-16 10:07:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -324,7 +324,7 @@ static int core_tcp_connect(nc_sock_t *ncsock)
     }
 
     /* everything went fine, we have the socket */
-    ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&ncsock->host, ncsock->port.num));
+    ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&ncsock->host, &ncsock->port));
     return sock;
   }
   else if (ret)			/* Argh, select() returned error! */
@@ -369,7 +369,7 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   }
 
   ncprint(NCPRINT_VERB2, _("Listening on %s"),
-	netcat_strid(&ncsock->local_host, ncsock->local_port.num));
+	netcat_strid(&ncsock->local_host, &ncsock->local_port));
   while (TRUE) {
     struct sockaddr_in my_addr;
     unsigned int my_len = sizeof(my_addr);	/* this *IS* socklen_t */
@@ -473,7 +473,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
   /* if the domain is unspecified, it means that this is the standard i/o */
   if (nc_slave->domain == PF_UNSPEC) {
-    fd_stdin = (use_stdin ? STDIN_FILENO : -1);
+    fd_stdin = STDIN_FILENO;
     fd_stdout = STDOUT_FILENO;
   }
   else {
@@ -505,7 +505,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     /* same thing for the other socket */
     if (nc_slave->recvq.len == 0) {
       debug_v("watching slave sock for incoming data");
-      FD_SET(fd_stdin, &ins);
+      if (use_stdin || (netcat_mode == NETCAT_TUNNEL))
+        FD_SET(fd_stdin, &ins);
     }
     else
       call_select = FALSE;
@@ -531,13 +532,12 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	exit(EXIT_FAILURE);
       }
       else if (read_ret == 0) {
-	debug_v("EOF Received from stdin! (ignored!)");
-	/* FIXME: So, it seems that nc110 stops from setting 0 in the &ins
-	   after it got an eof.. in fact in some circumstances after the initial
-	   eof it won't be recovered and will keep triggering select() for nothing. */
-	/* anyway, kill everything if this is a tunnel */
+	debug_v("EOF Received from stdin! (removing from lookups..)");
+	/* kill everything if this is a tunnel */
 	if (netcat_mode == NETCAT_TUNNEL)
 	  inloop = FALSE;
+	else
+	  use_stdin = FALSE;
       }
       else {
 	/* we can overwrite safely since if the receive queue is busy this fd is not

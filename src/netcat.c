@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.45 2002-06-13 23:09:23 themnemonic Exp $
+ * $Id: netcat.c,v 1.46 2002-06-16 10:07:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -101,7 +101,7 @@ static void ncexec(int fd)
 
 int main(int argc, char *argv[])
 {
-  int c, total_ports, sock_accept = -1, sock_connect = -1;
+  int c, total_ports, accept_ret = -1, connect_ret = -1;
   struct sigaction sv;
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
@@ -411,12 +411,12 @@ int main(int argc, char *argv[])
     memcpy(&listen_sock.local_host, &local_host, sizeof(listen_sock.local_host));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
     memcpy(&listen_sock.host, &remote_host, sizeof(listen_sock.host));
-    sock_accept = core_listen(&listen_sock);
+    accept_ret = core_listen(&listen_sock);
 
     /* in zero I/O mode the core_tcp_listen() call will always return -1
        (ETIMEDOUT) since no connections are accepted, because of this our job
        is completed now. */
-    if (sock_accept < 0) {
+    if (accept_ret < 0) {
       /* since i'm planning to make `-z' compatible with `-L' I need to check
          the exact error that caused this failure. */
       if (opt_zero && (errno == ETIMEDOUT))
@@ -437,12 +437,12 @@ int main(int argc, char *argv[])
       /* otherwise we are in tunnel mode.  The connect_sock var was already
          initialized by the command line arguments. */
       assert(netcat_mode == NETCAT_TUNNEL);
-      sock_connect = core_connect(&connect_sock);
+      connect_ret = core_connect(&connect_sock);
 
       /* connection failure? (we cannot get this in UDP mode) */
-      if (sock_connect < 0) {
+      if (connect_ret < 0) {
 	assert(opt_proto != NETCAT_PROTO_UDP);
-	ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
+	ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&connect_sock.host, &connect_sock.port),
 	strerror(errno));
       }
       core_readwrite(&listen_sock, &connect_sock);
@@ -479,27 +479,23 @@ int main(int argc, char *argv[])
     memcpy(&connect_sock.local_host, &local_host, sizeof(connect_sock.local_host));
     memcpy(&connect_sock.local_port, &local_port, sizeof(connect_sock.local_port));
     memcpy(&connect_sock.host, &remote_host, sizeof(connect_sock.host));
-    connect_sock.port.num = c;
+    netcat_getport(&connect_sock.port, NULL, c);
 
-    sock_connect = core_connect(&connect_sock);
+    connect_ret = core_connect(&connect_sock);
 
     /* connection failure? (we cannot get this in UDP mode) */
-    if (sock_connect < 0) {
+    if (connect_ret < 0) {
       assert(opt_proto != NETCAT_PROTO_UDP);
-      ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
+      ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&connect_sock.host, &connect_sock.port),
 	      strerror(errno));
       continue;			/* go with next port */
     }
 
     if (opt_zero) {
-      /* if we are not in tunnel mode, sock_accept must be untouched */
-      assert(sock_accept == -1);
-      shutdown(sock_connect, 2);
-      close(sock_connect);
+      shutdown(connect_ret, 2);
+      close(connect_ret);
     }
     else {
-      /* if we are not in tunnel mode, sock_accept must be untouched */
-      assert(sock_accept == -1);
       core_readwrite(&connect_sock, &stdio_sock);
     }
   }			/* end of while (total_ports > 0) */
