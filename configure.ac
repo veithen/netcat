@@ -68,6 +68,12 @@ AC_SUBST(AUTODIRS)
 dnl check for the resolver function
 AC_CHECK_FUNC(res_init, , AC_CHECK_LIB(resolv, res_init, [LIBRESOLV="-lresolv"], , $LIBSOCKET))
 
+AC_CHECK_FUNCS(srandom random)
+if test $ac_cv_func_srandom = no; then
+  # let's try with the older srand/rand functions
+  AC_CHECK_FUNCS(srand rand)
+fi
+
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
