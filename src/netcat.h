@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.12 2002-04-30 20:47:59 themnemonic Exp $
+ * $Id: netcat.h,v 1.13 2002-05-05 08:40:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -28,24 +28,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <assert.h>		/* the assert() macro. define NDEBUG to remove */
-#include <errno.h>		/* extern int errno */
+#include <assert.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
 
-/* conditional includes -- a very messy section which you may have to dink
-   for your own architecture [and please send diffs...]: */
+/* other misc unchecked includes */
+#include <sys/time.h>		/* timeval, time_t */
+#include <netinet/in.h>		/* sockaddr_in, htons, in_addr */
+#include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
+#include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
+#include <time.h>
+
 /* #undef _POSIX_SOURCE	*/	/* might need this for something? */
-#define HAVE_BIND		/* ASSUMPTION -- seems to work everywhere! */
-#define HAVE_HELP		/* undefine if you dont want the help text */
-
-/* have to do this *before* including types.h. xxx: Linux still has it wrong */
-#ifdef FD_SETSIZE		/* should be in types.h, butcha never know. */
-#undef FD_SETSIZE		/* if we ever need more than 16 active */
-#endif /* fd's, something is horribly wrong! */
-#define FD_SETSIZE 16		/* <-- this'll give us a long anyways, wtf */
 
 #ifdef HAVE_RANDOM		/* try with most modern random routines */
 #define SRAND srandom
@@ -56,18 +55,6 @@
 #else				/* if none of them are here, CHANGE OS! */
 #error "Couldn't find any random() library function"
 #endif
-
-/* includes: */
-#include <sys/time.h>		/* timeval, time_t */
-#include <setjmp.h>		/* jmp_buf et al */
-#include <netinet/in.h>		/* sockaddr_in, htons, in_addr */
-#include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
-#include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
-#include <arpa/inet.h>		/* inet_ntoa */
-#include <string.h>		/* strcpy, strchr, yadda yadda */
-#include <signal.h>
-#include <time.h>
-#include <fcntl.h>		/* O_WRONLY et al */
 
 /* handy stuff: */
 #define SA struct sockaddr	/* FIXME: this needs to be removed ASAP */
@@ -101,16 +88,25 @@
 
 /* Debugging output routines */
 #ifdef DEBUG
+#define dprintf(__n__, __msg__)		\
+  printf __msg__
+
 #define debug(fmt, args...) debug_output(FALSE, fmt, ## args)
 #define debug_d(fmt, args...) debug_output(FALSE, fmt, ## args); usleep(500000)
 #define debug_v(fmt, args...) debug_output(TRUE, fmt, ## args)
 #define debug_dv(fmt, args...) debug_output(TRUE, fmt, ## args); usleep(500000)
+
 #else
+#define dprintf(__n__, __msg__)		\
+  if (opt_verbose >= __n__)		\
+    printf __msg__
+
 #define debug(fmt, args...)
 #define debug_d(fmt, args...)
 #define debug_v(fmt, args...)
 #define debug_dv(fmt, args...)
 #endif
+
 
 typedef struct netcat_host_struct {
   char name[MAXHOSTNAMELEN];	/* dns name */
