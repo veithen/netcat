@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.3 2002-05-11 20:27:46 themnemonic Exp $
+ * $Id: core.c,v 1.4 2002-05-12 21:22:48 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -91,6 +91,10 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
 			NULL, (opt_tunnel ? 0 : local_port.num));
   /* FIXME: we should use our specified address (if any) */
 
+  if (sock < 0)
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
+	    sock, strerror(errno));
+
   /* FIXME: missing some vital checks about the creation of that socket */
   assert(sock > 0);
 
@@ -166,8 +170,8 @@ int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int t
 
     sock_accept = netcat_socket_accept(sock_listen, timeout);
     /* reset the timeout to the "use remaining time" value (see network.c file)
-       if it exited with timeout we also return this function, so losing this
-       information is not a bad thing. */
+       if it exited with timeout we also return this function, so losing the
+       original value is not a bad thing. */
     timeout = -1;
 
     /* failures in netcat_socket_accept() cause this function to return */
@@ -323,25 +327,32 @@ int core_readwrite(int sock, int sock2)
 	inloop = FALSE;
       }
       else {
-	write_ret = write(fd_stdout, buf, read_ret);
-	bytes_recv += write_ret;
-	debug_dv("write(stdout) = %d", write_ret);
+	/* check for telnet codes (if enabled).  Note that the buffered output
+           interval does NOT apply to telnet code answers */
+	if (opt_telnet)
+	  netcat_telnet_parse(sock, buf, &read_ret);
 
-	if (write_ret < 0) {
-	  perror("write(stdout)");
-	  exit(EXIT_FAILURE);
-	}
+	/* the telnet parsing could have returned 0 chars! */
+	if (read_ret) {
+	  write_ret = write(fd_stdout, buf, read_ret);
+	  bytes_recv += write_ret;
+	  debug_dv("write(stdout) = %d", write_ret);
 
-	/* FIXME: handle write_ret != read_ret */
+	  if (write_ret < 0) {
+	    perror("write(stdout)");
+	    exit(EXIT_FAILURE);
+	  }
 
-	/* if option is set, hexdump the received data */
-	if (opt_hexdump) {
+	  /* FIXME: handle write_ret != read_ret */
+
+	  /* if option is set, hexdump the received data */
+	  if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
-	  fprintf(output_fd, "Received %u bytes from the socket\n", write_ret);
+	    fprintf(output_fd, "Received %u bytes from the socket\n", write_ret);
 #endif
-	  netcat_fhexdump(output_fd, '<', buf, write_ret);
+	    netcat_fhexdump(output_fd, '<', buf, write_ret);
+	  }
 	}
-
       }
     }			/* end of reading from the socket section */
 
