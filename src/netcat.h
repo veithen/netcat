@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.21 2002-05-31 13:42:15 themnemonic Exp $
+ * $Id: netcat.h,v 1.22 2002-06-03 21:08:53 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -108,6 +108,12 @@
 # endif
 #endif
 
+typedef struct {
+  char *head;
+  char *pos;
+  int len;
+} nc_buffer_t;
+
 typedef enum {
   NETCAT_PROTO_UNSPEC,
   NETCAT_PROTO_TCP,
@@ -131,6 +137,7 @@ typedef struct {
   nc_proto_t proto;
   nc_host_t local_host, host;
   nc_port_t local_port, port;
+  nc_buffer_t sendq, recvq;
 } nc_sock_t;
 
 /* Netcat includes */

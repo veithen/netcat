@@ -1,4 +1,11 @@
 
+[*] Mon Jun  3 2002 - netcat (cvs)
+
+  o Completely rewritten the function core_readwrite() in order to allow more
+    possibilities of featuring adding.
+  o Minor code cleanup.
+
+
 [*] Fri May 31 2002 - netcat v0.5.0
 
   o Fixed the udp mode listen, which didn't allow any kind of safe read from
