@@ -1,4 +1,9 @@
 
+[*] Tue May  7 2002 - netcat (cvs)
+
+  o Now "make install" also symlinks "nc" to the program file "netcat".
+
+
 [*] Mon May  6 2002 - netcat v0.3.0
 
   o Fixed netcat_resolvehost() to be more library function.

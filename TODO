@@ -14,8 +14,6 @@ to mail me if you need any further information.
  o I need to study deeply the -g/-G options issue in order to make
    it working properly.
 
- o make install should also symlink nc -> netcat
-
  o Add command line switch -X, --input-hexdump so that read from
    stdin some valid hexdump-style data, and accepts it in some
    standard forms (more than one)

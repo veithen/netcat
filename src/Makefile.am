@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.9 2002-05-06 14:53:59 themnemonic Exp $
+# $Id: Makefile.am,v 1.10 2002-05-07 17:47:07 themnemonic Exp $
 
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"\$(localedir)\" @DEFS@
@@ -23,6 +23,19 @@ endif
 
 EXTRA_DIST = *.h
 
-## Proceed to subdirs
+#
+# Follows the local installation procedures
+#
+netcat_nc = $(DESTDIR)$(bindir)/nc
 
-## there isn't any
+install-exec-hook:
+	@if [ ! -L $(netcat_nc) -a ! -e $(netcat_nc) ]; then \
+		echo "Creating symlink to the shorter executable name"; \
+		ln -s netcat $(netcat_nc); \
+	fi
+
+uninstall-hook:
+	@if [ -L $(netcat_nc) ]; then \
+		echo "Removing symlink to the shorter executable name"; \
+		rm -f $(netcat_nc); \
+	fi
