@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: misc.h,v 1.6 2003-01-03 22:44:40 themnemonic Exp $
+ * $Id: misc.h,v 1.7 2003-02-28 22:08:36 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -32,6 +32,7 @@
 #define NCPRINT_EXIT		0x0008	/* exit() after printing the string */
 #define NCPRINT_VERB1		0x0010	/* require verbosity level 1 */
 #define NCPRINT_VERB2		0x0020	/* require verbosity level 2 */
+#define NCPRINT_NOFMT		0x0040	/* do not interpret format strings */
 
 /* NCPRINT commands */
 /* normal message printed to stderr by default */
@@ -54,14 +55,14 @@
 
 /* Debugging output routines */
 #ifdef DEBUG
-# define debug(fmt, args...) \
-  ncprint(NCPRINT_NONEWLINE | NCPRINT_DEBUG, fmt, ## args)
-# define debug_d(fmt, args...) \
-  ncprint(NCPRINT_NONEWLINE | NCPRINT_DEBUG | NCPRINT_DELAY, fmt, ## args)
-# define debug_v(fmt, args...) \
-  ncprint(NCPRINT_DEBUG_V, fmt, ## args)
-# define debug_dv(fmt, args...) \
-  ncprint(NCPRINT_DEBUG_V | NCPRINT_DELAY, fmt, ## args)
+# define debug(fmtstring) \
+  ncprint(NCPRINT_NOFMT | NCPRINT_NONEWLINE | NCPRINT_DEBUG, debug_fmt fmtstring)
+# define debug_d(fmtstring) \
+  ncprint(NCPRINT_NOFMT | NCPRINT_NONEWLINE | NCPRINT_DEBUG | NCPRINT_DELAY, debug_fmt fmtstring)
+# define debug_v(fmtstring) \
+  ncprint(NCPRINT_NOFMT | NCPRINT_DEBUG_V, debug_fmt fmtstring)
+# define debug_dv(fmtstring) \
+  ncprint(NCPRINT_NOFMT | NCPRINT_DEBUG_V | NCPRINT_DELAY, debug_fmt fmtstring)
 #else
 # define debug(fmt, args...)
 # define debug_d(fmt, args...)
