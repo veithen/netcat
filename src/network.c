@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.26 2002-06-27 21:51:20 themnemonic Exp $
+ * $Id: network.c,v 1.27 2002-08-16 12:01:34 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -304,18 +304,28 @@ const char *netcat_inet_ntop(const void *src)
 }			/* end of netcat_inet_ntop() */
 
 /* Backend for the socket(2) system call.  This function wraps the creation of
-   new sockets and sets the common SO_REUSEADDR SOL_SOCKET option, handling
-   eventual errors.
+   new sockets and sets the common SO_REUSEADDR socket option, and the useful
+   SO_LINGER option (if system available) handling eventual errors.
    Returns -1 if the socket(2) call failed, -2 if the setsockopt() call failed;
    otherwise the return value is a descriptor referencing the new socket. */
 
 int netcat_socket_new(int domain, int type)
 {
   int sock, ret, sockopt = 0;
+  struct linger fix_ling;
 
   sock = socket(domain, type, 0);
   if (sock < 0)
     return -1;
+
+  /* don't leave the socket in a TIME_WAIT state if we close the connection */
+  fix_ling.l_onoff = 1;
+  fix_ling.l_linger = 0;
+  ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
+  if (ret < 0) {
+    close(sock);
+    return -2;
+  }
 
   /* fix the socket options */
   ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
@@ -339,7 +349,7 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
   debug_dv("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local"
 	   "_port=%hu)", (void *)addr, port, (void *)local_addr, local_port);
 
-  rem_addr.sin_family = AF_INET;
+  rem_addr.sin_family = AF_INET;			/* FIXME */
   rem_addr.sin_port = htons(port);
   memcpy(&rem_addr.sin_addr, addr, sizeof(rem_addr.sin_addr));
 

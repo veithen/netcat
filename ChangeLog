@@ -17,6 +17,7 @@
   o Added new beta signal handling functions.
   o Fixed connection failures not handled properly in tunnel mode.
   o Fixed global return status to match the program specifications.
+  o Sockets shouldn't be left in a TIME_WAIT status anymore. [BUG #588961]
 
 
 [*] Tue Jun 18 2002 - netcat v0.5.2
