@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.25 2002-06-17 11:39:34 themnemonic Exp $
+ * $Id: network.c,v 1.26 2002-06-27 21:51:20 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -68,13 +68,13 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
        www.bighost.foo, which is an alias for www.bighost.mux.foo, the hostent
        struct will contain the real name in h_name, which is not what we want
        for the output purpose (the user doesn't want to see something he didn't
-       type.  So assume the lookup name as the "official" name and fetch the ips
-       for the reverse lookup. */
+       type.  So assume the lookup name as the "official" name and fetch the
+       ips for the reverse lookup. */
     debug("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
 	  hostent->h_name);
     strncpy(dst->name, name, MAXHOSTNAMELEN - 2);
 
-    /* now save all the available ip addresses (limiting to the global MAXINETADDRS) */
+    /* now save all the available ip addresses (no more than MAXINETADDRS) */
     for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++) {
       memcpy(&dst->iaddrs[i], hostent->h_addr_list[i], sizeof(dst->iaddrs[0]));
       strncpy(dst->addrs[i], netcat_inet_ntop(&dst->iaddrs[i]),
@@ -105,14 +105,15 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
          tool", thus it's good to see the case they chose for this host. */
       if (strcasecmp(dst->name, hostent->h_name))
 	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("this host doesn't match! %s -- %s"), hostent->h_name, dst->name);
+		_("this host doesn't match! %s -- %s"), hostent->h_name,
+		dst->name);
       else if (!host_auth) {	/* take only the first one as auth */
 	strncpy(dst->name, hostent->h_name, sizeof(dst->name));
 	host_auth = TRUE;
       }
     }				/* end of foreach addr, part B */
   }
-  else {			/* `name' is a numeric address, try reverse lookup */
+  else {		/* `name' is a numeric address, try reverse lookup */
     memcpy(&dst->iaddrs[0], &res_addr, sizeof(dst->iaddrs[0]));
     strncpy(dst->addrs[0], netcat_inet_ntop(&res_addr), sizeof(dst->addrs[0]));
 
@@ -145,11 +146,11 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 	  return TRUE;
 
       ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("Host %s isn't authoritative! (direct lookup mismatch)"),
-		dst->addrs[0]);
+	      _("Host %s isn't authoritative! (direct lookup mismatch)"),
+	      dst->addrs[0]);
       ncprint(NCPRINT_VERB1, _("  %s -> %s  BUT  %s -> %s"),
-		dst->addrs[0], dst->name,
-		dst->name, netcat_inet_ntop(hostent->h_addr_list[0]));
+	      dst->addrs[0], dst->name, dst->name,
+	      netcat_inet_ntop(hostent->h_addr_list[0]));
 
  check_failed:
       memset(dst->name, 0, sizeof(dst->name));
@@ -173,7 +174,7 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
   struct servent *servent;
 
   debug_v("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
-		(void *) dst, port_string, port_num);
+	  (void *)dst, port_string, port_num);
 
 /* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
    Despite this, we still have to treat it as a short when copying it around.
@@ -239,13 +240,15 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
 
 const char *netcat_strid(const nc_host_t *host, const nc_port_t *port)
 {
-  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + NETCAT_MAXPORTNAMELEN + 15];
+  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN +
+		  NETCAT_MAXPORTNAMELEN + 15];
   char *p = buf;
   assert(host && port);
 
   if (host->iaddrs[0].s_addr) {
     if (host->name[0])
-      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->name, host->addrs[0]);
+      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->name,
+		    host->addrs[0]);
     else
       p += snprintf(p, sizeof(buf) + buf - p, "%s", host->addrs[0]);
   }
@@ -259,7 +262,8 @@ const char *netcat_strid(const nc_host_t *host, const nc_port_t *port)
   return buf;
 }
 
-/* ... */
+/* Create a network address structure.  This function is a compatibility
+   replacement for the standard POSIX inet_pton() function. */
 
 int netcat_inet_pton(const char *src, void *dst)
 {
@@ -275,7 +279,8 @@ int netcat_inet_pton(const char *src, void *dst)
   return ret;
 }			/* end of netcat_inet_pton() */
 
-/* ... */
+/* Parse a network address structure.  This function is a compatibility
+   replacement for the standard POSIX inet_ntop() function. */
 
 const char *netcat_inet_ntop(const void *src)
 {
@@ -349,8 +354,8 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
 
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(local_port);
-    /* local_addr may not be specified because the user may want to only enforce
-       the local source port */
+    /* local_addr may not be specified because the user may want to only
+       enforce the local source port */
     if (local_addr)
       memcpy(&my_addr.sin_addr, local_addr, sizeof(my_addr.sin_addr));
     else
@@ -433,11 +438,11 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
 
  err:
   if (ret < 0) {
-    int tmpret, saved_errno = errno;
+    int saved_errno = errno;
 
-    /* the close() call MUST NOT fail */
-    tmpret = close(sock);
-    assert(tmpret >= 0);
+    /* the close() call SHOULD NOT fail, but don't risk losing the original
+       errno caused by some previous syscall. */
+    close(sock);
 
     /* restore the original errno */
     errno = saved_errno;
@@ -485,7 +490,7 @@ int netcat_socket_accept(int s, int timeout)
     new_sock = accept(s, NULL, NULL);
     debug_v("Connection received (new fd=%d)", new_sock);
 
-    /* note: as accept() could fail, new_sock might also be a negative value.
+    /* NOTE: as accept() could fail, new_sock might also be a negative value.
        It's application's work to handle the right errno. */
     return new_sock;
   }
