@@ -1,9 +1,10 @@
+
 Anonymous CVS Access
 ====================
 
 Anonymous CVS access is freely available to netcat CVS repository.  The
 repository includes only the strict source files and templates which are needed
-by the GNU configure scripts to build the source.
+by GNU auto-tools to prepare the working source.
 In order to build this sources, you need the following tools properly installed
 in your system:
 
@@ -12,23 +13,21 @@ in your system:
 	GNU Make version 3.79.1
 
 Any version above the specified is accepted.  Older versions may or may not
-work, but if you use an older version of one of those tools please do not send
-bug reports about compilation failures.
+work, but if you use a version older than the officially supported, do not
+send bug reports about compilation failure.
 
 
 
-Howto checkout the source tree
-==============================
+How to checkout the source tree
+===============================
 
 The repository can be checked out by using the following syntax:
 
- $ cvs -d:pserver:anonymous@cvs.netcat.sourceforge.net:/cvsroot/netcat \
-      login
+ $ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/netcat login
 
  (just press enter to the password prompt)
 
- $ cvs -d:pserver:anonymous@cvs.netcat.sourceforge.net:/cvsroot/netcat \
-      co netcat
+ $ cvs -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/netcat co netcat
 
 After you checked out the repository a first time, you won't need the above
 commands any more.  To resync your local repository with the server repository
@@ -48,34 +47,38 @@ Setting up a better CVS working environment
 There are a few tricks that can make cvs usage a little easier.  The first
 thing to do is to create the following file in your home directory:
 
- $ cat > $HOME/.cvsrc
+ $ cat <<EOF > $HOME/.cvsrc
  diff -u
  update -dP
  checkout -P
- ^D
+ EOF
 
-(^D means CTRL+D or whatever is your keyboard combination to send EOF)
-
-You can also use your favorite text editor to do this, just make sure that the
-files contains those three rows.
-This will make sure that each special cvs command has its right needed
-parameters.  For example now to resync the working repository you will just
-need to type:
+Alternatively you can use your favorite text editor to create it, just make
+the file contains those three rows.
+Now, to resynch the working repository with the official repository you'll
+just need to type:
 
  $ cd netcat
  $ cvs update
 
 
 
-Other special CVS repository features
-=====================================
+Other CVS repository features
+=============================
 
-One interesting feature of the cvs repository is the ability to checkout older
-sources version.  For example, if you want to check out the Netcat 0.6.2 you
-can type:
+Currently, CVS contains tags for each relevant point release. For example you
+can checkout version 0.6.2 of GNU Netcat by typing (make sure to enter the
+working repository directory first):
 
  $ cvs update -r netcat_release_0_6_2
 
-To return to the current main branch use this command:
+The repository also contains some branches, which usually represent a stable
+fork of the development line. This way you can retrieve the latest stability
+fixes for a release serie, like 0.7.x:
+
+ $ cvs update -r netcat_branch_0_7
+
+To return to the main trunk (thus retrieving the most up to date development
+source), use the following command:
 
  $ cvs update -A
