@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.2 2002-07-03 13:10:17 themnemonic Exp $
+ * $Id: udphelper.c,v 1.3 2002-09-15 22:07:25 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -31,7 +31,16 @@
 #ifndef USE_PKTINFO
 #include <sys/ioctl.h>
 #include <net/if.h>
+
+/* Support Solaris extended GIFCONF */
+#ifndef SIOCGLIFCONF
+#define SIOCGLIFCONF SIOCGIFCONF
+#define lifc_len ifc_len
+#define lifc_buf ifc_buf
+#define lifc_req ifc_req
+#define lifconf ifconf
 #endif
+#endif	/* !USE_PKTINFO */
 
 #ifdef USE_PKTINFO
 
@@ -58,7 +67,8 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
 
 	/* fetch the data and run away, we don't need to parse everything */
 	get_pktinfo = (struct in_pktinfo *) CMSG_DATA(get_cmsg);
-	memcpy(&get_addr->sin_addr, &get_pktinfo->ipi_spec_dst, sizeof(get_addr->sin_addr));
+	memcpy(&get_addr->sin_addr, &get_pktinfo->ipi_spec_dst,
+	       sizeof(get_addr->sin_addr));
 	return 0;
       }
     }
@@ -79,9 +89,10 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
 
 int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 {
-  int ret, i, alloc_size, *my_sockbuf, if_total = 0, sock_total = 0;
+  int ret, i, alloc_size, dummy_sock, if_total = 1;
+  int *my_sockbuf = NULL, sock_total = 0;
   unsigned int if_pos = 0;
-  struct ifconf nc_ifconf;
+  struct lifconf nc_ifconf;
   struct ifreq *nc_ifreq = NULL;
 
   /* initialize the sockbuf (assuming the function will be positive */
@@ -93,38 +104,46 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 
   /* this is a dummy socket needed for the ioctl(2) call (this just tells the
      kernel where to look for the needed API */
-  my_sockbuf[0] = socket(PF_INET, SOCK_DGRAM, 0);
-  if (my_sockbuf[0] < 0)
+  dummy_sock = socket(PF_INET, SOCK_DGRAM, 0);
+  if (dummy_sock < 0)
     goto err;
 
-  /* find out how many interface we have around */
+  /* find out the interfaces configuration, allocating more memory if
+     necessary. */
   do { /* FIXME: set max buffer size (what is max if num?) */
-    /* try with bigger steps in order not to do too many ioctls on systems with
-       many interfaces. */
+    /* since we don't need at this point to find out the exact number of
+       interfaces, use bigger step in order not to do too many ioctl()s on
+       systems with many interfaces. */
     if_total += 5;
     alloc_size = if_total * sizeof(*nc_ifreq);
 
-    /* like many other syscalls, ioctl() will adjust ifc_len to the REAL
-       ifc_len, so try to allocate a larger buffer in order to determine
+    /* like many other syscalls, ioctl() will adjust lifc_len to the REAL
+       lifc_len, so try to allocate a larger buffer in order to determine
        the total interfaces number. */
     free(nc_ifreq);	/* don't use realloc here, this way it is faster. */
     nc_ifreq = malloc(alloc_size);
-    nc_ifconf.ifc_len = alloc_size;
-    nc_ifconf.ifc_req = nc_ifreq;
+    nc_ifconf.lifc_len = alloc_size;
+    nc_ifconf.lifc_req = nc_ifreq;
+    /* wait for updating nc_ifconf.lifc_req before eventually jumping to the
+       error handling or it would cause a double free() to the same pointer */
+    if (!nc_ifreq) {
+      errno = ENOMEM;
+      goto err;
+    }
 
-    ret = ioctl(my_sockbuf[0], SIOCGIFCONF, (char *)&nc_ifconf);
+    ret = ioctl(dummy_sock, SIOCGLIFCONF, (char *)&nc_ifconf);
     if (ret < 0)
       goto err;
 
-  } while (nc_ifconf.ifc_len >= (if_total * sizeof(*nc_ifreq)));
+  } while (nc_ifconf.lifc_len >= alloc_size);
 
   /* Now loop */
   if_total = 0;
-  while (if_pos < nc_ifconf.ifc_len) {
+  while (if_pos < nc_ifconf.lifc_len) {
     int newsock;
     struct sockaddr_in *if_addr;
 
-    nc_ifreq = (struct ifreq *)((char *)nc_ifconf.ifc_req + if_pos);
+    nc_ifreq = (struct ifreq *)((char *)nc_ifconf.lifc_req + if_pos);
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
     if (nc_ifreq->ifr_addr.sa_len > sizeof(struct sockaddr))
       if_pos += sizeof(nc_ifreq->ifr_name) + nc_ifreq->ifr_addr.sa_len;
@@ -135,7 +154,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 #endif
 
     /* truncated? */
-    assert(if_pos <= nc_ifconf.ifc_len);
+    assert(if_pos <= nc_ifconf.lifc_len);
 
     if_total++;
 
@@ -146,7 +165,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 
     /* we need to sort out interesting interfaces, so fetch the interface
        flags */
-    ret = ioctl(my_sockbuf[0], SIOCGIFFLAGS, (char *)nc_ifreq);
+    ret = ioctl(dummy_sock, SIOCGIFFLAGS, (char *)nc_ifreq);
     if (ret < 0)
       goto err;
 
@@ -163,7 +182,11 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 
     /* update immediately the sockets buffer so that any following error would
        close this one in the cleanup. */
-    my_sockbuf = realloc(my_sockbuf, ++sock_total * sizeof(int));
+    my_sockbuf = realloc(my_sockbuf, (++sock_total + 1) * sizeof(int));
+    if (!my_sockbuf) {
+      errno = ENOMEM;
+      goto err;
+    }
     my_sockbuf[sock_total] = newsock;
 
     /* FIXME: WHY does SIOCGIFFLAGS mess with sin_family?? */
@@ -175,14 +198,15 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     if (ret < 0)
       goto err;
 
-  }
+  }				/* end of while (all_interfaces) */
 
-  /* ok we don't need anymore the interfaces list */
-  free(nc_ifconf.ifc_req);
-  nc_ifconf.ifc_req = NULL;
+  /* ok we don't need anymore the interfaces list and the dummy socket */
+  free(nc_ifconf.lifc_req);
+  nc_ifconf.lifc_req = NULL;
+  close(dummy_sock);
+  dummy_sock = -1;
 
-  /* close the "ioctl" socket and replace its value with the total sock num */
-  close(my_sockbuf[0]);
+  /* save the total sock value in the first member of the sockbuf array */
   my_sockbuf[0] = sock_total;
   *sockbuf = my_sockbuf;
 
@@ -194,18 +218,26 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     return my_sockbuf[1];
 
   errno = EAFNOSUPPORT;
+  my_sockbuf[0] = -1;
 
  err:
   /* destroy the ifconf struct and buffers */
-  free(nc_ifconf.ifc_req);
+  free(nc_ifconf.lifc_req);
 
-  /* FIXME: save the errno! */
+  /* save the errno value */
+  ret = errno;
+
+  if (dummy_sock >= 0)
+    close(dummy_sock);
 
   /* close all the sockets and free the sockets buffer */
-  for (i = 0; i < sock_total; i++)
+  for (i = 1; my_sockbuf && (i <= sock_total); i++)
     close(my_sockbuf[i]);
   free(my_sockbuf);
   *sockbuf = NULL;
+
+  /* restore the errno value for parent function handling */
+  errno = ret;
 
   return -1;
 }
@@ -227,4 +259,3 @@ void udphelper_sockets_close(int *sockbuf)
 
   free(sockbuf);
 }
-
