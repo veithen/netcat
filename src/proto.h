@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.5 2002-04-29 16:30:44 themnemonic Exp $
+ * $Id: proto.h,v 1.6 2002-04-29 23:41:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,7 +33,7 @@ void netcat_printversion(void);
 /* netcat.c */
 extern bool opt_listen, opt_numeric, opt_random, opt_hexdump, opt_udpmode,
 		opt_telnet, opt_zero;
-extern int opt_verbose;
+extern int opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern char unknown[];
 extern int netfd;

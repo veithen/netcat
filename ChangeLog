@@ -5,6 +5,9 @@
   o Fixed --enable-debug configure parameter
   o Added configure option `--enable-oldhexdump', causes netcat to use the
     old hexdump style rather than my new style.
+  o Added macros debug_d and debug_dv, respectively debug plus delay and
+    debug verbose plus delay.  Removed the old Debug macro.
+  o Restored command line switch `-w' (wait).
 
 
 [*] Mon Apr 29 2002 - netcat v0.2.0

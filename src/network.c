@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.3 2002-04-29 16:30:44 themnemonic Exp $
+ * $Id: network.c,v 1.4 2002-04-29 23:41:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,13 +27,7 @@
 #endif
 
 #include "netcat.h"
-
-/* ... */
-int netcat_connect_tcp() {
-
-  /* do nothing */
-  return 0;
-}
+#include <netdb.h>		/* hostent, gethostby*, getservby* */
 
 /* netcat_resolvehost :
    resolve a host 8 ways from sunday; return a new host_poop struct with its
@@ -88,7 +82,7 @@ netcat_host *netcat_resolvehost(char *name)
     strncpy(poop->name, hostent->h_name, MAXHOSTNAMELEN - 2);
     /* FIXME: what do I do with other hosts? */
     for (x = 0; hostent->h_addr_list[x] && (x < 8); x++) {
-      memcpy(&poop->iaddrs[x], hostent->h_addr_list[x], sizeof(IA));
+      memcpy(&poop->iaddrs[x], hostent->h_addr_list[x], sizeof(struct in_addr));
       strncpy(poop->addrs[x], inet_ntoa(poop->iaddrs[x]), sizeof(poop->addrs[0]));
     }				/* for x -> addrs, part A */
     if (!opt_verbose)		/* if we didn't want to see the */
@@ -97,7 +91,7 @@ netcat_host *netcat_resolvehost(char *name)
     /* do inverse lookups in separate loop based on our collected forward addrs,
        since gethostby* tends to crap into the same buffer over and over */
     for (x = 0; poop->iaddrs[x].s_addr && (x < 8); x++) {
-      hostent = gethostbyaddr((char *) &poop->iaddrs[x], sizeof(IA), AF_INET);
+      hostent = gethostbyaddr((char *) &poop->iaddrs[x], sizeof(struct in_addr), AF_INET);
 
       if (!hostent || !hostent->h_name) {
 	fprintf(stderr, "Warning: inverse host lookup failed for %s: ", poop->addrs[x]);
@@ -110,13 +104,13 @@ netcat_host *netcat_resolvehost(char *name)
 
   }
   else {			/* `name' is a numeric address */
-    memcpy(poop->iaddrs, &res_addr, sizeof(IA));
+    memcpy(poop->iaddrs, &res_addr, sizeof(struct in_addr));
     strncpy(poop->addrs[0], inet_ntoa(res_addr), sizeof(poop->addrs));
     if (opt_numeric)		/* if numeric-only, we're done */
       return poop;
     if (!opt_verbose)		/* likewise if we don't want */
       return poop;		/* the full DNS hair */
-    hostent = gethostbyaddr((char *) &res_addr, sizeof(IA), AF_INET);
+    hostent = gethostbyaddr((char *) &res_addr, sizeof(struct in_addr), AF_INET);
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
     if (!hostent)
       fprintf(stderr, "%s: inverse host lookup failed: ", name);

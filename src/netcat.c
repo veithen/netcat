@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.14 2002-04-29 16:30:43 themnemonic Exp $
+ * $Id: netcat.c,v 1.15 2002-04-29 23:41:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -31,7 +31,6 @@
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include <sys/time.h>
-#include <sys/types.h>
 
 #include <getopt.h>
 
@@ -67,8 +66,8 @@ char hexnibs[20] = "0123456789abcdef  ";
 /* will malloc up the following globals: */
 struct timeval *timer1 = NULL;
 struct timeval *timer2 = NULL;
-SAI *lclend = NULL;		/* sockaddr_in structs */
-SAI *remend = NULL;
+struct sockaddr_in *lclend = NULL;		/* sockaddr_in structs */
+struct sockaddr_in *remend = NULL;
 netcat_host **gates = NULL;		/* LSRR hop hostpoop */
 char *optbuf = NULL;		/* LSRR or sockopts */
 char *bigbuf_in;		/* data buffers */
@@ -80,7 +79,6 @@ static netcat_port portpoop;		/* for netcat_getport */
 
 /* global options flags */
 unsigned int o_interval = 0;
-unsigned int o_wait = 0;
 bool opt_listen = FALSE;		/* listen mode */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;		/* use random ports */
@@ -89,6 +87,7 @@ bool opt_telnet = FALSE;		/* answer in telnet mode */
 bool opt_hexdump = FALSE;	/* hexdump traffic */
 bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
 int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
+int opt_wait = 0;		/* wait time (FIXME) */
 char *opt_outputfile = NULL;	/* hexdump output file */
 
 static FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
@@ -206,11 +205,13 @@ unsigned int findline(char *buf, unsigned int siz)
     if (*p == '\n') {
       x = (int) (p - buf);
       x++;			/* 'sokay if it points just past the end! */
-      Debug(("findline returning %d", x)) return x;
+      debug_d("findline returning %d\n", x);
+      return x;
     }
     p++;
   }				/* for */
-  Debug(("findline returning whole thing: %d", siz)) return siz;
+  debug_d("findline returning whole thing: %d\n", siz);
+  return siz;
 }				/* findline */
 
 /* nextport :
@@ -291,7 +292,8 @@ doexec(int fd)
     p++;
   else
     p = pr00gie;
-  Debug(("gonna exec %s as %s...", pr00gie, p)) execl(pr00gie, p, NULL);
+  debug_d("gonna exec %s as %s...\n", pr00gie, p);
+  execl(pr00gie, p, NULL);
   bail("exec %s failed", pr00gie);	/* this gets sent out.  Hmm... */
 }				/* doexec */
 #endif /* GAPING_SECURITY_HOLE */
@@ -303,7 +305,7 @@ doexec(int fd)
    with appropriate socket options set up if we wanted source-routing, or
 	an unconnected TCP or UDP socket to listen on.
    Examines various global o_blah flags to figure out what-all to do. */
-int doconnect(IA *rad, USHORT rp, IA *lad, USHORT lp)
+int doconnect(struct in_addr *rad, USHORT rp, struct in_addr *lad, USHORT lp)
 {
   register int nnetfd;
   register int rr;
@@ -348,7 +350,7 @@ newskt:
 
 /* if lad/lp, do appropriate binding */
   if (lad)
-    memcpy(&lclend->sin_addr.s_addr, lad, sizeof(IA));
+    memcpy(&lclend->sin_addr.s_addr, lad, sizeof(struct in_addr));
   if (lp)
     lclend->sin_port = htons(lp);
   rr = 0;
@@ -374,7 +376,7 @@ newskt:
   if (opt_listen)
     return nnetfd;		/* thanks, that's all for today */
 
-  memcpy(&remend->sin_addr.s_addr, rad, sizeof(IA));
+  memcpy(&remend->sin_addr.s_addr, rad, sizeof(struct in_addr));
   remend->sin_port = htons(rp);
 
 /* rough format of LSRR option and explanation of weirdness.
@@ -423,21 +425,21 @@ Linux is also still a loss at 1.3.x it looks like; the lsrr code is { }...
       optbuf = Hmalloc(48);
       opp = optbuf;
       *opp++ = IPOPT_LSRR;	/* option */
-      *opp++ = (char) (((gatesidx + 1) * sizeof(IA)) + 3) & 0xff;	/* length */
+      *opp++ = (char) (((gatesidx + 1) * sizeof(struct in_addr)) + 3) & 0xff;	/* length */
       *opp++ = gatesptr;	/* pointer */
 /* opp now points at first hop addr -- insert the intermediate gateways */
       for (x = 0; x < gatesidx; x++) {
-	memcpy(opp, gates[x]->iaddrs, sizeof(IA));
-	opp += sizeof(IA);
+	memcpy(opp, gates[x]->iaddrs, sizeof(struct in_addr));
+	opp += sizeof(struct in_addr);
       }
 /* and tack the final destination on the end [needed!] */
-      memcpy(opp, rad, sizeof(IA));
-      opp += sizeof(IA);
+      memcpy(opp, rad, sizeof(struct in_addr));
+      opp += sizeof(struct in_addr);
       *opp = IPOPT_NOP;		/* alignment filler */
     }				/* if empty optbuf */
 /* calculate length of whole option mess, which is (3 + [hops] + [final] + 1),
    and apply it [have to do this every time through, of course] */
-    x = ((gatesidx + 1) * sizeof(IA)) + 4;
+    x = ((gatesidx + 1) * sizeof(struct in_addr)) + 4;
     rr = setsockopt(nnetfd, IPPROTO_IP, IP_OPTIONS, optbuf, x);
     if (rr == -1)
       bail("srcrt setsockopt fuxored");
@@ -447,7 +449,7 @@ Linux is also still a loss at 1.3.x it looks like; the lsrr code is { }...
   }				/* if gatesidx */
 
 /* wrap connect inside a timer, and hit it */
-  arm(1, o_wait);
+  arm(1, opt_wait);
   if (setjmp(jbuf) == 0) {
     rr = connect(nnetfd, (SA *) remend, sizeof(SA));
   }
@@ -467,7 +469,7 @@ Linux is also still a loss at 1.3.x it looks like; the lsrr code is { }...
    incoming and returns an open connection *from* someplace.  If we were
    given host/port args, any connections from elsewhere are rejected.  This
    in conjunction with local-address binding should limit things nicely... */
-int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
+int dolisten(struct in_addr *rad, USHORT rp, struct in_addr *lad, USHORT lp)
 {
   register int nnetfd;
   register int rr;
@@ -523,11 +525,12 @@ int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
    actually does work after all.  Yow.  YMMV on strange platforms!  */
   if (opt_udpmode) {
     x = sizeof(SA);		/* retval for recvfrom */
-    arm(2, o_wait);		/* might as well timeout this, too */
+    arm(2, opt_wait);		/* might as well timeout this, too */
     if (setjmp(jbuf) == 0) {	/* do timeout for initial connect */
       rr = recvfrom		/* and here we block... */
 	(nnetfd, bigbuf_net, BIGSIZ, MSG_PEEK, (SA *) remend, &x);
-    Debug(("dolisten/recvfrom ding, rr = %d, netbuf %s ", rr, bigbuf_net))}
+      debug_d("dolisten/recvfrom ding, rr = %d, netbuf %s\n", rr, bigbuf_net);
+    }
     else
       goto dol_tmo;		/* timeout */
     arm(0, 0);
@@ -548,7 +551,7 @@ int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
 
 /* fall here for TCP */
   x = sizeof(SA);		/* retval for accept */
-  arm(2, o_wait);		/* wrap this in a timer, too; 0 = forever */
+  arm(2, opt_wait);		/* wrap this in a timer, too; 0 = forever */
   if (setjmp(jbuf) == 0) {
     rr = accept(nnetfd, (SA *) remend, &x);
   }
@@ -575,7 +578,8 @@ whoisit:
   rr = getsockopt(nnetfd, IPPROTO_IP, IP_OPTIONS, optbuf, &x);
   if (rr < 0)
     holler("getsockopt failed");
-  Debug(("ipoptions ret len %d", x)) if (x) {	/* we've got options, lessee em... */
+  debug_d("ipoptions ret len %d\n", x);
+  if (x) {	/* we've got options, lessee em... */
     unsigned char *q = (unsigned char *) optbuf;
     char *p = bigbuf_net;	/* local variables, yuk! */
     char *pp = &bigbuf_net[128];	/* get random space farther out... */
@@ -649,15 +653,15 @@ dol_err:
    Use the time delay between writes if given, otherwise use the "tcp ping"
    trick for getting the RTT.  [I got that idea from pluvius, and warped it.]
    Return either the original fd, or clean up and return -1. */
-int udptest(int fd, IA *where)
+int udptest(int fd, struct in_addr *where)
 {
   int rr;
 
   rr = write(fd, bigbuf_in, 1);
   if (rr != 1)
     holler("udptest first write failed?! errno %d", errno);
-  if (o_wait)
-    sleep(o_wait);
+  if (opt_wait)
+    sleep((unsigned int) opt_wait);
   else {
 /* use the tcp-ping trick: try connecting to a normally refused port, which
    causes us to block for the time that SYN gets there and RST gets back.
@@ -665,13 +669,13 @@ int udptest(int fd, IA *where)
     opt_udpmode = FALSE;		/* so doconnect does TCP this time */
 /* Set a temporary connect timeout, so packet filtration doesnt cause
    us to hang forever, and hit it */
-    o_wait = 5;			/* enough that we'll notice?? */
+    opt_wait = 5;			/* enough that we'll notice?? */
     rr = doconnect(where, SLEAZE_PORT, 0, 0);
     if (rr > 0)
       close(rr);		/* in case it *did* open */
-    o_wait = 0;			/* reset it */
+    opt_wait = 0;		/* reset it */
     opt_udpmode = TRUE;		/* we *are* still doing UDP, right? */
-  }				/* if o_wait */
+  }				/* if opt_wait */
   errno = 0;			/* clear from sleep */
   rr = write(fd, bigbuf_in, 1);
   if (rr == 1)			/* if write error, no UDP listener */
@@ -767,7 +771,8 @@ int readwrite(int fd)
 	if (opt_telnet)
 	  atelnet(np, rr);	/* fake out telnet stuff */
       }				/* if rr */
-    Debug(("got %d from the net, errno %d", rr, errno))}	/* net:ding */
+      debug_d("got %d from the net, errno %d\n", rr, errno);
+    }	/* net:ding */
 
 /* if we're in "slowly" mode there's probably still stuff in the stdin
    buffer, so don't read unless we really need MORE INPUT!  MORE INPUT! */
@@ -820,7 +825,8 @@ int readwrite(int fd)
 	rnleft -= rr;		/* will get sanity-checked above */
 	wrote_out += rr;	/* global count */
       }
-    Debug(("wrote %d to stdout, errno %d", rr, errno))}	/* rnleft */
+      debug_d("wrote %d to stdout, errno %d\n", rr, errno);
+    }	/* rnleft */
     if (rzleft) {
       if (o_interval)		/* in "slowly" mode ?? */
 	rr = findline(zp, rzleft);
@@ -834,7 +840,8 @@ int readwrite(int fd)
 	rzleft -= rr;
 	wrote_net += rr;	/* global count */
       }
-    Debug(("wrote %d to net, errno %d", rr, errno))}	/* rzleft */
+      debug_d("wrote %d to net, errno %d\n", rr, errno);
+    }	/* rzleft */
     if (o_interval) {		/* cycle between slow lines, or ... */
       sleep(o_interval);
       errno = 0;		/* clear from sleep */
@@ -864,8 +871,8 @@ int main(int argc, char *argv[])
   netcat_host *gp;
   netcat_host *whereto = NULL;
   netcat_host *wherefrom = NULL;
-  IA *ouraddr = NULL;
-  IA *themaddr = NULL;
+  struct in_addr *ouraddr = NULL;
+  struct in_addr *themaddr = NULL;
   USHORT o_lport = 0;
   USHORT ourport = 0;
   USHORT loport = 0;		/* for scanning stuff */
@@ -881,8 +888,8 @@ int main(int argc, char *argv[])
 #endif
 /* I was in this barbershop quartet in Skokie IL ... */
 /* round up the usual suspects, i.e. malloc up all the stuff we need */
-  lclend = (SAI *) Hmalloc(sizeof(SA));
-  remend = (SAI *) Hmalloc(sizeof(SA));
+  lclend = (struct sockaddr_in *) Hmalloc(sizeof(SA));
+  remend = (struct sockaddr_in *) Hmalloc(sizeof(SA));
   bigbuf_in = Hmalloc(BIGSIZ);
   bigbuf_net = Hmalloc(BIGSIZ);
   ding1 = (fd_set *) Hmalloc(sizeof(fd_set));
@@ -925,11 +932,12 @@ int main(int argc, char *argv[])
 	{ "verbose",	no_argument,		NULL, 'v' },
 	{ "version",	no_argument,		NULL, 'V' },
 	{ "hexdump",	no_argument,		NULL, 'x' },
+	{ "wait",	required_argument,	NULL, 'w' },
 	{ "zero",	no_argument,		NULL, 'z' },
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "g:G:hi:lno:p:rtuvxz", long_options, &option_index);
+    c = getopt_long(argc, argv, "g:G:hi:lno:p:rtuvxw:z", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1003,12 +1011,14 @@ int main(int argc, char *argv[])
       netcat_printversion();
       exit(EXIT_SUCCESS);
     case 'w':			/* wait time */
-      o_wait = atoi(optarg);
-      if (o_wait <= 0)
-	bail("invalid wait-time %s", optarg);
+      opt_wait = atoi(optarg);
+      if (opt_wait <= 0) {
+	fprintf(stderr, "Error: invalid wait-time: %s\n", optarg);
+	exit(EXIT_FAILURE);
+      }
       timer1 = (struct timeval *) Hmalloc(sizeof(struct timeval));
       timer2 = (struct timeval *) Hmalloc(sizeof(struct timeval));
-      timer1->tv_sec = o_wait;	/* we need two.  see readwrite()... */
+      timer1->tv_sec = opt_wait;	/* we need two.  see readwrite()... */
       break;
     case 'x':			/* hexdump traffic */
       opt_hexdump = TRUE;
@@ -1023,8 +1033,8 @@ int main(int argc, char *argv[])
   }				/* while getopt */
 
 /* other misc initialization */
-  Debug(("fd_set size %d", sizeof(*ding1)))	/* how big *is* it? */
-    FD_SET(0, ding1);		/* stdin *is* initially open */
+  debug_d("fd_set size %d\n", sizeof(*ding1));	/* how big *is* it? */
+  FD_SET(0, ding1);		/* stdin *is* initially open */
   if (opt_random) {
     SRAND(time(0));
     randports = Hmalloc(65536);	/* big flag array for ports */
@@ -1049,7 +1059,7 @@ int main(int argc, char *argv[])
 
 
 /* optind is now index of first non -x arg */
-  Debug(("after go: x now %c, optarg %x optind %d", x, (int)optarg, optind))
+  debug_d("after go: x now %c, optarg %x optind %d\n", x, (int)optarg, optind);
 /* Debug (("optind up to %d at host-arg %s", optind, argv[optind])) */
 /* gonna only use first addr of host-list, like our IQ was normal; if you wanna
    get fancy with addresses, look up the list yourself and plug 'em in for now.
@@ -1129,9 +1139,9 @@ int main(int argc, char *argv[])
     }
     else			/* not a range, including args like "25-25" */
       curport = loport;
-    Debug(("Single %d, curport %d", Single, curport))
+    debug_d("Single %d, curport %d\n", Single, curport);
 /* Now start connecting to these things.  curport is already preloaded. */
-      while (loport <= curport) {
+    while (loport <= curport) {
       if ((!o_lport) && (opt_random)) {	/* -p overrides random local-port */
 	ourport = (RAND() & 0xffff);	/* random local-bind -- well above */
 	if (ourport < 8192)	/* resv and any likely listeners??? */
@@ -1140,8 +1150,9 @@ int main(int argc, char *argv[])
       netcat_getport(&portpoop, NULL, curport);
       curport = portpoop.num;
       netfd = doconnect(themaddr, curport, ouraddr, ourport);
-      Debug(("netfd %d from port %d to port %d", netfd, ourport,
-	     curport)) if (netfd > 0)
+      debug_d("netfd %d from port %d to port %d\n", netfd, ourport,
+	     curport);
+      if (netfd > 0)
 	if (opt_zero && opt_udpmode)	/* if UDP scanning... */
 	  netfd = udptest(netfd, themaddr);
       if (netfd > 0) {		/* Yow, are we OPEN YET?! */

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.10 2002-04-29 16:30:44 themnemonic Exp $
+ * $Id: netcat.h,v 1.11 2002-04-29 23:41:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,7 +30,10 @@
 #include <stdarg.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <assert.h>
+#include <assert.h>		/* the assert() macro. define NDEBUG to remove */
+#include <errno.h>		/* extern int errno */
+#include <sys/types.h>
+#include <sys/socket.h>
 
 /* conditional includes -- a very messy section which you may have to dink
    for your own architecture [and please send diffs...]: */
@@ -43,7 +46,6 @@
 #undef FD_SETSIZE		/* if we ever need more than 16 active */
 #endif /* fd's, something is horribly wrong! */
 #define FD_SETSIZE 16		/* <-- this'll give us a long anyways, wtf */
-#include <sys/types.h>		/* *now* do it.  Sigh, this is broken */
 
 #ifdef HAVE_RANDOM		/* try with most modern random routines */
 #define SRAND srandom
@@ -52,29 +54,23 @@
 #define SRAND srand
 #define RAND rand
 #else				/* if none of them are here, CHANGE OS! */
-#error "Couldn't find any random library function"
+#error "Couldn't find any random() library function"
 #endif
 
 /* includes: */
 #include <sys/time.h>		/* timeval, time_t */
 #include <setjmp.h>		/* jmp_buf et al */
-#include <sys/socket.h>		/* basics, SO_ and AF_ defs, sockaddr, ... */
 #include <netinet/in.h>		/* sockaddr_in, htons, in_addr */
 #include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
-#include <netdb.h>		/* hostent, gethostby*, getservby* */
 #include <arpa/inet.h>		/* inet_ntoa */
 #include <string.h>		/* strcpy, strchr, yadda yadda */
-#include <errno.h>
 #include <signal.h>
 #include <time.h>
 #include <fcntl.h>		/* O_WRONLY et al */
 
 /* handy stuff: */
-#define SA struct sockaddr	/* socket overgeneralization braindeath */
-#define SAI struct sockaddr_in	/* ... whoever came up with this model */
-#define IA struct in_addr	/* ... should be taken out and shot, */
-				/* ... not that TLI is any better.  sigh.. */
+#define SA struct sockaddr	/* FIXME: this needs to be removed ASAP */
 #define SLEAZE_PORT 31337	/* for UDP-scan RTT trick, change if ya want */
 #define USHORT unsigned short	/* use these for options an' stuff */
 #define BIGSIZ 8192		/* big buffers */
@@ -87,6 +83,35 @@
 #endif
 #define MAXHOSTNAMELEN 256
 
+/* TRUE and FALSE values for logical type `bool' */
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+/* this is just a logical type, but helps a lot */
+#ifndef __cplusplus
+#ifndef bool
+#define bool unsigned char
+#endif
+#endif
+
+/* Debugging output routines */
+#ifdef DEBUG
+#define debug(fmt, args...) debug_output(FALSE, fmt, ## args)
+#define debug_d(fmt, args...) debug_output(FALSE, fmt, ## args); usleep(500000)
+#define debug_v(fmt, args...) debug_output(TRUE, fmt, ## args)
+#define debug_dv(fmt, args...) debug_output(TRUE, fmt, ## args); usleep(500000)
+#else
+#define debug(fmt, args...)
+#define debug_d(fmt, args...)
+#define debug_v(fmt, args...)
+#define debug_dv(fmt, args...)
+#endif
+
 typedef struct netcat_host_struct {
   char name[MAXHOSTNAMELEN];	/* dns name */
   char addrs[8][24];		/* ascii-format IP addresses */
@@ -98,39 +123,6 @@ typedef struct netcat_port_struct {
   char ascnum[8];
   unsigned short num;
 } netcat_port;
-
-
-/* Debug macro: squirt whatever message and sleep a bit so we can see it go
-   by.  need to call like Debug ((stuff)) [with no ; ] so macro args match!
-   Beware: writes to stdOUT... */
-#ifdef DEBUG
-#define Debug(x) printf x; printf ("\n"); fflush (stdout); sleep (1);
-#else
-#define Debug(x)		/* nil... */
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
-
-#ifndef __cplusplus
-#ifndef bool
-#define bool unsigned char
-#endif
-#endif
-
-/* Debugging output routines */
-#ifdef DEBUG
-#define debug(fmt, args...) debug_output(FALSE, fmt, ## args)
-#define debug_v(fmt, args...) debug_output(TRUE, fmt, ## args)
-#else
-#define debug(fmt, args...)
-#define debug_v(fmt, args...)
-#endif
 
 #include "proto.h"
 

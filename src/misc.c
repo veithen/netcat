@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.8 2002-04-29 20:23:02 themnemonic Exp $
+ * $Id: misc.c,v 1.9 2002-04-29 23:41:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -200,6 +200,7 @@ void netcat_printhelp(char *argv0)
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
 "  -V, --version              output version information and exit\n"
 "  -x, --hexdump              hexdump incoming and outgoing traffic\n"
+"  -w, --wait=SECS            timeout for connects and final net reads\n"
 "  -z, --zero                 zero-I/O mode (used for scanning)\n\n");
 }
 
@@ -219,5 +220,5 @@ void netcat_printversion(void)
 
  /* "	-e prog			program to exec after connect [dangerous!!]\n"
 "	-s addr			local source address\n"
-"	-w secs			timeout for connects and final net reads\n"
+
 "port numbers can be individual or ranges: lo-hi [inclusive]"); */
