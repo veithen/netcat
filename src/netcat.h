@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.6 2002-04-27 14:55:38 themnemonic Exp $
+ * $Id: netcat.h,v 1.7 2002-04-28 17:17:01 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,14 +27,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <ctype.h>
+#include <assert.h>
 
 /* conditional includes -- a very messy section which you may have to dink
    for your own architecture [and please send diffs...]: */
 /* #undef _POSIX_SOURCE	*/	/* might need this for something? */
 #define HAVE_BIND		/* ASSUMPTION -- seems to work everywhere! */
 #define HAVE_HELP		/* undefine if you dont want the help text */
-/* #define ANAL	*/		/* if you want case-sensitive DNS matching */
 
 /* have to do this *before* including types.h. xxx: Linux still has it wrong */
 #ifdef FD_SETSIZE		/* should be in types.h, butcha never know. */
@@ -43,13 +44,15 @@
 #define FD_SETSIZE 16		/* <-- this'll give us a long anyways, wtf */
 #include <sys/types.h>		/* *now* do it.  Sigh, this is broken */
 
-#ifdef HAVE_RANDOM		/* aficionados of ?rand48() should realize */
-#define SRAND srandom		/* that this doesn't need *strong* random */
-#define RAND random		/* numbers just to mix up port numbers!! */
-#else
+#ifdef HAVE_RANDOM		/* try with most modern random routines */
+#define SRAND srandom
+#define RAND random
+#elif defined HAVE_RAND		/* otherwise fallback to the older rand() */
 #define SRAND srand
 #define RAND rand
-#endif /* HAVE_RANDOM */
+#else				/* if none of them are here, CHANGE OS! */
+#error "Couldn't find any random library function"
+#endif
 
 /* includes: */
 #include <sys/time.h>		/* timeval, time_t */
@@ -83,12 +86,11 @@
 #endif
 #define MAXHOSTNAMELEN 256
 
-struct host_poop
-{
+typedef struct netcat_host_struct {
   char name[MAXHOSTNAMELEN];	/* dns name */
   char addrs[8][24];		/* ascii-format IP addresses */
   struct in_addr iaddrs[8];	/* real addresses: in_addr.s_addr: ulong */
-};
+} netcat_host;
 
 #define HINF struct host_poop
 
@@ -124,9 +126,26 @@ struct port_poop
 #endif
 #endif
 
+/* Debugging output routines */
+#ifdef DEBUG
+#define debug(fmt, args...) debug_output(FALSE, fmt, ## args)
+#define debug_v(fmt, args...) debug_output(TRUE, fmt, ## args)
+#else
+#define debug(fmt, args...)
+#define debug_v(fmt, args...)
+#endif
+
+extern int o_verbose;
+extern char unknown[];
+
 /* misc.c */
 char *netcat_string_split(char **buf);
+void debug_output(bool wrap, const char *fmt, ...);
 void netcat_commandline(int *argc, char ***argv);
-void netcat_printhelp();
+void netcat_printhelp(char *argv0);
+
+/* network.c */
+netcat_host *netcat_resolvehost(char *name, bool numeric);
+
 
 #endif	/* !NETCAT_H */

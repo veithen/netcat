@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.3 2002-04-27 14:55:37 themnemonic Exp $
+ * $Id: misc.c,v 1.4 2002-04-28 17:17:01 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,6 +27,20 @@
 #endif
 
 #include "netcat.h"
+
+/* ... */
+void debug_output(bool wrap, const char *fmt, ...)
+{
+  va_list args;
+
+  va_start(args, fmt);
+  if (wrap)
+    printf("(debug) ");
+  vprintf(fmt, args);
+  if (wrap)
+    printf("\n");
+  va_end(args);
+}
 
 /* ... */
 char *netcat_string_split(char **buf)

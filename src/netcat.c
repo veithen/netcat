@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.9 2002-04-27 14:55:37 themnemonic Exp $
+ * $Id: netcat.c,v 1.10 2002-04-28 17:17:01 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -41,7 +41,7 @@ jmp_buf jbuf;			/* timer crud */
 int jval = 0;			/* timer crud */
 int netfd = -1;
 int ofd = 0;			/* hexdump output fd */
-static char unknown[] = "(UNKNOWN)";
+char unknown[] = "(UNKNOWN)";
 static char p_tcp[] = "tcp";	/* for getservby* */
 static char p_udp[] = "udp";
 
@@ -73,7 +73,7 @@ struct timeval *timer1 = NULL;
 struct timeval *timer2 = NULL;
 SAI *lclend = NULL;		/* sockaddr_in structs */
 SAI *remend = NULL;
-HINF **gates = NULL;		/* LSRR hop hostpoop */
+netcat_host **gates = NULL;		/* LSRR hop hostpoop */
 char *optbuf = NULL;		/* LSRR or sockopts */
 char *bigbuf_in;		/* data buffers */
 char *bigbuf_net;
@@ -83,14 +83,13 @@ PINF *portpoop = NULL;		/* for getportpoop / getservby* */
 unsigned char *stage = NULL;	/* hexdump line buffer */
 
 /* global cmd flags: */
-USHORT o_alla = 0;
 unsigned int o_interval = 0;
 USHORT o_listen = 0;
 USHORT o_nflag = 0;
 USHORT o_wfile = 0;
 USHORT o_random = 0;
 USHORT o_udpmode = 0;
-USHORT o_verbose = 0;
+int o_verbose = 0;
 unsigned int o_wait = 0;
 USHORT o_zero = 0;
 
@@ -190,7 +189,7 @@ char *Hmalloc(unsigned int size)
     memset(p, 0, s);
   else
     bail("Hmalloc %d failed", s);
-  return (p);
+  return p;
 }				/* Hmalloc */
 
 /* findline :
@@ -203,141 +202,25 @@ unsigned int findline(char *buf, unsigned int siz)
   register int x;
 
   if (!buf)			/* various sanity checks... */
-    return (0);
+    return 0;
   if (siz > BIGSIZ)
-    return (0);
+    return 0;
   x = siz;
   for (p = buf; x > 0; x--) {
     if (*p == '\n') {
       x = (int) (p - buf);
       x++;			/* 'sokay if it points just past the end! */
-      Debug(("findline returning %d", x)) return (x);
+      Debug(("findline returning %d", x)) return x;
     }
     p++;
   }				/* for */
-  Debug(("findline returning whole thing: %d", siz)) return (siz);
+  Debug(("findline returning whole thing: %d", siz)) return siz;
 }				/* findline */
 
-/* comparehosts :
-   cross-check the host_poop we have so far against new gethostby*() info,
-   and holler about mismatches.  Perhaps gratuitous, but it can't hurt to
-   point out when someone's DNS is fukt.  Returns 1 if mismatch, in case
-   someone else wants to do something about it. */
-int comparehosts(HINF * poop, struct hostent *hp)
-{
-  errno = 0;
-  h_errno = 0;
-/* The DNS spec is officially case-insensitive, but for those times when you
-   *really* wanna see any and all discrepancies, by all means define this. */
-#ifdef ANAL
-  if (strcmp(poop->name, hp->h_name) != 0) {	/* case-sensitive */
-#else
-  if (strcasecmp(poop->name, hp->h_name) != 0) {	/* normal */
-#endif
-    holler("DNS fwd/rev mismatch: %s != %s", poop->name, hp->h_name);
-    return (1);
-  }
-  return (0);
-/* ... do we need to do anything over and above that?? */
-}				/* comparehosts */
 
-/* gethostpoop :
-   resolve a host 8 ways from sunday; return a new host_poop struct with its
-   info.  The argument can be a name or [ascii] IP address; it will try its
-   damndest to deal with it.  "numeric" governs whether we do any DNS at all,
-   and we also check o_verbose for what's appropriate work to do. */
-HINF *gethostpoop(char *name, USHORT numeric)
-{
-  struct hostent *hostent;
-  struct in_addr iaddr;
-  register HINF *poop = NULL;
-  register int x;
-
-/* I really want to strangle the twit who dreamed up all these sockaddr and
-   hostent abstractions, and then forced them all to be incompatible with
-   each other so you *HAVE* to do all this ridiculous casting back and forth.
-   If that wasn't bad enough, all the doc insists on referring to local ports
-   and addresses as "names", which makes NO sense down at the bare metal.
-
-   What an absolutely horrid paradigm, and to think of all the people who
-   have been wasting significant amounts of time fighting with this stupid
-   deliberate obfuscation over the last 10 years... then again, I like
-   languages wherein a pointer is a pointer, what you put there is your own
-   business, the compiler stays out of your face, and sheep are nervous.
-   Maybe that's why my C code reads like assembler half the time... */
-
-/* If we want to see all the DNS stuff, do the following hair --
-   if inet_addr, do reverse and forward with any warnings; otherwise try
-   to do forward and reverse with any warnings.  In other words, as long
-   as we're here, do a complete DNS check on these clowns.  Yes, it slows
-   things down a bit for a first run, but once it's cached, who cares? */
-
-  errno = 0;
-  h_errno = 0;
-  if (name)
-    poop = (HINF *) Hmalloc(sizeof(HINF));
-  if (!poop)
-    bail("gethostpoop fuxored");
-  strcpy(poop->name, unknown);	/* preload it */
-/* see wzv:workarounds.c for dg/ux return-a-struct inet_addr lossage */
-  iaddr.s_addr = inet_addr(name);
-
-  if (iaddr.s_addr == INADDR_NONE) {	/* here's the great split: names... */
-    if (numeric)
-      bail("Can't parse %s as an IP address", name);
-    hostent = gethostbyname(name);
-    if (!hostent)
-/* failure to look up a name is fatal, since we can't do anything with it */
-      bail("%s: forward host lookup failed: ", name);
-    strncpy(poop->name, hostent->h_name, MAXHOSTNAMELEN - 2);
-    for (x = 0; hostent->h_addr_list[x] && (x < 8); x++) {
-      memcpy(&poop->iaddrs[x], hostent->h_addr_list[x], sizeof(IA));
-      strncpy(poop->addrs[x], inet_ntoa(poop->iaddrs[x]),
-	      sizeof(poop->addrs[0]));
-    }				/* for x -> addrs, part A */
-    if (!o_verbose)		/* if we didn't want to see the */
-      return (poop);		/* inverse stuff, we're done. */
-/* do inverse lookups in separate loop based on our collected forward addrs,
-   since gethostby* tends to crap into the same buffer over and over */
-    for (x = 0; poop->iaddrs[x].s_addr && (x < 8); x++) {
-      hostent = gethostbyaddr((char *) &poop->iaddrs[x], sizeof(IA), AF_INET);
-      if ((!hostent) || (!hostent->h_name))
-	holler("Warning: inverse host lookup failed for %s: ",
-	       poop->addrs[x]);
-      else
-	(void) comparehosts(poop, hostent);
-    }				/* for x -> addrs, part B */
-
-  }
-  else {			/* not INADDR_NONE: numeric addresses... */
-    memcpy(poop->iaddrs, &iaddr, sizeof(IA));
-    strncpy(poop->addrs[0], inet_ntoa(iaddr), sizeof(poop->addrs));
-    if (numeric)		/* if numeric-only, we're done */
-      return (poop);
-    if (!o_verbose)		/* likewise if we don't want */
-      return (poop);		/* the full DNS hair */
-    hostent = gethostbyaddr((char *) &iaddr, sizeof(IA), AF_INET);
-/* numeric or not, failure to look up a PTR is *not* considered fatal */
-    if (!hostent)
-      holler("%s: inverse host lookup failed: ", name);
-    else {
-      strncpy(poop->name, hostent->h_name, MAXHOSTNAMELEN - 2);
-      hostent = gethostbyname(poop->name);
-      if ((!hostent) || (!hostent->h_addr_list[0]))
-	holler("Warning: forward host lookup failed for %s: ", poop->name);
-      else
-	(void) comparehosts(poop, hostent);
-    }				/* if hostent */
-  }				/* INADDR_NONE Great Split */
-
-/* whatever-all went down previously, we should now have a host_poop struct
-   with at least one IP address in it. */
-  h_errno = 0;
-  return (poop);
-}				/* gethostpoop */
 
 /* getportpoop :
-   Same general idea as gethostpoop -- look up a port in /etc/services, fill
+   Same general idea as netcat_resolvehost -- look up a port in /etc/services, fill
    in global port_poop, but return the actual port *number*.  Pass ONE of:
 	pstring to resolve stuff like "23" or "exec";
 	pnum to reverse-resolve something that's already a number.
@@ -359,7 +242,7 @@ USHORT getportpoop(char *pstring, unsigned int pnum)
    more frequent if we're scanning */
   if (pnum) {
     if (pstring)		/* one or the other, pleeze */
-      return (0);
+      return 0;
     x = pnum;
     if (o_nflag)		/* go faster, skip getservbyblah */
       goto gp_finish;
@@ -380,12 +263,12 @@ USHORT getportpoop(char *pstring, unsigned int pnum)
    you're at 3com and have some company-internal services defined... */
   if (pstring) {
     if (pnum)			/* one or the other, pleeze */
-      return (0);
+      return 0;
     x = atoi(pstring);
     if (x)
-      return (getportpoop(NULL, x));	/* recurse for numeric-string-arg */
+      return getportpoop(NULL, x);	/* recurse for numeric-string-arg */
     if (o_nflag)		/* can't use names! */
-      return (0);
+      return 0;
     servent = getservbyname(pstring, whichp);
     if (servent) {
       strncpy(portpoop->name, servent->s_name, sizeof(portpoop->name));
@@ -394,7 +277,7 @@ USHORT getportpoop(char *pstring, unsigned int pnum)
     }				/* if servent */
   }				/* if pstring */
 
-  return (0);			/* catches any problems so far */
+  return 0;			/* catches any problems so far */
 
 /* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
    Despite this, we still have to treat it as a short when copying it around.
@@ -412,7 +295,7 @@ gp_finish:
    x containing our [host-order and therefore useful, dammit] port number */
   sprintf(portpoop->anum, "%d", x);	/* always load any numeric specs! */
   portpoop->num = (x & 0xffff);	/* ushort, remember... */
-  return (portpoop->num);
+  return portpoop->num;
 }				/* getportpoop */
 
 /* nextport :
@@ -424,8 +307,7 @@ gp_finish:
    returns a USHORT random port, or 0 if all the t-b-t ones are used up. */
 USHORT nextport(char *block)
 {
-  register unsigned int x;
-  register unsigned int y;
+  unsigned int x = 0, y = 0;
 
   y = 70000;			/* high safety count for rnd-tries */
   while (y > 0) {
@@ -438,7 +320,7 @@ USHORT nextport(char *block)
     y--;
   }				/* while y */
   if (x)
-    return (x);
+    return x;
 
   y = 65535;			/* no random one, try linear downsearch */
   while (y > 0) {		/* if they're all used, we *must* be sure! */
@@ -449,9 +331,9 @@ USHORT nextport(char *block)
     y--;
   }				/* while y */
   if (y)
-    return (y);			/* at least one left */
+    return y;			/* at least one left */
 
-  return (0);			/* no more left! */
+  return 0;			/* no more left! */
 }				/* nextport */
 
 /* loadports :
@@ -506,7 +388,7 @@ doexec(int fd)
    with appropriate socket options set up if we wanted source-routing, or
 	an unconnected TCP or UDP socket to listen on.
    Examines various global o_blah flags to figure out what-all to do. */
-int doconnect(IA * rad, USHORT rp, IA * lad, USHORT lp)
+int doconnect(IA *rad, USHORT rp, IA *lad, USHORT lp)
 {
   register int nnetfd;
   register int rr;
@@ -575,7 +457,7 @@ newskt:
     bail("Can't grab %s:%d with bind", inet_ntoa(lclend->sin_addr), lp);
 
   if (o_listen)
-    return (nnetfd);		/* thanks, that's all for today */
+    return nnetfd;		/* thanks, that's all for today */
 
   memcpy(&remend->sin_addr.s_addr, rad, sizeof(IA));
   remend->sin_port = htons(rp);
@@ -660,9 +542,9 @@ Linux is also still a loss at 1.3.x it looks like; the lsrr code is { }...
   }
   arm(0, 0);
   if (rr == 0)
-    return (nnetfd);
+    return nnetfd;
   close(nnetfd);		/* clean up junked socket FD!! */
-  return (-1);
+  return -1;
 }				/* doconnect */
 
 /* dolisten :
@@ -670,11 +552,11 @@ Linux is also still a loss at 1.3.x it looks like; the lsrr code is { }...
    incoming and returns an open connection *from* someplace.  If we were
    given host/port args, any connections from elsewhere are rejected.  This
    in conjunction with local-address binding should limit things nicely... */
-int dolisten(IA * rad, USHORT rp, IA * lad, USHORT lp)
+int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
 {
   register int nnetfd;
   register int rr;
-  HINF *whozis = NULL;
+  netcat_host *whozis = NULL;
   int x;
   char *cp;
   USHORT z;
@@ -684,7 +566,7 @@ int dolisten(IA * rad, USHORT rp, IA * lad, USHORT lp)
 /* Pass everything off to doconnect, who in o_listen mode just gets a socket */
   nnetfd = doconnect(rad, rp, lad, lp);
   if (nnetfd <= 0)
-    return (-1);
+    return -1;
   if (o_udpmode) {		/* apparently UDP can listen ON */
     if (!lp)			/* "port 0",  but that's not useful */
       bail("UDP listen needs -p arg");
@@ -811,7 +693,7 @@ dol_noop:
 /* now check out who it is.  We don't care about mismatched DNS names here,
    but any ADDR and PORT we specified had better fucking well match the caller.
    Converting from addr to inet_ntoa and back again is a bit of a kludge, but
-   gethostpoop wants a string and there's much gnarlier code out there already,
+   netcat_resolvehost wants a string and there's much gnarlier code out there already,
    so I don't feel bad.
    The *real* question is why BFD sockets wasn't designed to allow listens for
    connections *from* specific hosts/ports, instead of requiring the caller to
@@ -819,7 +701,7 @@ dol_noop:
    other words, we need a TCP MSG_PEEK. */
   z = ntohs(remend->sin_port);
   strcpy(bigbuf_net, inet_ntoa(remend->sin_addr));
-  whozis = gethostpoop(bigbuf_net, o_nflag);
+  whozis = netcat_resolvehost(bigbuf_net, o_nflag);
   errno = 0;
   x = 0;			/* use as a flag... */
   if (rad)			/* xxx: fix to go down the *list* if we have one? */
@@ -833,13 +715,13 @@ dol_noop:
 	 cp, whozis->name, whozis->addrs[0], z);
   holler("connect to [%s] from %s [%s] %d",	/* oh, you're okay.. */
 	 cp, whozis->name, whozis->addrs[0], z);
-  return (nnetfd);		/* open! */
+  return nnetfd;		/* open! */
 
 dol_tmo:
   errno = ETIMEDOUT;		/* fake it */
 dol_err:
   close(nnetfd);
-  return (-1);
+  return -1;
 }				/* dolisten */
 
 /* udptest :
@@ -852,9 +734,9 @@ dol_err:
    Use the time delay between writes if given, otherwise use the "tcp ping"
    trick for getting the RTT.  [I got that idea from pluvius, and warped it.]
    Return either the original fd, or clean up and return -1. */
-udptest(int fd, IA * where)
+int udptest(int fd, IA *where)
 {
-  register int rr;
+  int rr;
 
   rr = write(fd, bigbuf_in, 1);
   if (rr != 1)
@@ -878,9 +760,9 @@ udptest(int fd, IA * where)
   errno = 0;			/* clear from sleep */
   rr = write(fd, bigbuf_in, 1);
   if (rr == 1)			/* if write error, no UDP listener */
-    return (fd);
+    return fd;
   close(fd);			/* use it or lose it! */
-  return (-1);
+  return -1;
 }				/* udptest */
 
 /* oprint :
@@ -1035,7 +917,7 @@ int readwrite(int fd)
    either find it or do your own bit-bashing: *ding1 |= (1 << fd), etc... */
   if (fd > FD_SETSIZE) {
     holler("Preposterous fd value %d", fd);
-    return (1);
+    return 1;
   }
   FD_SET(fd, ding1);		/* global: the net is open */
   netretry = 2;
@@ -1073,7 +955,7 @@ int readwrite(int fd)
       if (errno != EINTR) {	/* might have gotten ^Zed, etc ? */
 	holler("select fuxored");
 	close(fd);
-	return (1);
+	return 1;
       }
     }				/* select fuckup */
 /* if we have a timeout AND stdin is closed AND we haven't heard anything
@@ -1085,7 +967,7 @@ int readwrite(int fd)
 	if (o_verbose > 1)	/* normally we don't care */
 	  holler("net timeout");
 	close(fd);
-	return (0);		/* not an error! */
+	return 0;		/* not an error! */
       }
     }				/* select timeout */
 /* xxx: should we check the exception fds too?  The read fds seem to give
@@ -1148,7 +1030,7 @@ int readwrite(int fd)
 /* net write retries sometimes happen on UDP connections */
     if (!wretry) {		/* is something hung? */
       holler("too many output retries");
-      return (1);
+      return 1;
     }
     if (rnleft) {
       rr = write(1, np, rnleft);
@@ -1200,9 +1082,9 @@ int main(int argc, char *argv[])
 {
   register int x;
   register char *cp;
-  HINF *gp;
-  HINF *whereto = NULL;
-  HINF *wherefrom = NULL;
+  netcat_host *gp;
+  netcat_host *whereto = NULL;
+  netcat_host *wherefrom = NULL;
   IA *ouraddr = NULL;
   IA *themaddr = NULL;
   USHORT o_lport = 0;
@@ -1213,7 +1095,6 @@ int main(int argc, char *argv[])
   char *randports = NULL;
 
   int c;
-  /* int digit_optind = 0; */
 
 #ifdef HAVE_BIND
 /* can *you* say "cc -yaddayadda netcat.c -lresolv -l44bsd" on SunLOSs? */
@@ -1250,7 +1131,6 @@ int main(int argc, char *argv[])
     netcat_commandline(&argc, &argv);
 
   while (TRUE) {
-    int this_option_optind = optind ? optind : 1;
     int option_index = 0;
     static const struct option long_options[] = {
 	{ "help", no_argument, NULL, 'h' },
@@ -1273,10 +1153,6 @@ int main(int argc, char *argv[])
       break;
 
     switch (c) {
-    case 'a':
-      bail("all-A-records NIY");
-      o_alla++;
-      break;
 #ifdef GAPING_SECURITY_HOLE
     case 'e':			/* prog to exec */
       pr00gie = optarg;
@@ -1293,15 +1169,14 @@ int main(int argc, char *argv[])
       if (gatesidx > 8)
 	bail("too many -g hops");
       if (gates == NULL)	/* eat this, Billy-boy */
-	gates = (HINF **) Hmalloc(sizeof(HINF *) * 10);
-      gp = gethostpoop(optarg, o_nflag);
+	gates = (netcat_host **) Hmalloc(sizeof(netcat_host *) * 10);
+      gp = netcat_resolvehost(optarg, o_nflag);
       if (gp)
 	gates[gatesidx] = gp;
       gatesidx++;
       break;
     case 'h':
-      errno = 0;
-      netcat_printhelp();
+      netcat_printhelp(argv[0]);
       exit(EXIT_SUCCESS);
     case 'i':			/* line-interval time */
       o_interval = atoi(optarg) & 0xffff;
@@ -1330,7 +1205,7 @@ int main(int argc, char *argv[])
 /* do a full lookup [since everything else goes through the same mill],
    unless -n was previously specified.  In fact, careful placement of -n can
    be useful, so we'll still pass o_nflag here instead of forcing numeric.  */
-      wherefrom = gethostpoop(optarg, o_nflag);
+      wherefrom = netcat_resolvehost(optarg, o_nflag);
       ouraddr = &wherefrom->iaddrs[0];
       break;
 #ifdef TELNET
@@ -1389,7 +1264,7 @@ int main(int argc, char *argv[])
    get fancy with addresses, look up the list yourself and plug 'em in for now.
    unless we finally implement -a, that is. */
     if (argv[optind])
-    whereto = gethostpoop(argv[optind], o_nflag);
+    whereto = netcat_resolvehost(argv[optind], o_nflag);
   if (whereto && whereto->iaddrs)
     themaddr = &whereto->iaddrs[0];
   if (themaddr)
