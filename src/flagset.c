@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: flagset.c,v 1.2 2002-05-05 09:05:58 themnemonic Exp $
+ * $Id: flagset.c,v 1.3 2002-05-12 21:17:53 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,7 +33,7 @@ static size_t flagset_len = 0;
 
 /* ... */
 
-bool netcat_flag_init()
+bool netcat_flag_init(void)
 {
   /* safe double-init */
   if (flagset)
@@ -113,7 +113,7 @@ unsigned short netcat_flag_next(unsigned short port)
 
 /* ... */
 
-int netcat_flag_count()
+int netcat_flag_count(void)
 {
   register char c;
   register int i;
@@ -134,7 +134,7 @@ int netcat_flag_count()
 
 /* ... */
 
-unsigned short netcat_flag_rand()
+unsigned short netcat_flag_rand(void)
 {
   int rand, randmax = netcat_flag_count() - 1;
   unsigned short ret = 0;

@@ -1,11 +1,11 @@
 /*
- * proto.h -- main header project file
+ * proto.h -- contains all global variables and functions prototypes
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.16 2002-05-11 19:46:08 themnemonic Exp $
+ * $Id: proto.h,v 1.17 2002-05-12 21:17:53 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,12 +30,12 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout);
 int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int timeout);
 
 /* flagset.c */
-bool netcat_flag_init();
+bool netcat_flag_init(void);
 void netcat_flag_set(unsigned short port, bool flag);
 bool netcat_flag_get(unsigned short port);
 unsigned short netcat_flag_next(unsigned short port);
-int netcat_flag_count();
-unsigned short netcat_flag_rand();
+int netcat_flag_count(void);
+unsigned short netcat_flag_rand(void);
 
 /* misc.c */
 char *netcat_string_split(char **buf);
@@ -70,4 +70,4 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
 int netcat_socket_accept(int fd, int timeout);
 
 /* telnet.c */
-void atelnet(unsigned char *buf, unsigned int size);
+void netcat_telnet_parse(int sock, unsigned char *buf, int *size);
