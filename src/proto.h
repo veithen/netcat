@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.10 2002-05-04 15:13:43 themnemonic Exp $
+ * $Id: proto.h,v 1.11 2002-05-04 22:21:09 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -32,7 +32,8 @@ unsigned short netcat_flag_rand();
 
 /* misc.c */
 char *netcat_string_split(char **buf);
-int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen);
+int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
+		    size_t datalen);
 void debug_output(bool wrap, const char *fmt, ...);
 void netcat_commandline_read(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
@@ -49,12 +50,12 @@ extern int netfd;
 bool netcat_resolvehost(netcat_host *dst, char *name);
 bool netcat_getport(netcat_port *dst, const char *port_string,
 		    unsigned short port_num);
+const char *netcat_inet_ntop(const void *src);
 int netcat_socket_new();
 int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
 		const struct in_addr *local_addr, unsigned short local_port);
 int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
 int netcat_socket_accept(int fd, int timeout);
-
 
 
 /* telnet.c */
