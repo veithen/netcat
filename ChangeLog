@@ -2,6 +2,7 @@
 [*] Mon Apr 29 2002 - netcat (cvs)
 
   o Various fixes to the Makefiles for the clean targets
+  o Fixed --enable-debug configure parameter
 
 
 [*] Mon Apr 29 2002 - netcat v0.2.0

@@ -85,13 +85,18 @@ dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
 
-AC_ARG_ENABLE(debug,
-[  --enable-debug          enable use of Memory Debug (default: no)],
-	debug=$enableval, debug=no)
+AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
+	[enable use of Memory Debug (default: no)]),
+	if test "x$enableval" = "xyes"; then
+	  CFLAGS="$CFLAGS -O0 -Wall -g3 -ggdb3 -DDEBUG"
+	else
+	  CFLAGS="$CFLAGS -Wall -DNDEBUG"
+	fi , debug=no)
 
-AM_CONDITIONAL(DO_DEBUG, test "x$debug" = "xyes")
-
-
+AC_ARG_ENABLE(oldhexdump, AC_HELP_STRING([--enable-oldhexdump],
+	[use the old style hexdump format (default: no)]),
+	AC_DEFINE(OLD_HEXDUMP,  , use the old style hexdump format))
+	
 dnl add here all your Makefiles. These will be created by configure.
 dnl
 AC_CONFIG_FILES(Makefile doc/Makefile src/Makefile)
