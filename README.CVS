@@ -7,8 +7,8 @@ by the GNU configure scripts to build the source.
 In order to build this sources, you need the following tools properly installed
 in your system:
 
-	autoconf (GNU Autoconf) 2.53
-	automake (GNU automake) 1.6
+	autoconf (GNU Autoconf) 2.54
+	automake (GNU automake) 1.6.3
 	GNU Make version 3.79.1
 
 Any version above the specified is accepted.  Older versions may or may not
@@ -71,10 +71,10 @@ Other special CVS repository features
 =====================================
 
 One interesting feature of the cvs repository is the ability to checkout older
-sources version.  For example, if you want to check out the Netcat 0.5.2 you
+sources version.  For example, if you want to check out the Netcat 0.6.2 you
 can type:
 
- $ cvs update -r netcat_release_0_5_2
+ $ cvs update -r netcat_release_0_6_2
 
 To return to the current main branch use this command:
 
