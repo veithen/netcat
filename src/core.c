@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.15 2002-06-05 12:34:55 themnemonic Exp $
+ * $Id: core.c,v 1.16 2002-06-06 21:05:54 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -219,6 +219,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
       else {
 	nc_sock_t dup_socket;
 
+	/* don't duplicate the socket if we don't have ancillary data available */
+	if (!use_ancillary)
+	  return sock;
+
 	memset(&dup_socket, 0, sizeof(dup_socket));
 	dup_socket.domain = ncsock->domain;
 	dup_socket.proto = ncsock->proto;
@@ -226,6 +230,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr, sizeof(local_addr));
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);
 	dup_socket.port.num = ntohs(rem_addr.sin_port);
+	/* copy the received data in the socket's queue */
+	ncsock->recvq.len = recv_ret;
+	ncsock->recvq.head = ncsock->recvq.pos = malloc(recv_ret);
+	memcpy(ncsock->recvq.head, my_hdr_vec.iov_base, recv_ret);
+	/* FIXME: this ONLY saves the first 1024 bytes! and the others? */
 	close(sock);
 
 	/* this is all we want from this function */
@@ -448,6 +457,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   delayer.tv_usec = 0;
 
   while (inloop) {
+    bool call_select = TRUE;
     struct sockaddr_in recv_addr;	/* only used by UDP proto */
     unsigned int recv_len = sizeof(recv_addr);
 
@@ -461,23 +471,30 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       debug_v("watching main sock for incoming data");
       FD_SET(fd_sock, &ins);
     }
+    else
+      call_select = FALSE;
 
     /* same thing for the other socket */
     if (nc_slave->recvq.len == 0) {
       debug_v("watching slave sock for incoming data");
       FD_SET(fd_stdin, &ins);
     }
+    else
+      call_select = FALSE;
 
-    debug_v("entering select()...timeout=%d:%d", delayer.tv_sec, delayer.tv_usec);
-    select(fd_max, &ins, NULL, NULL,
-	   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
+    if (call_select || delayer.tv_sec || delayer.tv_usec) {
+      debug_v("entering with timeout=%d:%d select() ...", delayer.tv_sec, delayer.tv_usec);
+      select(fd_max, &ins, NULL, NULL,
+	     (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
+      call_select = TRUE;
+    }
 
     /* reading from stdin the incoming data.  The data is currently in the
        kernel's receiving queue, and in this session we move that data to our
        own receiving queue, located in the socket object.  We can be sure that
        this queue is empty now because otherwise this fd wouldn't have been
        watched. */
-    if (FD_ISSET(fd_stdin, &ins)) {
+    if (call_select && FD_ISSET(fd_stdin, &ins)) {
       read_ret = read(fd_stdin, buf, sizeof(buf));
       debug_dv("read(stdin) = %d", read_ret);
 
@@ -595,7 +612,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     }				/* end of reading from stdin section */
 
     /* reading from the socket (net). */
-    if (FD_ISSET(fd_sock, &ins)) {
+    if (call_select && FD_ISSET(fd_sock, &ins)) {
       if ((nc_main->proto == NETCAT_PROTO_UDP) && opt_zero) {
 	memset(&recv_addr, 0, sizeof(recv_addr));
 	/* this allows us to fetch packets from different addresses */
