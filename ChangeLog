@@ -1,8 +1,10 @@
 
-[*] Fri Jan  3 2003 - netcat (cvs)
+[*] Mon Jan  6 2003 - netcat (cvs)
 
   o Added command line switch `-c' (close), which shuts down the connection
     on EOF from stdin without waiting for any answer from remote host.
+  o Some previously optionally included code related to signal handling is now
+    included in the default compilation.
   o Now the SIGUSR1 signal is handled and prints the current sending/receiving
     statistics to stderr, disregarding the verbosity level given.
   o Added some development sheets for those that may want to study GNU Netcat's

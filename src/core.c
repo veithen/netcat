@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.32 2002-12-08 19:01:49 themnemonic Exp $
+ * $Id: core.c,v 1.33 2003-01-06 23:00:46 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,7 +33,7 @@
 unsigned long bytes_sent = 0;		/* total bytes received */
 unsigned long bytes_recv = 0;		/* total bytes sent */
 
-/* Creates a UDP socket with a default destination address. It also calls
+/* Creates a UDP socket with a default destination address.  It also calls
    bind(2) if it is needed in order to specify the source address.
    Returns the new socket number. */
 
@@ -92,6 +92,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 #ifdef USE_PKTINFO
   need_udphelper = FALSE;
 #else
+  /* if we need a specified source address then go straight to it */
   if (ncsock->local_host.iaddrs[0].s_addr)
     need_udphelper = FALSE;
 #endif
@@ -143,6 +144,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     if (ret < 0)
       goto err;
     netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
+    assert(ncsock->local_port.num != 0);
   }
 
   if (!need_udphelper)
@@ -240,7 +242,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d"),
 		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
 
-      if (opt_zero) {
+      if (opt_zero) {		/* output the packet right here right now */
 	write_ret = write(STDOUT_FILENO, buf, recv_ret);
 	bytes_recv += write_ret;
 	debug_dv("write_u(stdout) = %d", write_ret);
@@ -284,6 +286,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	ret = connect(sock, (struct sockaddr *)&rem_addr, sizeof(rem_addr));
 	if (ret < 0)
 	  goto err;
+
+	/* remove this socket from the array in order not to get it closed */
 	sockbuf[socks_loop] = -1;
 #endif
 	udphelper_sockets_close(sockbuf);
@@ -319,10 +323,13 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   debug_v("core_tcp_connect(ncsock=%p)", (void *)ncsock);
 
   /* since we are nonblocking now, we could start as many connections as we
-     want but it's not a great idea connecting more than one host at time */
+     want but it's not a great idea connecting more than one host at time.
+     Also don't specify the local address if it's not really needed, so we can
+     avoid one bind(2) call. */
   sock = netcat_socket_new_connect(PF_INET, SOCK_STREAM,
-		&ncsock->host.iaddrs[0], ncsock->port.netnum,
-		&ncsock->local_host.iaddrs[0], ncsock->local_port.netnum);
+	&ncsock->host.iaddrs[0], ncsock->port.netnum,
+	(ncsock->local_host.iaddrs[0].s_addr ? &ncsock->local_host.iaddrs[0] :
+	NULL), ncsock->local_port.netnum);
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
@@ -549,11 +556,9 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     struct sockaddr_in recv_addr;	/* only used by UDP proto */
     unsigned int recv_len = sizeof(recv_addr);
 
-#ifdef BETA_SIGHANDLER
     /* if we received a terminating signal exit now */
     if (got_sigterm)
       break;
-#endif
 
     /* reset the ins events watch because some changes could happen */
     FD_ZERO(&ins);
@@ -585,10 +590,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       ret = select(fd_max, &ins, NULL, NULL,
 		   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
       if (ret < 0) {
-#ifdef BETA_SIGHANDLER
 	if (errno == EINTR)
 	  goto handle_signal;
-#endif
 	perror("select(core_readwrite)");
 	exit(EXIT_FAILURE);
       }
@@ -836,15 +839,13 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       }
     }				/* end of reading from the socket section */
 
-#ifdef BETA_SIGHANDLER
- handle_signal:
+ handle_signal:			/* FIXME: i'm not sure this is the right place */
     if (got_sigusr1) {
       debug_v("LOCAL printstats!");
       netcat_printstats(TRUE);
       got_sigusr1 = FALSE;
     }
     continue;
-#endif
   }				/* end of while (inloop) */
 
   /* we've got an EOF from the net, close the sockets */

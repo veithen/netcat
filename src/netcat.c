@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.60 2002-12-08 19:00:34 themnemonic Exp $
+ * $Id: netcat.c,v 1.61 2003-01-06 23:00:33 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -31,10 +31,6 @@
 #include <signal.h>
 #include <getopt.h>
 #include <time.h>		/* time(2) used as random seed */
-
-#ifdef BETA_SIGHANDLER
-#warning Using beta code for signal handling functions
-#endif
 
 /* int gatesidx = 0; */		/* LSRR hop count */
 /* int gatesptr = 4; */		/* initial LSRR pointer, settable */
@@ -70,22 +66,17 @@ static void got_term(int z)
 {
   if (!got_sigterm)
     ncprint(NCPRINT_VERB1, _("Terminated."));
-#ifdef BETA_SIGHANDLER
   debug_v("_____ RECEIVED SIGTERM _____ [signal_handler=%s]",
 	  BOOL_TO_STR(signal_handler));
   got_sigterm = TRUE;
   if (signal_handler)			/* default action */
     exit(EXIT_FAILURE);
-#else
-  exit(EXIT_FAILURE);
-#endif
 }
 
 static void got_int(int z)
 {
   if (!got_sigterm)
     ncprint(NCPRINT_VERB1, _("Exiting."));
-#ifdef BETA_SIGHANDLER
   debug_v("_____ RECEIVED SIGINT _____ [signal_handler=%s]",
 	  BOOL_TO_STR(signal_handler));
   got_sigterm = TRUE;
@@ -93,24 +84,16 @@ static void got_int(int z)
     netcat_printstats(FALSE);
     exit(EXIT_FAILURE);
   }
-#else
-  netcat_printstats(FALSE);
-  exit(EXIT_FAILURE);
-#endif
 }
 
 static void got_usr1(int z)
 {
-#ifdef BETA_SIGHANDLER
   debug_dv("_____ RECEIVED SIGUSR1 _____ [signal_handler=%s]",
 	   BOOL_TO_STR(signal_handler));
   if (signal_handler)			/* default action */
     netcat_printstats(TRUE);
   else
     got_sigusr1 = TRUE;
-#else
-  netcat_printstats(TRUE);
-#endif
 }
 
 /* ... */
@@ -262,16 +245,16 @@ int main(int argc, char *argv[])
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("Invalid interval time \"%s\""), optarg);
       break;
-    case 'l':			/* listen mode */
-      if (netcat_mode == NETCAT_TUNNEL)
+    case 'l':			/* mode flag: listen mode */
+      if (netcat_mode != NETCAT_UNSPEC)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		_("`-L' and `-l' options are incompatible"));
+		_("You can specify mode flags (`-l' and `-L') only once"));
       netcat_mode = NETCAT_LISTEN;
       break;
-    case 'L':			/* tunnel mode */
-      if (netcat_mode == NETCAT_LISTEN)
+    case 'L':			/* mode flag: tunnel mode */
+      if (netcat_mode != NETCAT_UNSPEC)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		_("`-L' and `-l' options are incompatible"));
+		_("You can specify mode flags (`-l' and `-L') only once"));
       if (opt_zero)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-L' and `-z' options are incompatible"));
