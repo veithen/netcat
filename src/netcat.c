@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.48 2002-06-17 21:52:59 themnemonic Exp $
+ * $Id: netcat.c,v 1.49 2002-06-27 00:10:43 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -178,13 +178,13 @@ int main(int argc, char *argv[])
 	{ "source",	required_argument,	NULL, 's' },
 	{ "tunnel-source", required_argument,	NULL, 'S' },
 #ifndef USE_OLD_COMPAT
-	{ "tcp",		no_argument,		NULL, 't' },
+	{ "tcp",	no_argument,		NULL, 't' },
 	{ "telnet",	no_argument,		NULL, 'T' },
 #else
-	{ "tcp",		no_argument,		NULL, 1 },
+	{ "tcp",	no_argument,		NULL, 1 },
 	{ "telnet",	no_argument,		NULL, 't' },
 #endif
-	{ "udp",		no_argument,		NULL, 'u' },
+	{ "udp",	no_argument,		NULL, 'u' },
 	{ "verbose",	no_argument,		NULL, 'v' },
 	{ "version",	no_argument,		NULL, 'V' },
 	{ "hexdump",	no_argument,		NULL, 'x' },
@@ -241,11 +241,11 @@ int main(int argc, char *argv[])
 
 	/* lookup the remote address and the remote port for tunneling */
 	if (!netcat_resolvehost(&connect_sock.host, optarg))
-	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve tunnel target host: %s"),
-		  optarg);
+	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+	  	  _("Couldn't resolve tunnel target host: %s"), optarg);
 	if (!netcat_getport(&connect_sock.port, div, 0))
-	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Invalid tunnel target port: %s"),
-		  div);
+	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+	  	  _("Invalid tunnel target port: %s"), div);
 
 	connect_sock.proto = opt_proto;
 	connect_sock.timeout = opt_wait;
