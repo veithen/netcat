@@ -1,0 +1,131 @@
+\input texinfo   @c -*-texinfo-*-
+
+@c $Id: netcat.texi,v 1.1 2002-04-28 11:26:37 themnemonic Exp $
+
+@c %**start of header
+@setfilename netcat.info
+@settitle GNU Netcat Manual
+@c Disable the monstrous rectangles beside overfull hbox-es.
+@finalout
+@c Use `odd' to print double-sided.
+@setchapternewpage on
+@c %**end of header
+
+@iftex
+@c Remove this if you don't use A4 paper.
+@afourpaper
+@end iftex
+
+@c This should really be generated automatically, possibly by including
+@c an auto-generated file.
+@set VERSION 0.1.0+cvs
+@set UPDATED April 2002
+
+@dircategory Net Utilities
+@direntry
+* Netcat: (nc).         The GNU famous networking tool.
+@end direntry
+
+@ifinfo
+This file documents the the GNU Wget utility for downloading network
+data.
+
+@c man begin COPYRIGHT
+Copyright @copyright{} 2002 Johnny Mnemonic
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+@ignore
+Permission is granted to process this file through TeX and print the
+results, provided the printed document carries a copying permission
+notice identical to this one except for the removal of this paragraph
+(this paragraph not being relevant to the printed manual).
+@end ignore
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1 or
+any later version published by the Free Software Foundation; with the
+Invariant Sections being ``GNU General Public License'' and ``GNU Free
+Documentation License'', with no Front-Cover Texts, and with no
+Back-Cover Texts.  A copy of the license is included in the section
+entitled ``GNU Free Documentation License''.
+@c man end
+@end ifinfo
+
+@titlepage
+@title GNU Netcat
+@subtitle The famous networking tool
+@author by Johnny Mnemonic
+
+@ignore
+@c man begin AUTHOR
+Originally written by Johnny Mnemonic <johnny@themnemonic.org>.
+@c man end
+@c man begin SEEALSO
+GNU Info entry for @file{netcat}.
+@c man end
+@end ignore
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 1996, 1997, 1998, 2000, 2001 Free Software
+Foundation, Inc.
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1 or
+any later version published by the Free Software Foundation; with the
+Invariant Sections being ``GNU General Public License'' and ``GNU Free
+Documentation License'', with no Front-Cover Texts, and with no
+Back-Cover Texts.  A copy of the license is included in the section
+entitled ``GNU Free Documentation License''.
+@end titlepage
+
+@ifinfo
+@node Top, Overview, (dir), (dir)
+@top Netcat @value{VERSION}
+
+This manual documents version @value{VERSION} of GNU Netcat, the freely
+available utility for network connections.
+
+Copyright @copyright{} 1996, 1997, 1998, 2000, 2001 Free Software
+Foundation, Inc.
+
+@menu
+* Overview::            Features of Netcat.
+* Invoking::            Netcat command-line arguments.
+* Examples::            Examples of usage.
+@end menu
+@end ifinfo
+
+@node Overview, Invoking, Top, Top
+@chapter Overview
+@cindex overview
+@cindex features
+
+@c man begin DESCRIPTION
+Netcat is a simple Unix utility which reads and writes data across network
+connections, using TCP or UDP protocol.
+It is designed to be a reliable "back-end" tool that can be used directly
+or easily driven by other programs and scripts.  At the same time, it is
+a feature-rich network debugging and exploration tool, since it can create
+almost any kind of connection you would need and has several interesting
+built-in capabilities.  Netcat, or "nc" as the original program was named,
+should have been supplied long ago as another one of those cryptic but
+standard Unix tools.
+
+@c man end
+
+@node Invoking, Examples, Overview, Top
+@chapter Invoking
+@cindex invoking
+
+This is still in progress!
+
+@node Examples,  , Invoking, Top
+@chapter Examples
+@cindex examples
+
+blablabla
+
+@bye

@@ -34,6 +34,13 @@ dnl first check for c compiler
 AC_PROG_CC
 AC_PROG_CPP
 
+dnl check for pod2man since we need it for building documentation
+dnl although it's not mandatory
+dnl AC_CHECK_PROG(netcat_pod2man, pod2man, yes, no)
+
+AC_PATH_PROGS(PERL, perl5 perl, no)
+AC_PATH_PROG(POD2MAN, pod2man, no)
+
 dnl create only shared libtool-libraries
 AC_ENABLE_SHARED(yes)
  
@@ -84,6 +91,12 @@ AC_ARG_ENABLE(debug,
 
 AM_CONDITIONAL(DO_DEBUG, test "x$debug" = "xyes")
 
+
 dnl add here all your Makefiles. These will be created by configure.
 dnl
-AC_OUTPUT(Makefile doc/Makefile src/Makefile)
+AC_CONFIG_FILES(Makefile doc/Makefile src/Makefile)
+
+dnl this one is special, it needs the executable flag
+dnl
+AC_CONFIG_FILES(doc/texi2pod.pl, chmod +x doc/texi2pod.pl)
+AC_OUTPUT
