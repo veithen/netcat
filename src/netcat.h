@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.35 2004-01-03 16:42:07 themnemonic Exp $
+ * $Id: netcat.h,v 1.36 2004-10-24 11:54:27 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -41,12 +41,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
 
-/* other misc unchecked includes */
-#if 0
-#include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
-#include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
-#endif
-
 /* These are useful to keep the source readable */
 #ifndef STDIN_FILENO
 # define STDIN_FILENO 0
@@ -56,9 +50,6 @@
 #endif
 #ifndef STDERR_FILENO
 # define STDERR_FILENO 2
-#endif
-#ifndef SHUT_RDWR
-# define SHUT_RDWR 2
 #endif
 
 /* find a random routine */
@@ -96,8 +87,9 @@
 #endif
 
 /* MAXINETADDR defines the maximum number of host aliases that are saved after
-   a successfully hostname lookup. Please not that this value will also take
-   a significant role in the memory usage. Approximately one struct takes:
+   a successfully hostname lookup.  This will have impact on following lookups,
+   in case `-v' switch was specified, and on memory usage. Each struct takes
+   approximately:
    MAXINETADDRS * (NETCAT_ADDRSTRLEN + sizeof(struct in_addr)) */
 #define MAXINETADDRS 6
 
@@ -128,6 +120,12 @@
 #define BOOL_TO_STR(__var__) (__var__ ? "TRUE" : "FALSE")
 #define NULL_STR(__var__) (__var__ ? __var__ : "(null)")
 
+/* redefine MAX functions as it's non-standard */
+#ifdef MAX
+# undef MAX
+#endif
+#define MAX(__a,__b) (((int)(__a) > (int)(__b)) ? (__a) : (__b))
+
 /* there are some OS that still doesn't support POSIX standards */
 #ifndef HAVE_IN_PORT_T
 typedef unsigned short in_port_t;
@@ -142,7 +140,15 @@ typedef enum {
   NETCAT_TUNNEL
 } nc_mode_t;
 
-/* Recognized protocols */
+/* Supported internet protocols */
+
+typedef enum {
+  NETCAT_DOMAIN_UNSPEC,
+  NETCAT_DOMAIN_IPV4,
+  NETCAT_DOMAIN_IPV6
+} nc_domain_t;
+
+/* Supported protocols */
 
 typedef enum {
   NETCAT_PROTO_UNSPEC,
@@ -150,12 +156,22 @@ typedef enum {
   NETCAT_PROTO_UDP
 } nc_proto_t;
 
+/* ASCII conversion targets */
+
+typedef enum {
+  NETCAT_CONVERT_NONE,
+  NETCAT_CONVERT_CRLF,
+  NETCAT_CONVERT_CR,
+  NETCAT_CONVERT_LF
+} nc_convert_t;
+
 /* used for queues buffering and data tracking purposes.  The `head' field is
    a pointer to the begin of the buffer segment, while `pos' indicates the
    actual position of the data stream.  If `head' is NULL, it means that there
    is no dynamically-allocated data in this buffer, *BUT* it MAY still contain
    some local data segment (for example allocated inside the stack).
    `len' indicates the length of the buffer starting from `pos'. */
+/* FIXME: how do i recover original len? */
 
 typedef struct {
   unsigned char *head;
@@ -171,6 +187,23 @@ typedef struct {
   char name[MAXHOSTNAMELEN];			/* dns name */
   char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/* ascii-format IP addresses */
   struct in_addr iaddrs[MAXINETADDRS];		/* real addresses */
+} nc_host4_t;
+
+typedef struct {
+  char name[MAXHOSTNAMELEN];			/* dns name */
+  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/* ascii-format IP addresses */
+#ifdef USE_IPV6
+  struct in6_addr iaddrs[MAXINETADDRS];		/* real addresses */
+#else
+  char nullbuf[32];				/* keep consistent size */
+#endif
+} nc_host6_t;
+
+typedef struct { /* FIXME: shouldn't become an union??? */
+  nc_host4_t host;
+#ifdef USE_IPV6
+  nc_host6_t host6;
+#endif
 } nc_host_t;
 
 /* standard netcat port record.  It contains the port `name', which may be
@@ -180,17 +213,25 @@ typedef struct {
   char name[NETCAT_MAXPORTNAMELEN];	/* canonical port name */
   char ascnum[8];			/* ascii port number */
   unsigned short num;			/* port number */
-  /* FIXME: this is just a test! */
+  /* FIXME: this is just a test -- update: looks good, but maybe not */
   in_port_t netnum;			/* port number in network byte order */
 } nc_port_t;
+
+/* Private struct definition for the new ports range manager module */
+
+typedef struct nc_ports_st *nc_ports_t;
 
 /* This is a more complex struct that holds socket records. [...] */
 
 typedef struct {
-  int fd, domain, timeout;
+  int fd, timeout;
+  nc_convert_t conversion;
+  nc_domain_t domain;
   nc_proto_t proto;
-  nc_host_t local_host, host;
-  nc_port_t local_port, port;
+  nc_host_t local;
+  nc_port_t local_port;
+  nc_host_t remote;
+  nc_port_t port;
   nc_buffer_t sendq, recvq;
 } nc_sock_t;
 

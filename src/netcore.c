@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: netcore.c,v 1.1 2004-01-15 22:07:21 themnemonic Exp $
+ * $Id: netcore.c,v 1.2 2004-10-24 11:54:27 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -50,7 +50,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = ncsock->local_port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+  memcpy(&myaddr.sin_addr, &ncsock->local.host.iaddrs[0],
 	 sizeof(myaddr.sin_addr));
   /* only call bind if it is really needed */
   if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
@@ -62,7 +62,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   /* now prepare myaddr for the connect() call */
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = ncsock->port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->host.iaddrs[0], sizeof(myaddr.sin_addr));
+  memcpy(&myaddr.sin_addr, &ncsock->remote.host.iaddrs[0], sizeof(myaddr.sin_addr));
   ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
   if (ret < 0)
     goto err;
@@ -118,7 +118,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* prepare myaddr for the bind() call */
     myaddr.sin_family = AF_INET;
     myaddr.sin_port = ncsock->local_port.netnum;
-    memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+    memcpy(&myaddr.sin_addr, &ncsock->local.host.iaddrs[0],
 	   sizeof(myaddr.sin_addr));
     /* bind() MUST be called in this function, since it's the final call for
        this type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
@@ -149,10 +149,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
   if (!need_udphelper)
     ncprint(NCPRINT_VERB2, _("Listening on %s"),
-	    netcat_strid(&ncsock->local_host, &ncsock->local_port));
+	    netcat_strid(ncsock->domain, &ncsock->local, &ncsock->local_port));
   else
     ncprint(NCPRINT_VERB2, _("Listening on %s (using %d sockets)"),
-	    netcat_strid(&ncsock->local_host, &ncsock->local_port), sockbuf[0]);
+	    netcat_strid(ncsock->domain, &ncsock->local, &ncsock->local_port), sockbuf[0]);
 
   /* since this protocol is connectionless, we need a special handling here.
      We want to simulate a two-ends connection but in order to do this we need
@@ -218,7 +218,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
          use the MSG_PEEK flag, which leaves the received packet untouched */
       recv_ret = recvmsg(sock, &my_hdr, (opt_zero ? 0 : MSG_PEEK));
 
-      debug_v(("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
+      debug_v(("received packet from %s:%d%s", netcat_inet_ntop(AF_INET, &rem_addr.sin_addr),
 		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest")));
 
 #ifdef USE_PKTINFO
@@ -233,15 +233,15 @@ static int core_udp_listen(nc_sock_t *ncsock)
       if (ret == 0) {
 	char tmpbuf[127];
 
-	strncpy(tmpbuf, netcat_inet_ntop(&rem_addr.sin_addr), sizeof(tmpbuf));
+	strncpy(tmpbuf, netcat_inet_ntop(AF_INET, &rem_addr.sin_addr), sizeof(tmpbuf));
 	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d -> %s:%d (local)"),
 		tmpbuf, ntohs(rem_addr.sin_port),
-		netcat_inet_ntop(&local_addr.sin_addr),
+		netcat_inet_ntop(AF_INET, &local_addr.sin_addr),
 		ntohs(local_addr.sin_port));
       }
       else
 	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d"),
-		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
+		netcat_inet_ntop(AF_INET, &rem_addr.sin_addr), ntohs(rem_addr.sin_port));
 
       if (opt_zero) {		/* output the packet right here right now */
 	write_ret = write(STDOUT_FILENO, buf, recv_ret);
@@ -260,7 +260,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
 	  fprintf(output_fp, "Received %d bytes from %s:%d\n", recv_ret,
-		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
+		netcat_inet_ntop(AF_INET, &rem_addr.sin_addr), ntohs(rem_addr.sin_port));
 #endif
 	  netcat_fhexdump(output_fp, '<', buf, write_ret);
 	}
@@ -272,9 +272,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	memset(&dup_socket, 0, sizeof(dup_socket));
 	dup_socket.domain = ncsock->domain;
 	dup_socket.proto = ncsock->proto;
-	memcpy(&dup_socket.local_host.iaddrs[0], &local_addr.sin_addr,
+	memcpy(&dup_socket.local.host.iaddrs[0], &local_addr.sin_addr,
 	       sizeof(local_addr));
-	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr,
+	memcpy(&dup_socket.remote.host.iaddrs[0], &rem_addr.sin_addr,
 	       sizeof(local_addr));
 	dup_socket.local_port.netnum = local_addr.sin_port;
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);
@@ -329,10 +329,10 @@ static int core_tcp_connect(nc_sock_t *ncsock)
      want but it's not a great idea connecting more than one host at time.
      Also don't specify the local address if it's not really needed, so we can
      avoid one bind(2) call. */
-  sock = netcat_socket_new_connect(PF_INET, SOCK_STREAM,
-	&ncsock->host.iaddrs[0], ncsock->port.netnum,
-	(ncsock->local_host.iaddrs[0].s_addr ? &ncsock->local_host.iaddrs[0] :
-	NULL), ncsock->local_port.netnum);
+  sock = netcat_socket_new_connect(ncsock->domain, ncsock->proto,
+	&ncsock->remote, &ncsock->port,
+	(ncsock->local.host.iaddrs[0].s_addr ? &ncsock->local : NULL),
+	&ncsock->local_port);
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
@@ -344,53 +344,50 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   timest.tv_sec = timeout;
   timest.tv_usec = 0;
 
-  ret = select(sock + 1, NULL, &outs, NULL, (timeout > 0 ? &timest : NULL));
-  if (ret > 0) {
-    int ret, get_ret;
-    unsigned int get_len = sizeof(get_ret);	/* socklen_t */
+  do {
+    ret = select(sock + 1, NULL, &outs, NULL, (timeout > 0 ? &timest : NULL));
+  } while ((ret == -1) && (errno = EINTR));
+
+  if (ret < 0)
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
+	    strerror(errno));
+  else {
+    int ret, getret;
+    unsigned int getret_len = sizeof(getret);
 
     /* ok, select([single]), so sock must have triggered this */
     assert(FD_ISSET(sock, &outs));
 
-    /* fetch the errors of the socket and handle system request errors */
-    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, &get_ret, &get_len);
+    /* fetch eventual errors of the socket */
+    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, &getret, &getret_len);
     if (ret < 0)
       ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
 	      strerror(errno));
 
     /* POSIX says that SO_ERROR expects an int, so my_len must be untouched */
-    assert(get_len == sizeof(get_ret));
+    //assert(getret_len == sizeof(getret_ret));
 
     /* FIXME: the error Broken Pipe should probably not stop here */
-    debug_v(("Connection returned errcode=%d (%s)", get_ret, strerror(get_ret)));
-    if (get_ret > 0) {
+    debug_v(("Connection returned errcode=%d (%s)", getret, strerror(getret)));
+    if (getret > 0) {
       char tmp;
 
-      /* Ok, select() returned a write event for this socket AND getsockopt()
-         said that some error happened.  This mean that EOF is expected. */
+      /* ok, select() returned a write event for this socket AND getsockopt()
+         said that some error happened.  This means that EOF is expected. */
       ret = read(sock, &tmp, 1);
       assert(ret == 0);
       /* FIXME: see the TODO entry about false error detection */
 
       shutdown(sock, 2);
       close(sock);
-      ncsock->fd = -1;
-      errno = get_ret;		/* value returned by getsockopt(SO_ERROR) */
+      errno = getret;		/* value returned by getsockopt(SO_ERROR) */
       return -1;
     }
 
     /* everything went fine, we have the socket */
-    ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&ncsock->host,
-						      &ncsock->port));
+    ncprint(NCPRINT_VERB1, _("%s open"),
+	    netcat_strid(ncsock->domain, &ncsock->remote, &ncsock->port));
     return sock;
-  }
-  else if (ret) {
-    /* Terminated by a signal. Silently exit */
-    if (errno == EINTR)
-      exit(EXIT_FAILURE);
-    /* The error seems to be a little worse */
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
-	    strerror(errno));
   }
 
   /* select returned 0, this means connection timed out for our timing
@@ -402,11 +399,11 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   return -1;
 }				/* end of core_tcp_connect() */
 
-/* This function loops inside the accept() loop until a *VALID* connection is
-   fetched.  If an unwanted connection arrives, it is shutdown() and close()d.
-   If zero I/O mode is enabled, ALL connections are refused and it stays
-   unconditionally in listen mode until timeout elapses, if given, otherwise
-   forever.
+/* This function loops inside the accept() loop until a VALID connection is
+   fetched.  If an unwanted connection arrives, it is immediately closed.
+   If zero I/O mode is enabled, ALL connections are refused and the socket
+   stays unconditionally in listen mode until timeout elapses, if any,
+   otherwise forever.
    Returns: The new socket descriptor for the fetched connection */
 
 static int core_tcp_listen(nc_sock_t *ncsock)
@@ -414,60 +411,68 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   int sock_listen, sock_accept, timeout = ncsock->timeout;
   debug_v(("core_tcp_listen(ncsock=%p)", (void *)ncsock));
 
-  sock_listen = netcat_socket_new_listen(PF_INET, &ncsock->local_host.iaddrs[0],
-			ncsock->local_port.netnum);
+  sock_listen = netcat_socket_new_listen(ncsock->domain, &ncsock->local,
+			&ncsock->local_port);
   if (sock_listen < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-	    _("Couldn't setup listening socket (err=%d)"), sock_listen);
+	    _("Couldn't setup listening socket (err=%d): %s"), sock_listen,
+		strerror(errno));
 
-  /* if the port was set to 0 this means that it is assigned randomly by the
-     OS.  Find out which port they assigned to us. */
+  /* if the port is set to 0, it means that we want listening port assigned
+     randomly by OS.  Find out which port they assigned to us. */
   if (ncsock->local_port.num == 0) {
     int ret;
-    struct sockaddr_in myaddr;
-    unsigned int myaddr_len = sizeof(myaddr);
+    struct sockaddr_in findport;
+    unsigned int findport_len = sizeof(findport);
 
-    ret = getsockname(sock_listen, (struct sockaddr *)&myaddr, &myaddr_len);
+    ret = getsockname(sock_listen, (struct sockaddr *)&findport, &findport_len);
     if (ret < 0) {
       close(sock_listen);
       return -1;
     }
-    netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
+    netcat_getport(&ncsock->local_port, NULL, ntohs(findport.sin_port));
   }
 
   ncprint(NCPRINT_VERB2, _("Listening on %s"),
-	netcat_strid(&ncsock->local_host, &ncsock->local_port));
+	netcat_strid(ncsock->domain, &ncsock->local, &ncsock->local_port));
   while (TRUE) {
-    struct sockaddr_in my_addr;
-    unsigned int my_len = sizeof(my_addr);	/* this *IS* socklen_t */
-
-    sock_accept = netcat_socket_accept(sock_listen, timeout);
-    /* reset the timeout to the "use remaining time" value (see network.c file)
-       if it exited with timeout we also return this function, so losing the
-       original value is not a bad thing. */
-    timeout = -1;
+    struct sockaddr_in myaddr;
+    unsigned int myaddr_len = sizeof(myaddr);	/* this *IS* socklen_t */
 
     /* failures in netcat_socket_accept() cause this function to return */
+    sock_accept = netcat_socket_accept(sock_listen, timeout);
     if (sock_accept < 0)
       return -1;
 
-    /* FIXME: i want a library function like netcat_peername() that fetches it
-       and resolves with netcat_resolvehost(). */
-    getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
+    /* reset timeout to the "use remaining time" value (see network.c file).
+       if it exited with timeout we also return this function, so losing the
+       original value is not a bad thing. NOTE: this was before the above "if",
+       dunno what it matters, but i don't understand my own comment! */
+    timeout = -1;
 
-    /* if a remote address (and optionally some ports) have been specified we
-       assume it as the only ip and port that it is allowed to connect to
-       this socket */
+    getpeername(sock_accept, (struct sockaddr *)&myaddr, &myaddr_len);
 
-    if ((ncsock->host.iaddrs[0].s_addr && memcmp(&ncsock->host.iaddrs[0],
-	 &my_addr.sin_addr, sizeof(ncsock->host.iaddrs[0]))) ||
-	(netcat_flag_count() && !netcat_flag_get(ntohs(my_addr.sin_port)))) {
+    /* if a "remote address" (and optionally some ports) have been specified,
+       they are assumed to be the only IP and port(s) allowed to connect to
+       this socket. See documentation for more information. */
+
+    if ((ncsock->remote.host.iaddrs[0].s_addr &&
+	 memcmp(&ncsock->remote.host.iaddrs[0], &myaddr.sin_addr,
+		sizeof(ncsock->remote.host.iaddrs[0]))) /* ||
+	(netcat_ports_count() && !netcat_flag_get(ntohs(myaddr.sin_port))) */) {
       ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
-	      netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
+	      netcat_inet_ntop(AF_INET, &myaddr.sin_addr), ntohs(myaddr.sin_port));
       goto refuse;
     }
+
+    /* FIXME: _resolvehost must require verbosity >= 2 for DNS-resolving this
+       request */
+
+    netcat_getport(&ncsock->port, NULL, ntohs(myaddr.sin_port));
+    //netcat_resolvehost(&ncsock->remote, NULL, &myaddr.sin_addr);
+
     ncprint(NCPRINT_VERB1, _("Connection from %s:%hu"),
-	    netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
+	    ncsock->remote.host.name, ncsock->port.num);
 
     /* with zero I/O mode we don't really accept any connection */
     if (opt_zero)
@@ -789,7 +794,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 			    (struct sockaddr *)&recv_addr, &recv_len);
 	/* when recvfrom() call fails, recv_addr remains untouched */
 	debug_dv(("recvfrom(net) = %d (address=%s:%d)", read_ret,
-		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
+		netcat_inet_ntop(AF_INET, &recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
       }
       else {
 	/* common file read fallback */
@@ -866,7 +871,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 #ifndef USE_OLD_HEXDUMP
 	if ((nc_main->proto == NETCAT_PROTO_UDP) && opt_zero)
 	  fprintf(output_fp, "Received %d bytes from %s:%d\n", write_ret,
-		  netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
+		  netcat_inet_ntop(AF_INET, &recv_addr.sin_addr), ntohs(recv_addr.sin_port));
 	else
 	  fprintf(output_fp, "Received %d bytes from the socket\n", write_ret);
 #endif
