@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.32 2002-12-06 17:29:00 themnemonic Exp $
+ * $Id: netcat.h,v 1.33 2003-08-17 21:48:22 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -70,8 +70,15 @@
 #endif				/* if none of them are here, CHANGE OS! */
 
 /* This must be defined to the longest possible internet address length in
-   string notation. */
-#define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
+   string notation.
+   Bugfix: Looks like Solaris 7 doesn't define this standard. It's ok to use
+   the following workaround since this is going to change to introduce IPv6
+   support. */
+#ifdef INET_ADDRSTRLEN
+# define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
+#else
+# define NETCAT_ADDRSTRLEN 16
+#endif
 
 /* FIXME: I should search more about this portnames standards.  At the moment
    i'll fix my own size for this */
