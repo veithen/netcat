@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.11 2002-05-04 15:13:43 themnemonic Exp $
+ * $Id: network.c,v 1.12 2002-05-05 08:39:57 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -28,10 +28,12 @@
 
 #include "netcat.h"
 #include <netdb.h>		/* hostent, gethostby*, getservby* */
+#include <fcntl.h>		/* fcntl() */
 
 /* Tries to resolve the hostname (or IP address) pointed to by `name'.
    The allocated structure `dst' is filled with the result or with
    ...
+   TODO: this function requires much testings
 */
 
 bool netcat_resolvehost(netcat_host *dst, char *name)
@@ -192,6 +194,19 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
 
 /* ... */
 
+const char *netcat_inet_ntop(const void *src)
+{
+  static char my_buf[127];
+
+  debug_v("netcat_inet_ntop(src=%p)", src);
+
+  /* FIXME: Since inet_ntop breaks on IPV6-mapped IPv4 addresses i'll need to
+   * sort it out by myself. */
+  return inet_ntop(AF_INET, src, my_buf, sizeof(my_buf));
+}
+
+/* ... */
+
 int netcat_socket_new()
 {
   int sock, ret, sockopt = 0;
@@ -310,15 +325,19 @@ int netcat_socket_accept(int s, int timeout)
   /* now go into select. use the timeout only if it is valid */
   select(s + 1, &in, NULL, NULL, (timeout > 0 ? &timest : NULL));
 
+  /* have we got this connection? */
   if (FD_ISSET(s, &in)) {
     int new_sock;
 
     new_sock = accept(s, NULL, NULL);
     debug_v("Connection received (new fd=%d)", new_sock);
 
+    /* note: as accept() could fail, new_sock might also be a negative value.
+       It's application's work to handle the right errno. */
     return new_sock;
   }
 
+  /* no connections arrived during the given time. nothing happens */
   errno = ETIMEDOUT;
   return -1;
 }
