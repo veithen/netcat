@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.19 2002-05-12 21:16:50 themnemonic Exp $
+ * $Id: network.c,v 1.20 2002-05-15 20:20:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -299,7 +299,8 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
   }
 
   /* add the non-blocking flag to this socket */
-  ret = fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+  if ((ret = fcntl(sock, F_GETFL, 0)) >= 0)
+    ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK);
   if (ret < 0) {
     ret = -4;
     goto err;
