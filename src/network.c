@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.8 2002-05-01 16:04:45 themnemonic Exp $
+ * $Id: network.c,v 1.9 2002-05-03 23:25:13 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -29,9 +29,10 @@
 #include "netcat.h"
 #include <netdb.h>		/* hostent, gethostby*, getservby* */
 
-/* Fills the structure pointed to by `dst' with the resolved host `name'.
-   `name' can be either a valid IP string in dotted notation or a FQDN.
-   ... */
+/* Tries to resolve the hostname (or IP address) pointed to by `name'.
+   The allocated structure `dst' is filled with the result or with
+   ...
+*/
 
 bool netcat_resolvehost(netcat_host *dst, char *name)
 {
@@ -48,16 +49,12 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
 
   ret = inet_pton(AF_INET, name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
-    if (opt_numeric) {
-      fprintf(stderr, _("Can't parse %s as an IP address"), name);
-      exit(EXIT_FAILURE); /* FIXME: i should return FALSE here */
-    }
+    if (opt_numeric)
+      return FALSE;
     hostent = gethostbyname(name);
     /* failure to look up a name is fatal, since we can't do anything with it */
-    if (!hostent) {
-      fprintf(stderr, _("Error: Host lookup failed for `%s'\n"), name);
-      exit(EXIT_FAILURE);
-    }
+    if (!hostent)
+      return FALSE;
     strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
     /* FIXME: what do I do with other hosts? */
     for (i = 0; hostent->h_addr_list[i] && (i < 8); i++) {
@@ -185,4 +182,69 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
  end:
   snprintf(dst->ascnum, sizeof(dst->ascnum), "%hu", dst->num);
   return TRUE;
+}
+
+int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
+{
+  int sock, ret, sockopt = 0;
+  struct sockaddr_in my_addr;
+
+  debug_dv("netcat_create_server(addr=%p, port=%hu)", (void *)addr, port);
+
+  /* Reset the sockaddr structure */
+  my_addr.sin_family = AF_INET;
+  my_addr.sin_port = htons(port);
+  memcpy(&my_addr.sin_addr, addr, sizeof(my_addr.sin_addr));
+
+  /* create the socket */
+  sock = socket(PF_INET, SOCK_STREAM, 0);
+  if (sock < 0)
+    return -1;
+
+  /* fix the socket options */
+  ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
+  if (ret < 0)
+    return -2;
+
+  /* bind it to the specified address (could be INADDY_ANY as well) */
+  ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
+  if (ret < 0)
+    return -3;
+
+  /* actually make it listening, with a reasonable backlog value */
+  ret = listen(sock, 4);
+  if (ret < 0)
+    return -4;
+
+  return sock;
+}
+
+/* ... */
+
+int netcat_socket_accept(int fd, int timeout)
+{
+  fd_set in;
+  struct timeval timest;
+
+  debug_v("netcat_accept(fd=%d, timeout=%d)", fd, timeout);
+
+  timest.tv_sec = timeout;
+  timest.tv_usec = 0;
+
+  FD_ZERO(&in);
+  FD_SET(fd, &in);
+
+  /* now go into select, and use the timeout only if it is valid */
+  select(fd + 1, &in, NULL, NULL, (timeout > 0 ? &timest : NULL));
+
+  if (FD_ISSET(fd, &in)) {
+    int new_sock;
+    debug_v("connection received");
+
+    new_sock = accept(fd, NULL, NULL);
+
+    return new_sock;
+  }
+
+  return -1;
 }

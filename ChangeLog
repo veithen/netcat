@@ -1,4 +1,11 @@
 
+[*] Sat May  4 2002 - netcat (cvs)
+
+  o Fixed netcat_resolvehost() to be more library function.
+  o Added function netcat_socket_new_listen() and netcat_socket_accept()
+    to network.c.
+
+
 [*] Wed May  1 2002 - netcat v0.2.2
 
   o More fixes around the NLS (added the missing config.rpath script)
