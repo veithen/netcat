@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.8 2002-12-06 17:32:38 themnemonic Exp $
+ * $Id: udphelper.c,v 1.9 2002-12-11 20:36:25 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -279,11 +279,12 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 
 #endif	/* USE_PKTINFO */
 
-/* ... */
+/* Closes the `sockbuf' previously allocated with udphelper_sockets_open().
+   The global errno is not altered by this function. */
 
 void udphelper_sockets_close(int *sockbuf)
 {
-  int i;
+  int i, saved_errno = errno;
 
   if (!sockbuf)
     return;
@@ -293,4 +294,5 @@ void udphelper_sockets_close(int *sockbuf)
       close(sockbuf[i]);
 
   free(sockbuf);
+  errno = saved_errno;
 }
