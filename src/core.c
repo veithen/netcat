@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.22 2002-06-27 00:18:47 themnemonic Exp $
+ * $Id: core.c,v 1.23 2002-06-30 01:34:11 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -174,7 +174,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
       struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
       struct sockaddr_in local_addr;
+#ifdef USE_PKTINFO
       unsigned char anc_buf[512];
+#endif
 
       sock = sockbuf[socks_loop];
 
@@ -194,9 +196,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
       my_hdr_vec.iov_len = sizeof(buf);
       my_hdr.msg_iov = &my_hdr_vec;
       my_hdr.msg_iovlen = 1;
-      /* now the most important part: the ancillary data, used to recovering the dst */
+#ifdef USE_PKTINFO
+      /* now the core part for the IP_PKTINFO support: the ancillary data */
       my_hdr.msg_control = anc_buf;
       my_hdr.msg_controllen = sizeof(anc_buf);
+#endif
 
       /* now check the remote address.  If we are simulating a routing then
          use the MSG_PEEK flag, which leaves the received packet untouched */
