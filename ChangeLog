@@ -1,8 +1,10 @@
 
-[*] Fri May 17 2002 - netcat (cvs)
+[*] Mon May 20 2002 - netcat (cvs)
 
   o Fixed the udp mode listen, which didn't allow any kind of safe read from
     stdin.
+  o Generalized flagset.c to be more a library file.  Fixed some minor bugs
+    in the interface.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0
