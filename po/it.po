@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: netcat 0.2.1\n"
-"POT-Creation-Date: 2002-04-30 22:08+0200\n"
+"POT-Creation-Date: 2002-04-30 22:55+0200\n"
 "PO-Revision-Date: 2002-04-30 22:02+0200\n"
 "Last-Translator: Johnny Mnemonic <johnny@themnemonic.org>\n"
 "Language-Team: Italian <johnny@themnemonic.org>\n"
@@ -79,12 +79,12 @@ msgid ""
 "Written by Johnny Mnemonic.\n"
 msgstr ""
 
-#: src/netcat.c:1031
+#: src/netcat.c:1037
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr ""
 
-#: src/netcat.c:1054
+#: src/netcat.c:1060
 msgid "Failed to open output file: "
 msgstr "Impossibile aprire il file di output: "
 

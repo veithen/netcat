@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-04-30 22:08+0200\n"
+"POT-Creation-Date: 2002-04-30 22:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -78,12 +78,12 @@ msgid ""
 "Written by Johnny Mnemonic.\n"
 msgstr ""
 
-#: src/netcat.c:1031
+#: src/netcat.c:1037
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr ""
 
-#: src/netcat.c:1054
+#: src/netcat.c:1060
 msgid "Failed to open output file: "
 msgstr ""
 
