@@ -1,4 +1,13 @@
 
+[*] Wed May  1 2002 - netcat (cvs)
+
+  o More fixes around the NLS (added the missing config.rpath script)
+  o Added lib directory that will contain all netcat related libraries.
+  o Added compatibility support (libcontrib) containing all the needed
+    functions not provided by the OS.
+  o Added GNU getopt to the compat library.
+
+
 [*] Tue Apr 30 2002 - netcat v0.2.1
 
   o Various fixes to the Makefiles for the clean targets

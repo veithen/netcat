@@ -34,3 +34,5 @@ to mail me if you need any further information.
    a configure option `--enable-compat' that implies ALL other
    single options like `--enable-oldhexdump'.
 
+ o The configure script must properly check res_init() by including
+   the <resolv.h> file.
