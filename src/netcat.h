@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.19 2002-05-24 18:06:47 themnemonic Exp $
+ * $Id: netcat.h,v 1.20 2002-05-28 20:57:23 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -36,6 +36,7 @@
 #include <sys/time.h>		/* timeval, time_t */
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/uio.h>		/* needed for reading/writing vectors */
 #include <netinet/in.h>
 #include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
 
@@ -69,6 +70,14 @@
 /* This must be defined to the longest possible internet address length in
    string notation. */
 #define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
+
+/* Find out whether we can use the RFC 2292 extensions on this machine
+   (I've found out only linux supporting this feature so far) */
+#ifdef HAVE_PKTINFO
+# if defined SOL_IP && defined IP_PKTINFO
+#  define USE_PKTINFO
+# endif
+#endif
 
 /* MAXINETADDR defines the maximum number of host aliases that are saved after
    a successfully hostname lookup. Please not that this value will also take

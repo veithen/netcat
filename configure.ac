@@ -23,7 +23,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat,0.4.0)
+AM_INIT_AUTOMAKE(netcat,0.5.0)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
@@ -66,6 +66,9 @@ if test $ac_cv_func_srandom = no; then
 fi
 
 AC_CHECK_FUNCS(inet_pton inet_ntop)
+
+AC_CHECK_TYPE(struct in_pktinfo, AC_DEFINE(HAVE_PKTINFO, ,
+	[Use IPv4 pktinfo for fetching UDP destination address]), , [#include <netinet/in.h>])
 
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
