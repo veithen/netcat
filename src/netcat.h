@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.28 2002-08-15 22:26:37 themnemonic Exp $
+ * $Id: netcat.h,v 1.29 2002-08-16 11:59:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -45,6 +45,12 @@
 #if 0
 #include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
+#endif
+
+/* special beta code that must be explicitely included */
+#if defined DEBUG && defined USE_TESTCODE
+# define BETA_NCEXEC
+# define BETA_SIGHANDLER
 #endif
 
 /* These are useful to keep the source readable */

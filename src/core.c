@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.25 2002-08-15 22:26:37 themnemonic Exp $
+ * $Id: core.c,v 1.26 2002-08-16 11:59:12 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -548,9 +548,19 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       call_select = FALSE;
 
     if (call_select || delayer.tv_sec || delayer.tv_usec) {
+      int ret;
+
       debug_v("entering with timeout=%d:%d select() ...", delayer.tv_sec, delayer.tv_usec);
-      select(fd_max, &ins, NULL, NULL,
-	     (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
+      ret = select(fd_max, &ins, NULL, NULL,
+		   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
+      if (ret < 0) {
+#ifdef BETA_SIGHANDLER
+	if (errno == EINTR)
+	  break;
+#endif
+	perror("select(core_readwrite)");
+	exit(EXIT_FAILURE);
+      }
       call_select = TRUE;
     }
 
@@ -777,10 +787,17 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     }				/* end of reading from the socket section */
   }				/* end of while (inloop) */
 
-  /* we've got an EOF from the net, close the socket */
-  shutdown(fd_sock, 2);
+  /* we've got an EOF from the net, close the sockets */
+  shutdown(fd_sock, SHUT_RDWR);
   close(fd_sock);
   nc_main->fd = -1;
+
+  /* close the slave socket only if it wasn't a simulation */
+  if (nc_slave->domain != PF_UNSPEC) {
+    shutdown(fd_stdin, SHUT_RDWR);
+    close(fd_stdin);
+    nc_slave->fd = -1;
+  }
 
   return 0;
 }				/* end of core_readwrite() */

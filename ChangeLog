@@ -1,5 +1,5 @@
 
-[*] Thu Aug 15 2002 - netcat (cvs)
+[*] Fri Aug 16 2002 - netcat (cvs)
 
   o Rewritten the udp listening routines. Now it uses the newly added udphelper
     routines in order to allow a portable way to simulate two-ends connections
@@ -13,6 +13,10 @@
     This bug was introduced with the queues model in core.c.
   o Now it is possible to disable the debugging support at runtime if it was
     compiled in.
+  o Restored the command line switch `-e' (exec).
+  o Added new beta signal handling functions.
+  o Fixed connection failures not handled properly in tunnel mode.
+  o Fixed global return status to match the program specifications.
 
 
 [*] Tue Jun 18 2002 - netcat v0.5.2
