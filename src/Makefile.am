@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.10 2002-05-07 17:47:07 themnemonic Exp $
+# $Id: Makefile.am,v 1.11 2002-05-11 19:06:17 themnemonic Exp $
 
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"\$(localedir)\" @DEFS@
@@ -10,6 +10,7 @@ endif
 
 bin_PROGRAMS = netcat
 netcat_SOURCES = \
+	core.c \
 	flagset.c \
 	misc.c \
 	netcat.c \
