@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-10-02 21:25+0200\n"
+"POT-Creation-Date: 2002-10-15 19:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -149,7 +149,7 @@ msgid ""
 "For more information about these matters, see the file named COPYING.\n"
 "\n"
 "Original idea and design by Avian Research <hobbit@avian.org>,\n"
-"Written by Giovanni Giacobbi <johnny@themnemonic.org>.\n"
+"Written by Giovanni Giacobbi <giovanni@giacobbi.net>.\n"
 msgstr ""
 
 #: src/netcat.c:80

@@ -8,6 +8,19 @@
 
 
 
+* Netcat 0.6.1 - 15 Sep 2002 - Release Notes
+
+A bugfix release for the 0.6 major version.  This version may be
+the last one for a long period, but it should be enough stable
+to stick to.
+Most important fix is indeed the Solaris related code added, that
+makes it able to use Netcat's UDP features on this OS too.  Other
+fixes are in compilation scripts and internal socket code.  It
+should also be a bit faster.  Always report bugs to the Netcat
+bug tracking system on SourceForge.
+
+
+
 * Netcat 0.6.0 - 22 Aug 2002 - Release Notes
 
 The summer brought advice and this is the new major release of
