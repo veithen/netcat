@@ -3,7 +3,7 @@
 #
 #  Author: Giovanni Giacobbi <giovanni@giacobbi.net>
 #
-#  Copyright (C) 2002 - 2003  Giovanni Giacobbi
+#  Copyright (C) 2002 - 2004  Giovanni Giacobbi
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.7.0-cvs)
+AM_INIT_AUTOMAKE(netcat, 0.7.1)
 AC_PREREQ(2.53)
 
 dnl without this order in this file, automake will be confused!
@@ -80,6 +80,14 @@ if test -n "$GCC"; then
   CFLAGS="$CFLAGS -Wall"
 fi
 
+# check wether we shall use linux-style select(2) call
+case "$host" in
+  *-linux*)
+    AC_DEFINE(USE_LINUX_SELECT,  , [use the linux-style select(2) call])
+    ;;
+esac
+    
+
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
@@ -112,16 +120,17 @@ AC_ARG_WITH(included-getopt, AC_HELP_STRING([--with-included-getopt],
 
 # apply the acquired enable options
 if test "x$nc_enab_compat" = "xyes"; then
-  AC_DEFINE(USE_OLD_COMPAT,  , misc old compat behaviours)
+  AC_DEFINE(USE_OLD_COMPAT,  , [misc old compat behaviours])
 fi
 
 if test "x$nc_enab_oldhexdump" = "xyes"; then
-  AC_DEFINE(USE_OLD_HEXDUMP,  , use the old style hexdump format)
+  AC_DEFINE(USE_OLD_HEXDUMP,  , [use the old style hexdump format])
 fi
 
 if test "x$nc_enab_oldtelnet" = "xyes"; then
-  AC_DEFINE(USE_OLD_TELNET,  , use the old telnet codes parsing policy)
+  AC_DEFINE(USE_OLD_TELNET,  , [use the old telnet codes parsing policy])
 fi
+
 
 dnl *********************************************************************
 dnl ** SPECIAL FUNCTIONS VALIDITY CHECKING ******************************
@@ -144,12 +153,14 @@ if test "x$nc_need_getopt" != "xyes"; then
   fi
 fi
 
+
 dnl *********************************************************************
 dnl ** AUTOMAKE CONDITIONALS ********************************************
 dnl *********************************************************************
 
 AC_SUBST(CONTRIBLIBS)
 AM_CONDITIONAL(NEED_GETOPT, test "x$nc_need_getopt" = "xyes")
+
 
 dnl *********************************************************************
 dnl ** OUTPUT SECTION ***************************************************
