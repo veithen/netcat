@@ -1,5 +1,5 @@
 
-[*] Tue Aug 19 2003 - netcat (cvs)
+[*] Thu Aug 21 2003 - netcat v0.7.0
 
   o Added command line switch `-c' (close), which shuts down the connection
     on EOF from stdin without waiting for any answer from remote host.
@@ -16,6 +16,10 @@
   o Various fixes for code portability.  Changed the debugging support routines,
     and checking better what kind of compiler there is. [BUG #677625]
   o Fixed a simple compile error on Solaris7. [BUG #788870]
+  o Fixed core dump in command line parsing routines when fgets() returned an
+    empty string. [BUG #791799]
+  o Now netcat is able to handle large amount of data, without overflowing the
+    socket queues anymore.
 
 
 [*] Tue Oct 15 2002 - netcat v0.6.1
