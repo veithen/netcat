@@ -8,6 +8,19 @@
 
 
 
+* Netcat 0.7.1 - 11 Jan 2004 - Release Notes
+
+Another bugfix release mainly focused on portability that was made
+possible by submitted bug reports. If you find something wrong with
+this release, always use the SourceForge bug tracking system.
+This release also represents the branch point for the first stable
+series.
+Next development version, 0.8, will introduce a code restyling, and
+the IPv6 support.
+If you want to contribute with ideas/code/documentation contact me.
+
+
+
 * Netcat 0.7.0 - 21 Aug 2003 - Release Notes
 
 This new Netcat version was supposed to be released as 0.6.2, but
