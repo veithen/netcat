@@ -39,6 +39,8 @@ to mail me if you need any further information.
    TIME_WAIT status).  Netcat should cleanup and shutdown all
    open sockets before terminating.
 
+ o Unify the SIOCGIF* and SIOCGLIF* families
+
 
 
     Future features/Planning
