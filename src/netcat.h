@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.25 2002-06-16 09:48:04 themnemonic Exp $
+ * $Id: netcat.h,v 1.26 2002-07-03 13:07:48 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -42,9 +42,10 @@
 #include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
 
 /* other misc unchecked includes */
+#if 0
 #include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
-#include <time.h>
+#endif
 
 /* These are useful to keep the source readable */
 #ifndef STDIN_FILENO
@@ -78,7 +79,7 @@
 
 /* Find out whether we can use the RFC 2292 extensions on this machine
    (I've found out only linux supporting this feature so far) */
-#ifdef HAVE_PKTINFO
+#ifdef HAVE_STRUCT_IN_PKTINFO
 # if defined SOL_IP && defined IP_PKTINFO
 #  define USE_PKTINFO
 # endif

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.49 2002-06-27 00:10:43 themnemonic Exp $
+ * $Id: netcat.c,v 1.50 2002-07-03 13:07:48 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,6 +30,7 @@
 #include <resolv.h>
 #include <signal.h>
 #include <getopt.h>
+#include <time.h>		/* time(2) used as random seed */
 
 /* int gatesidx = 0; */		/* LSRR hop count */
 /* int gatesptr = 4; */		/* initial LSRR pointer, settable */
