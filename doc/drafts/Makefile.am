@@ -1,7 +1,9 @@
-## Process this file with automake to create Makefile.in.
+## Process this file with automake to create Makefile.in
 
-## Makefile of the GNU netcat project.
-## Copyright (C) 2002  Giovanni Giacobbi
+## Makefile for Netcat.
+
+## Copyright (C) 1995, 1996, 1997, 1998, 1999, 2001, 2002 Free
+## Software Foundation, Inc.
 
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -13,22 +15,19 @@
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
 
+# $Id: Makefile.am,v 1.4 2003-01-02 14:39:31 themnemonic Exp $
 
-# $Id: Makefile.am,v 1.3 2002-12-06 18:05:09 themnemonic Exp $
+# general rule to build png graphs from the DIA xml file
+.xml.png:
+	dia -e $@ $(srcdir)/$<
 
-corerw.png: $(srcdir)/corerw.xml
-	dia -e $@ $(srcdir)/corerw.xml
-
-docs: corerw.png
+docs: corerw.png resolve.png
 
 # clean images generated at packaging time, and DIA's backup files
-MAINTAINERCLEANFILES = corerw.png *.xml~
+MAINTAINERCLEANFILES = corerw.png resolve.png *.xml~
 
 ##dist-hook: docs
 ##	@cp -p $(srcdir)/corerw.png $(distdir)
+##	@cp -p $(srcdir)/resolve.png $(distdir)
 
 EXTRA_DIST = *.txt
-
-## Proceed to subdirs
-
-## there aren't any
