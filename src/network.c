@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.22 2002-06-12 23:08:13 themnemonic Exp $
+ * $Id: network.c,v 1.23 2002-06-15 12:54:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,29 +30,33 @@
 #include <netdb.h>		/* hostent, gethostby*, getservby* */
 #include <fcntl.h>		/* fcntl() */
 
-/* Tries to resolve the hostname (or IP address) pointed to by `name'.
-   The allocated structure `dst' is filled with the result or with
-   ...
-   TODO: this function requires much testings
-*/
+/* Tries to resolve the hostname (or IP address) pointed to by `name'.  The
+   destination structure `dst' if first initialized and then filled with proper
+   values in relation with the lookup results.  Either you lookup from the IP
+   or from the hostname, the destination struct will contain an authoritative
+   name (with the proper case) and a list of ip addresses.
+   This function returns TRUE on success and FALSE otherwise.  On success, the
+   name field may be empty, while there will always be at least one IP address
+   in the list.
+   On failure, the `dst' struct is returned empty. */
 
-bool netcat_resolvehost(nc_host_t *dst, char *name)
+bool netcat_resolvehost(nc_host_t *dst, const char *name)
 {
+  int i, ret;
   struct hostent *hostent;
   struct in_addr res_addr;
-  int i, ret;
 
   assert(name[0]);
   debug_v("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name);
 
-  /* reset the dst struct for debugging cleanup purposes */
+  /* reset all fields of the dst struct */
   memset(dst, 0, sizeof(*dst));
-  strcpy(dst->name, "(unknown)");
 
   ret = netcat_inet_pton(name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
+    bool host_auth = FALSE;
 
-    /* if the opt_numeric option is set, we must not use DNS in any kind */
+    /* if the opt_numeric option is set, we must not use DNS in any way */
     if (opt_numeric)
       return FALSE;
 
@@ -60,63 +64,97 @@ bool netcat_resolvehost(nc_host_t *dst, char *name)
     if (!(hostent = gethostbyname(name)))
       return FALSE;
 
-    strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
+    /* now I need to handle the host aliases (CNAME).  If we lookup host
+       www.bighost.foo, which is an alias for www.bighost.mux.foo, the hostent
+       struct will contain the real name in h_name, which is not what we want
+       for the output purpose (the user doesn't want to see something he didn't
+       type.  So assume the lookup name as the "official" name and fetch the ips
+       for the reverse lookup. */
+    debug("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
+	  hostent->h_name);
+    strncpy(dst->name, name, MAXHOSTNAMELEN - 2);
 
     /* now save all the available ip addresses (limiting to the global MAXINETADDRS) */
     for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++) {
       memcpy(&dst->iaddrs[i], hostent->h_addr_list[i], sizeof(dst->iaddrs[0]));
       strncpy(dst->addrs[i], netcat_inet_ntop(&dst->iaddrs[i]),
 	      sizeof(dst->addrs[0]));
-    }				/* for x -> addrs, part A */
+    }				/* end of foreach addr, part A */
 
     /* since the invalid dns warning is only shown with verbose level 1,
-       we can skip them (which would speed up the thing) */
+       we may skip them (which would speed up the thing) */
     if (opt_verbose < 1)
       return TRUE;
 
     /* do inverse lookups in separate loop based on our collected forward
-       addresses. FIXME: handle the mismatch event */
+       addresses. */
     for (i = 0; dst->iaddrs[i].s_addr && (i < MAXINETADDRS); i++) {
       hostent = gethostbyaddr((char *)&dst->iaddrs[i], sizeof(dst->iaddrs[0]),
 			      AF_INET);
 
       if (!hostent || !hostent->h_name) {
-	ncprint(NCPRINT_WARNING, _("inverse host lookup failed for %s"),
-		dst->addrs[i]);
+	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+		_("inverse host lookup failed for %s"), dst->addrs[i]);
 	continue;
       }
-      if (strcasecmp(dst->name, hostent->h_name)) {
-	ncprint(NCPRINT_WARNING, _("this host mismatch! %s - %s"), dst->name,
-		hostent->h_name);
+
+      /* now the case.  hostnames aren't case sensitive because of this we may
+         find a different case for the authoritative hostname.  For the same
+         previous reason we may want to keep the user typed case, but this time
+         we are going to override it because this tool is a "network exploration
+         tool", thus it's good to see the case they chose for this host. */
+      if (strcasecmp(dst->name, hostent->h_name))
+	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+		_("this host doesn't match! %s -- %s"), hostent->h_name, dst->name);
+      else if (!host_auth) {	/* take only the first one as auth */
+	strncpy(dst->name, hostent->h_name, sizeof(dst->name));
+	host_auth = TRUE;
       }
-    }
+    }				/* end of foreach addr, part B */
   }
   else {			/* `name' is a numeric address, try reverse lookup */
     memcpy(&dst->iaddrs[0], &res_addr, sizeof(dst->iaddrs[0]));
     strncpy(dst->addrs[0], netcat_inet_ntop(&res_addr), sizeof(dst->addrs[0]));
 
     /* if opt_numeric is set or we don't require verbosity, we are done */
-    if (opt_numeric || !opt_verbose)
+    if (opt_numeric)
       return TRUE;
 
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
     hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
     if (!hostent)
-      ncprint(NCPRINT_ERROR, _("Inverse name lookup failed for `%s'"), name);
+      ncprint(NCPRINT_VERB2 | NCPRINT_WARNING,
+	      _("inverse name lookup failed for `%s'"), name);
     else {
       strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
-      /* now do the direct lookup to see if the IP was auth */
+      /* now do the direct lookup to see if the PTR was authoritative */
       hostent = gethostbyname(dst->name);
+
+      /* Any kind of failure in this section results in a host not auth
+         warning, and the dst->name field cleaned (I don't care if there is a
+         PTR, if it's unauthoritative). */
       if (!hostent || !hostent->h_addr_list[0]) {
-	ncprint(NCPRINT_WARNING, _("direct host lookup failed for %s"), dst->name);
+	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+		_("Host %s isn't authoritative! (direct lookup failed)"),
+		dst->addrs[0]);
+	goto check_failed;
       }
-      else if (strcasecmp(dst->name, hostent->h_name)) {
-	ncprint(NCPRINT_WARNING, _("this host mismatch! %s - %s"), dst->name,
-		hostent->h_name);
-      }
-      /* FIXME: I should erase the dst->name field, since the answer wasn't auth */
+      for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++)
+	if (!memcmp(&dst->iaddrs[0], hostent->h_addr_list[i],
+		    sizeof(dst->iaddrs[0])))
+	  return TRUE;
+
+      ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+		_("Host %s isn't authoritative! (direct lookup mismatch)"),
+		dst->addrs[0]);
+      ncprint(NCPRINT_VERB1, _("  %s -> %s  BUT  %s -> %s"),
+		dst->addrs[0], dst->name,
+		dst->name, netcat_inet_ntop(hostent->h_addr_list[0]));
+
+ check_failed:
+      memset(dst->name, 0, sizeof(dst->name));
     }				/* if hostent */
-  }				/* INADDR_NONE Great Split */
+  }
 
   return TRUE;
 }

@@ -1,5 +1,5 @@
 
-[*] Fri Jun 14 2002 - netcat (cvs)
+[*] Sat Jun 15 2002 - netcat (cvs)
 
   o Fixed a bug in UDP listen mode with unspecified port where Netcat was not
     actually listening.
@@ -8,6 +8,8 @@
   o More code cleanup.  Added a global variable netcat_mode to specify in which
     mode netcat was launched.
   o Fixed a preprocessor warning on some OSes.
+  o Many fixes to the resolver functions.  Now all weird DNS things that you may
+    find in the net are reported with the `-v' command line switch.
 
 
 [*] Mon Jun 10 2002 - netcat v0.5.1
