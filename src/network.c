@@ -1,11 +1,11 @@
 /*
- * network.c -- description
+ * network.c -- all network related functions and helpers
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.24 2002-06-16 09:50:06 themnemonic Exp $
+ * $Id: network.c,v 1.25 2002-06-17 11:39:34 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -234,12 +234,12 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
 /* returns a pointer to a static buffer containing a description of the remote
    host in the best form available (using hostnames and portnames) */
 
+/*    MAXHOSTNAMELEN     _ [ ADDRSTRLEN ]   _ 5 _    ( MAXPORTNAMELEN ) */
 /* "my.very.long.hostname [255.255.255.255] 65535 (my_very_long_port_name)" */
-/* "MAXHOSTNAMELEN        [  ADDRSTRLEN  ]      5     ( 64 )" */
 
 const char *netcat_strid(const nc_host_t *host, const nc_port_t *port)
 {
-  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + NETCAT_MAXPORTNAMELEN + 10];
+  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + NETCAT_MAXPORTNAMELEN + 15];
   char *p = buf;
   assert(host && port);
 
@@ -250,7 +250,7 @@ const char *netcat_strid(const nc_host_t *host, const nc_port_t *port)
       p += snprintf(p, sizeof(buf) + buf - p, "%s", host->addrs[0]);
   }
   else
-    p += snprintf(p, sizeof(buf) + buf - p, "any address");
+    p += snprintf(p, sizeof(buf) + buf - p, _("any address"));
 
   p += snprintf(p, sizeof(buf) + buf - p, " %s", port->ascnum);
   if (port->name[0])
