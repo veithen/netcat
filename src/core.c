@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.36 2003-08-21 15:24:14 themnemonic Exp $
+ * $Id: core.c,v 1.37 2003-08-28 18:47:39 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -137,13 +137,13 @@ static int core_udp_listen(nc_sock_t *ncsock)
   /* if the port was set to 0 this means that it is assigned randomly by the
      OS.  Find out which port they assigned to us. */
   if (ncsock->local_port.num == 0) {
-    struct sockaddr_in myaddr;
-    unsigned int myaddr_len = sizeof(myaddr);
+    struct sockaddr_in get_myaddr;
+    unsigned int get_myaddr_len = sizeof(get_myaddr);
 
-    ret = getsockname(sock, (struct sockaddr *)&myaddr, &myaddr_len);
+    ret = getsockname(sock, (struct sockaddr *)&get_myaddr, &get_myaddr_len);
     if (ret < 0)
       goto err;
-    netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
+    netcat_getport(&ncsock->local_port, NULL, ntohs(get_myaddr.sin_port));
     assert(ncsock->local_port.num != 0);
   }
 
@@ -276,7 +276,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	       sizeof(local_addr));
 	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr,
 	       sizeof(local_addr));
+	dup_socket.local_port.netnum = local_addr.sin_port;
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);
+	dup_socket.port.netnum = rem_addr.sin_port;
 	dup_socket.port.num = ntohs(rem_addr.sin_port);
 	/* copy the received data in the socket's queue */
 	ncsock->recvq.len = recv_ret;
