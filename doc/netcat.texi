@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.9 2002-10-03 10:26:16 themnemonic Exp $
+@c $Id: netcat.texi,v 1.10 2004-01-03 16:19:33 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -28,7 +28,7 @@
 This file documents the Netcat utility for network operations data.
 
 @c man begin COPYRIGHT
-Copyright @copyright{} 2002  Giovanni Giacobbi
+Copyright @copyright{} 2002 - 2004  Giovanni Giacobbi
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
