@@ -22,3 +22,7 @@ to mail me if you need any further information.
 
  o Add doc/migrating (or something else) describing everything you
    always wanted to know for changing from nc to GNU netcat.
+
+ o I need to fetch information about the history of this tool,
+   so I can give credits to the right people for the design and
+   the original code.
