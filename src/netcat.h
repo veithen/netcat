@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.26 2002-07-03 13:07:48 themnemonic Exp $
+ * $Id: netcat.h,v 1.27 2002-07-10 11:16:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -59,15 +59,15 @@
 #endif
 
 /* find a random routine */
-#ifdef HAVE_RANDOM		/* try with most modern random routines */
+#if defined HAVE_RANDOM && defined HAVE_SRANDOM
+# define USE_RANDOM		/* try with most modern random routines */
 # define SRAND srandom
 # define RAND random
-#elif defined HAVE_RAND		/* otherwise fallback to the older rand() */
+#elif defined HAVE_RAND && defined HAVE_SRAND
+# define USE_RANDOM		/* otherwise fallback to the older rand() */
 # define SRAND srand
 # define RAND rand
-#else				/* if none of them are here, CHANGE OS! */
-# error "Couldn't find any random() library function"
-#endif
+#endif				/* if none of them are here, CHANGE OS! */
 
 /* This must be defined to the longest possible internet address length in
    string notation. */

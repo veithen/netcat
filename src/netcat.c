@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.50 2002-07-03 13:07:48 themnemonic Exp $
+ * $Id: netcat.c,v 1.51 2002-07-10 11:16:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -52,7 +52,7 @@ int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
-nc_proto_t opt_proto = NETCAT_PROTO_TCP;	/* protocol to use for connections */
+nc_proto_t opt_proto = NETCAT_PROTO_TCP;  /* protocol to use for connections */
 
 /* prints statistics to stderr with the right verbosity level */
 
@@ -202,7 +202,8 @@ int main(int argc, char *argv[])
     switch (c) {
     case 'e':			/* prog to exec */
       if (opt_exec)
-	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Cannot specify `-e' option double"));
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Cannot specify `-e' option double"));
       opt_exec = strdup(optarg);
       break;
     case 'G':			/* srcrt gateways pointer val */
@@ -267,8 +268,8 @@ int main(int argc, char *argv[])
       break;
     case 'P':			/* used only in tunnel mode (source port) */
       if (!netcat_getport(&connect_sock.local_port, optarg, 0))
-	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Invalid tunnel connect port: %s"),
-		optarg);
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Invalid tunnel connect port: %s"), optarg);
       break;
     case 'r':			/* randomize various things */
       opt_random = TRUE;
@@ -276,13 +277,13 @@ int main(int argc, char *argv[])
     case 's':			/* local source address */
       /* lookup the source address and assign it to the connection address */
       if (!netcat_resolvehost(&local_host, optarg))
-	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve local host: %s"),
-		optarg);
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Couldn't resolve local host: %s"), optarg);
       break;
     case 'S':			/* used only in tunnel mode (source ip) */
       if (!netcat_resolvehost(&connect_sock.local_host, optarg))
-	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve tunnel local host: %s"),
-		optarg);
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Couldn't resolve tunnel local host: %s"), optarg);
       break;
     case 1:			/* use TCP protocol (default) */
 #ifndef USE_OLD_COMPAT
@@ -330,7 +331,12 @@ int main(int argc, char *argv[])
 
   /* randomize only if needed */
   if (opt_random)
+#ifdef USE_RANDOM
     SRAND(time(0));
+#else
+    ncprint(NCPRINT_WARNING,
+	    _("Random support not compiled, option `-r' discarded"));
+#endif
 
   /* handle the -o option. exit on failure */
   if (opt_outputfile) {
@@ -342,7 +348,8 @@ int main(int argc, char *argv[])
   else
     output_fd = stderr;
 
-  debug_v("Trying to parse non-args parameters (argc=%d, optind=%d)", argc, optind);
+  debug_v("Trying to parse non-args parameters (argc=%d, optind=%d)", argc,
+	  optind);
 
   /* try to get an hostname parameter */
   if (optind < argc) {
@@ -359,8 +366,8 @@ int main(int argc, char *argv[])
     int port_lo = 0, port_hi = 65535;
     nc_port_t port_tmp;
 
-    if (!(q = strchr(parse, '-')))		/* simple number? */
-      q = strchr(parse, ':');			/* try with the other separator */
+    if (!(q = strchr(parse, '-')))	/* simple number? */
+      q = strchr(parse, ':');		/* try with the other separator */
 
     if (!q) {
       if (netcat_getport(&port_tmp, parse, 0))
@@ -457,8 +464,9 @@ int main(int argc, char *argv[])
       /* connection failure? (we cannot get this in UDP mode) */
       if (connect_ret < 0) {
 	assert(opt_proto != NETCAT_PROTO_UDP);
-	ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&connect_sock.host, &connect_sock.port),
-	strerror(errno));
+	ncprint(NCPRINT_VERB1, "%s: %s",
+		netcat_strid(&connect_sock.host, &connect_sock.port),
+		strerror(errno));
       }
       core_readwrite(&listen_sock, &connect_sock);
       debug_dv("Tunnel: EXIT");
@@ -508,7 +516,8 @@ int main(int argc, char *argv[])
     /* connection failure? (we cannot get this in UDP mode) */
     if (connect_ret < 0) {
       assert(opt_proto != NETCAT_PROTO_UDP);
-      ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&connect_sock.host, &connect_sock.port),
+      ncprint(NCPRINT_VERB1, "%s: %s",
+	      netcat_strid(&connect_sock.host, &connect_sock.port),
 	      strerror(errno));
       continue;			/* go with next port */
     }

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: flagset.c,v 1.4 2002-05-19 02:00:24 themnemonic Exp $
+ * $Id: flagset.c,v 1.5 2002-07-10 11:16:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -178,8 +178,13 @@ unsigned short netcat_flag_rand(void)
   if (randmax < 0)
     return 0;
 
+#ifdef USE_RANDOM
   /* fetch a random number from the high-order bits */
   rand = 1 + (int) ((float)randmax * RAND() / (RAND_MAX + 1.0));
+#else
+# warning "random routines not found, removed random support"
+  rand = 1;				/* simulates a random number */
+#endif
 
   /* loop until we find the specified flag */
   while (rand--)
