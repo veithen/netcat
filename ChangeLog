@@ -1,5 +1,5 @@
 
-[*] Wed May  8 2002 - netcat (cvs)
+[*] Thu May  9 2002 - netcat v0.3.1
 
   o Now "make install" also symlinks "nc" to the program file "netcat".
   o More careful use of stderr/stdout for printing messages
