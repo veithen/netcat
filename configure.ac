@@ -1,7 +1,7 @@
 #
 #  configure.ac
 #
-#  Author: Giovanni Giacobbi <johnny@themnemonic.org>
+#  Author: Giovanni Giacobbi <giovanni@giacobbi.net>
 #
 #  Copyright (C) 2002  Giovanni Giacobbi
 #
@@ -22,7 +22,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.6.1+cvs)
+AM_INIT_AUTOMAKE(netcat, 0.6.1)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
@@ -48,7 +48,7 @@ AC_SUBST(all_includes)
 AC_SUBST(all_libraries)
 
 dnl I18n support
-ALL_LINGUAS="it"
+ALL_LINGUAS="it sk"
 AM_GNU_GETTEXT([external], need-ngettext)
 AM_INTL_SUBDIR
 
@@ -76,7 +76,8 @@ AC_CHECK_MEMBERS(struct sockaddr.sa_len, , , [#include <sys/types.h>
 #include <sys/socket.h>])
 
 dnl Check if it is available the RFC2292 IPv4 extension and in_port_t.
-AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <netinet/in.h>])
+AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <sys/types.h>
+#include <netinet/in.h>])
 
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
