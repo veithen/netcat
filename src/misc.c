@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.17 2002-05-05 18:15:39 themnemonic Exp $
+ * $Id: misc.c,v 1.18 2002-05-06 15:02:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -111,6 +111,67 @@ int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
 
   return 0;
 }
+
+/* ... */
+
+void ncprint(int type, const char *fmt, ...)
+{
+  int flags = type & 0xFF;
+  char buf[1024], newline = '\n';
+  FILE *fstream = NULL;
+  va_list args;
+
+  type &= ~0xFF;
+
+#ifndef DEBUG
+  /* return if this requires some verbosity levels and we haven't got it */
+  if ((type == NCPRINT_VERB2) && (opt_verbose < 2))
+    return;
+
+  if ((type == NCPRINT_VERB1) && (opt_verbose < 1))
+    return;
+#endif
+
+  /* known flags */
+  if (flags & NCPRINT_STDERR)
+    fstream = stderr;
+  else if (flags & NCPRINT_STDOUT)
+    fstream = stdout;
+  else if (flags & NCPRINT_NONEWLINE)
+    newline = '\0';
+
+  /* from now on, we are sure that we need the string formatted */
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+
+  switch (type) {
+  case NCPRINT_NORMAL:
+  case NCPRINT_VERB1:
+  case NCPRINT_VERB2:
+    fprintf((fstream ? fstream : stdout), "%s%c", buf, newline);
+    break;
+#ifdef DEBUG
+  case NCPRINT_DEBUG:
+    fprintf((fstream ? fstream : stdout), "(debug) %s%c", buf, newline);
+    break;
+#endif
+  case NCPRINT_ERROR:
+    fprintf((fstream ? fstream : stderr), "%s %s%c", _("Error:"), buf, newline);
+    break;
+  case NCPRINT_WARNING:
+    fprintf((fstream ? fstream : stderr), "%s %s%c", _("Warning:"), buf, newline);
+    break;
+  }
+  /* discard unknown types */
+
+  /* post-output effects flags */
+  if (flags & NCPRINT_DELAY)
+    usleep(NCPRINT_WAITTIME);
+
+  if (flags & NCPRINT_EXIT)
+    exit(EXIT_FAILURE);
+}
+
 
 /* ... */
 

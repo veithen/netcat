@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.13 2002-05-05 09:05:59 themnemonic Exp $
+ * $Id: network.c,v 1.14 2002-05-06 15:02:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -42,61 +42,66 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
   struct in_addr res_addr;
   int i, ret;
 
-  assert(name);
+  assert(name[0]);
   debug_v("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name);
 
   /* reset the dst struct for debugging cleanup purposes */
   memset(dst, 0, sizeof(*dst));
   strcpy(dst->name, "(unknown)");
 
-  ret = inet_pton(AF_INET, name, &res_addr);
+  ret = netcat_inet_pton(name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
 
     /* if the opt_numeric option is set, we must not use DNS in any kind */
     if (opt_numeric)
       return FALSE;
-    hostent = gethostbyname(name);
 
     /* failures to look up a name are reported to the calling function */
-    if (!hostent)
+    if (!(hostent = gethostbyname(name)))
       return FALSE;
 
     strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
 
-    /* FIXME: what do I do with other hosts? */
-    for (i = 0; hostent->h_addr_list[i] && (i < 8); i++) {
-      memcpy(&dst->iaddrs[i], hostent->h_addr_list[i], sizeof(struct in_addr));
-      strncpy(dst->addrs[i], inet_ntoa(dst->iaddrs[i]), sizeof(dst->addrs[0]));
+    /* now save all the available ip addresses (limiting to the global MAXINETADDRS) */
+    for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++) {
+      memcpy(&dst->iaddrs[i], hostent->h_addr_list[i], sizeof(dst->iaddrs[0]));
+      strncpy(dst->addrs[i], netcat_inet_ntop(&dst->iaddrs[i]),
+	      sizeof(dst->addrs[0]));
     }				/* for x -> addrs, part A */
-    if (!opt_verbose)		/* if we didn't want to see the */
-      return TRUE;		/* inverse stuff, we're done. */
 
-    /* do inverse lookups in separate loop based on our collected forward addrs,
-       since gethostby* tends to crap into the same buffer over and over */
-    for (i = 0; dst->iaddrs[i].s_addr && (i < 8); i++) {
-      hostent = gethostbyaddr((char *) &dst->iaddrs[i], sizeof(struct in_addr), AF_INET);
+    /* since the invalid dns warning is only shown with verbose level 1,
+       we can skip them (which would speed up the thing) */
+    if (opt_verbose < 1)
+      return TRUE;
+
+    /* do inverse lookups in separate loop based on our collected forward
+       addresses. FIXME: handle the mismatch event */
+    for (i = 0; dst->iaddrs[i].s_addr && (i < MAXINETADDRS); i++) {
+      hostent = gethostbyaddr((char *)&dst->iaddrs[i], sizeof(dst->iaddrs[0]),
+			      AF_INET);
 
       if (!hostent || !hostent->h_name) {
-	fprintf(stderr, _("Warning: inverse host lookup failed for %s: "),
+	fprintf(stderr, "Warning: inverse host lookup failed for %s\n",
 		dst->addrs[i]);
 	continue;
       }
       if (strcasecmp(dst->name, hostent->h_name)) {
-	fprintf(stderr, _("Warning, this host mismatch! %s - %s\n"),
-		dst->name, hostent->h_name);
+	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", dst->name,
+		hostent->h_name);
       }
-    }				/* for x -> addrs, part B */
+    }
   }
-  else {			/* `name' is a numeric address */
-    memcpy(&dst->iaddrs[0], &res_addr, sizeof(struct in_addr));
-    strncpy(dst->addrs[0], inet_ntoa(res_addr), sizeof(dst->addrs));
+  else {			/* `name' is a numeric address, try reverse lookup */
+    memcpy(&dst->iaddrs[0], &res_addr, sizeof(dst->iaddrs[0]));
+    /* FIXME: the following is broken cause of dst->addrs */
+    strncpy(dst->addrs[0], netcat_inet_ntop(&res_addr), sizeof(dst->addrs));
 
     /* if opt_numeric is set or we don't require verbosity, we are done */
     if (opt_numeric || !opt_verbose)
       return TRUE;
 
-    hostent = gethostbyaddr((char *) &res_addr, sizeof(struct in_addr), AF_INET);
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
+    hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
     if (!hostent)
       fprintf(stderr, _("Error: Inverse name lookup failed for `%s'\n"), name);
     else {
@@ -190,20 +195,46 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
  end:
   snprintf(dst->ascnum, sizeof(dst->ascnum), "%hu", dst->num);
   return TRUE;
-}
+}			/* end of netcat_getport() */
+
+/* ... */
+
+int netcat_inet_pton(const char *src, void *dst)
+{
+  int ret;
+
+#ifdef HAVE_INET_PTON
+  ret = inet_pton(AF_INET, src, dst);
+#else
+# warning Using broken network address conversion function
+  ret = inet_aton(src, (struct in_addr *)dst);
+#endif
+
+  return ret;
+}			/* end of netcat_inet_pton() */
 
 /* ... */
 
 const char *netcat_inet_ntop(const void *src)
 {
+#ifdef HAVE_INET_NTOP
   static char my_buf[127];
+#endif
+  const char *ret;
 
   debug_v("netcat_inet_ntop(src=%p)", src);
 
+#ifdef HAVE_INET_NTOP
   /* FIXME: Since inet_ntop breaks on IPV6-mapped IPv4 addresses i'll need to
    * sort it out by myself. */
-  return inet_ntop(AF_INET, src, my_buf, sizeof(my_buf));
-}
+  ret = inet_ntop(AF_INET, src, my_buf, sizeof(my_buf));
+#else
+# warning Using broken network address conversion function
+  ret = inet_ntoa(*(struct in_addr *)src);
+#endif
+
+  return ret;
+}			/* end of netcat_inet_ntop() */
 
 /* ... */
 
@@ -250,7 +281,7 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(local_port);
     memcpy(&my_addr.sin_addr, local_addr, sizeof(my_addr.sin_addr));
-    bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
+    ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
     if (ret < 0)
       return -3;
   }
