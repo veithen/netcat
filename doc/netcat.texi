@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.1 2002-04-28 11:26:37 themnemonic Exp $
+@c $Id: netcat.texi,v 1.2 2002-04-28 11:38:10 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -18,8 +18,7 @@
 
 @c This should really be generated automatically, possibly by including
 @c an auto-generated file.
-@set VERSION 0.1.0+cvs
-@set UPDATED April 2002
+@include version.texi
 
 @dircategory Net Utilities
 @direntry
@@ -27,7 +26,7 @@
 @end direntry
 
 @ifinfo
-This file documents the the GNU Wget utility for downloading network
+This file documents the the Netcat utility for network operations
 data.
 
 @c man begin COPYRIGHT
