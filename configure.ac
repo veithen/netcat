@@ -23,7 +23,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat,0.2.1)
+AM_INIT_AUTOMAKE(netcat,0.2.1+cvs)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
@@ -33,6 +33,7 @@ dnl checks for programs.
 dnl first check for c compiler
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_RANLIB
 
 dnl check for pod2man since we need it for building documentation
 dnl although it's not mandatory
@@ -75,10 +76,45 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 AC_ARG_ENABLE(oldhexdump, AC_HELP_STRING([--enable-oldhexdump],
 	[use the old style hexdump format (default: no)]),
 	AC_DEFINE(USE_OLD_HEXDUMP,  , use the old style hexdump format))
+
+AC_ARG_WITH(included-getopt, AC_HELP_STRING([--with-included-getopt],
+	[use the internal getopt library (default: auto)]),
+	nc_need_getopt=yes)
+
+dnl *********************************************************************
+dnl ** SPECIAL FUNCTIONS VALIDITY CHECKING ******************************
+dnl *********************************************************************
+
+dnl Try to see if we need the included getopt
+dnl NOTE: with this configuration, it could happen on a really broken
+dnl       system, that we have the header file but not the library
+dnl       functio, and i don't know what would happen.
+dnl AC_CHECK_HEADER(getopt.h)
+dnl AM_CONDITIONAL(NEED_GETOPT_H, test ac_cv_header_getopt_h = no)
+
+# don't run the check if --with-included-getopt was specified
+if test "x$nc_need_getopt" != "xyes"; then
+  AC_CHECK_FUNCS(getopt_long)
+  if test $ac_cv_func_getopt_long = no; then
+    # automatically use the internal getopt library
+    nc_need_getopt=yes
+  fi
+fi
+
+dnl *********************************************************************
+dnl ** AUTOMAKE CONDITIONALS ********************************************
+dnl *********************************************************************
+
+AM_CONDITIONAL(NEED_GETOPT, test "x$nc_need_getopt" = "xyes")
+
+dnl *********************************************************************
+dnl ** OUTPUT SECTION ***************************************************
+dnl *********************************************************************
 	
 dnl add here all your Makefiles. These will be created by configure.
 dnl
-AC_CONFIG_FILES(Makefile doc/Makefile src/Makefile po/Makefile.in m4/Makefile)
+AC_CONFIG_FILES(Makefile m4/Makefile lib/Makefile lib/contrib/Makefile
+	src/Makefile doc/Makefile po/Makefile.in)
 
 dnl this one is special, it needs the executable flag
 dnl
