@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.15 2002-05-05 10:27:01 themnemonic Exp $
+ * $Id: netcat.h,v 1.16 2002-05-06 15:05:54 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,13 +33,13 @@
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+#include <sys/time.h>		/* timeval, time_t */
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
 
 /* other misc unchecked includes */
-#include <sys/time.h>		/* timeval, time_t */
-#include <netinet/in.h>		/* sockaddr_in, htons, in_addr */
 #include <netinet/in_systm.h>	/* misc crud that netinet/ip.h references */
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
 #include <time.h>
@@ -76,6 +76,14 @@
 #define USHORT unsigned short	/* use these for options an' stuff */
 #define BIGSIZ 8192		/* big buffers */
 
+#define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
+
+/* MAXINETADDR defines the maximum number of host aliases that are saved after
+   a successfully hostname lookup. Please not that this value will also take
+   a significant role in the memory usage. Approximately one struct takes:
+   MAXINETADDRS * (NETCAT_ADDRSTRLEN + sizeof(struct in_addr)) */
+#define MAXINETADDRS 6
+
 #ifndef INADDR_NONE
 # define INADDR_NONE 0xffffffff
 #endif
@@ -86,46 +94,24 @@
 
 /* TRUE and FALSE values for logical type `bool' */
 #ifndef TRUE
-#define TRUE 1
+# define TRUE 1
 #endif
 
 #ifndef FALSE
-#define FALSE 0
+# define FALSE 0
 #endif
 
 /* this is just a logical type, but helps a lot */
 #ifndef __cplusplus
-#ifndef bool
-#define bool unsigned char
+# ifndef bool
+#  define bool unsigned char
+# endif
 #endif
-#endif
-
-/* Debugging output routines */
-#ifdef DEBUG
-#define dprintf(__n__, __msg__)		\
-  printf __msg__
-
-#define debug(fmt, args...) debug_output(FALSE, fmt, ## args)
-#define debug_d(fmt, args...) debug_output(FALSE, fmt, ## args); usleep(500000)
-#define debug_v(fmt, args...) debug_output(TRUE, fmt, ## args)
-#define debug_dv(fmt, args...) debug_output(TRUE, fmt, ## args); usleep(500000)
-
-#else
-#define dprintf(__n__, __msg__)		\
-  if (opt_verbose >= __n__)		\
-    printf __msg__
-
-#define debug(fmt, args...)
-#define debug_d(fmt, args...)
-#define debug_v(fmt, args...)
-#define debug_dv(fmt, args...)
-#endif
-
 
 typedef struct netcat_host_struct {
-  char name[MAXHOSTNAMELEN];	/* dns name */
-  char addrs[8][24];		/* ascii-format IP addresses */
-  struct in_addr iaddrs[8];	/* real addresses: in_addr.s_addr: ulong */
+  char name[MAXHOSTNAMELEN];		/* dns name */
+  char addrs[MAXINETADDRS][24];		/* ascii-format IP addresses */
+  struct in_addr iaddrs[MAXINETADDRS];	/* real addresses: in_addr.s_addr: ulong */
 } netcat_host;
 
 typedef struct netcat_port_struct {
@@ -136,5 +122,6 @@ typedef struct netcat_port_struct {
 
 #include "proto.h"
 #include "intl.h"
+#include "misc.h"
 
 #endif	/* !NETCAT_H */
