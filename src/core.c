@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.4 2002-05-12 21:22:48 themnemonic Exp $
+ * $Id: core.c,v 1.5 2002-05-15 20:18:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -43,7 +43,7 @@ int core_udp_connect(struct in_addr *host, unsigned short port)
   connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
 
   return sock;
-}
+}				/* end of core_udp_connect() */
 
 /* Returns a new socket */
 
@@ -70,7 +70,7 @@ int core_udp_listen(struct in_addr *local_host, unsigned short local_port)
     return -11;
 
   return sock;
-}
+}				/* end of core_udp_listen() */
 
 /* ... */
 
@@ -78,12 +78,9 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
 {
   int ret, sock;
   struct timeval timest;
-  fd_set ins;
   fd_set outs;
   debug_v("core_tcp_connect(host=%p, port=%hu, timeout=%d)", (void *)host,
 	  port, timeout);
-
-  debug_dv("Trying TCP connection to %s[:%hu]", netcat_inet_ntop(host), port);
 
   /* since we are nonblocking now, we can start as many connections as we want
      but it's not a great idea connecting more than one host at time */
@@ -95,55 +92,56 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
 	    sock, strerror(errno));
 
-  /* FIXME: missing some vital checks about the creation of that socket */
-  assert(sock > 0);
-
   /* initialize select()'s variables */
-  FD_ZERO(&ins);
   FD_ZERO(&outs);
-  FD_SET(sock, &ins);
   FD_SET(sock, &outs);
   timest.tv_sec = timeout;
   timest.tv_usec = 0;
 
-  /* FIXME: what happens if: Connection Refused, or calling select on an already
-     connected host */
-  select(sock + 1, &ins, &outs, NULL, (timeout > 0 ? &timest : NULL));
+  ret = select(sock + 1, NULL, &outs, NULL, (timeout > 0 ? &timest : NULL));
+  if (ret > 0) {
+    int ret, get_ret, get_len = sizeof(get_ret);
 
-  /* FIXME: why do i get both these? */
-  if (FD_ISSET(sock, &ins)) {
-    char tmp;
-    debug_v("Connect-flag: ins");
+    /* ok, select([single]), so sock must have triggered this */
+    assert(FD_ISSET(sock, &outs));
 
-    /* since the select() returned flag set for reading, this means that EOF
-       arrived on a closed socket, which means that the connection failed.
-       Because of this, a read() on that socket MUST fail. */
-    ret = read(sock, &tmp, 1);
-    assert(ret < 0);
+    /* fetch the errors of the socket and handle system request errors */
+    ret = getsockopt(sock, SOL_SOCKET, SO_ERROR, &get_ret, &get_len);
+    if (ret < 0)
+      ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
+	      strerror(errno));
 
-    close(sock);
-    return -1;			/* FIXME: close() MAY overwrite errno */
-  }
+    /* POSIX says that SO_ERROR expects an int, so my_len MUST be untouched */
+    assert(get_len == sizeof(get_ret));
 
-  /* connection was successful, this is the right thing to return */
-  if (FD_ISSET(sock, &outs)) {
-    debug_v("Connect-flag: outs");
+    debug_v("Connection returned errcode=%d (%s)", get_ret, strerror(get_ret));
+    if (get_ret > 0) {
+      char tmp;
+
+      /* Ok, select() returned a write event for this socket AND getsockopt()
+         said that some errors happened.  This mean that EOF is expected. */
+      ret = read(sock, &tmp, 1);
+      assert(ret == 0);
+
+      shutdown(sock, 2);
+      close(sock);
+      errno = get_ret;
+      return -1;
+    }
     return sock;
   }
+  else if (ret)			/* Argh, select() returned error! */
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
+	    strerror(errno));
 
-  /* FIXME: i don't remember what is this and WHY this is here */
-  if (!FD_ISSET(sock, &ins) && !FD_ISSET(sock, &outs)) {
-    /* aborts the connection try, sets the proper errno and returns */
-    shutdown(sock, 2);
-    close(sock);
-    errno = ETIMEDOUT;
-    return -1;
-  }
-
-  /* connection failed, errno was set by the connect() call, so we can return
-     safely our error code */
+  /* select returned 0, this means connection timed out for our timing
+     directives (in fact the socket has a longer timeout usually, so we need
+     to abort the connection try, set the proper errno and return */
+  shutdown(sock, 2);
+  close(sock);
+  errno = ETIMEDOUT;
   return -1;
-}
+}				/* end of core_tcp_connect() */
 
 /* This function loops inside the accept() loop until a *VALID* connection is
    fetched.  If an unwanted connection arrives, it is shutdown() and close()d.
@@ -214,7 +212,7 @@ int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int t
   /* we don't need a listening socket anymore */
   close(sock_listen);
   return sock_accept;
-}
+}				/* end of core_tcp_listen() */
 
 /* handle stdin/stdout/network I/O. */
 
@@ -391,5 +389,5 @@ int core_readwrite(int sock, int sock2)
   }				/* end of while (inloop) */
 
   return 0;
-}				/* end of readwrite() */
+}				/* end of core_readwrite() */
 
