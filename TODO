@@ -1,2 +1,15 @@
 
-EVERYTHING!
+This file contains all the broken/planned things to do within
+The GNU Netcat project.
+
+If you wish to contribute about one of these points, feel free
+to mail me if you need any further information.
+
+
+    TODO/bugs in Netcat
+==============================
+
+ o Write the README file!
+ o I need to study deeply the -g/-G options issue in order to make
+   nc more stable
+ o make install should also symlink nc -> netcat
