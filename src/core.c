@@ -2,10 +2,10 @@
  * core.c -- core loops and most critical routines
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.28 2002-09-16 21:43:12 themnemonic Exp $
+ * $Id: core.c,v 1.29 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

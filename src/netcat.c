@@ -2,10 +2,10 @@
  * netcat.c -- main project file
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.57 2002-10-02 19:25:26 themnemonic Exp $
+ * $Id: netcat.c,v 1.58 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.8 2002-08-22 00:22:32 themnemonic Exp $
+@c $Id: netcat.texi,v 1.9 2002-10-03 10:26:16 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -57,7 +57,7 @@ entitled ``GNU Free Documentation License''.
 
 @ignore
 @c man begin AUTHOR
-Originally written by Giovanni Giacobbi <johnny@themnemonic.org>.
+Originally written by Giovanni Giacobbi <giovanni@giacobbi.net>.
 @c man end
 @c man begin SEEALSO
 GNU Info entry for @file{netcat}.

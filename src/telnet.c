@@ -2,10 +2,10 @@
  * telnet.c -- a small implementation of the telnet protocol routines
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: telnet.c,v 1.9 2002-06-05 12:34:55 themnemonic Exp $
+ * $Id: telnet.c,v 1.10 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

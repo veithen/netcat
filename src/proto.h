@@ -2,10 +2,10 @@
  * proto.h -- contains all global variables and functions prototypes
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.34 2002-09-16 21:43:12 themnemonic Exp $
+ * $Id: proto.h,v 1.35 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

@@ -2,10 +2,10 @@
  * misc.h -- ncprint header symbols and constants
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.h,v 1.4 2002-08-15 22:26:37 themnemonic Exp $
+ * $Id: misc.h,v 1.5 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

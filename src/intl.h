@@ -2,10 +2,10 @@
  * intl.h -- main i18n support header file
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: intl.h,v 1.5 2002-08-17 10:22:54 themnemonic Exp $
+ * $Id: intl.h,v 1.6 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

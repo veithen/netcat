@@ -2,10 +2,10 @@
  * flagset.c -- very big flags array handler
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: flagset.c,v 1.5 2002-07-10 11:16:55 themnemonic Exp $
+ * $Id: flagset.c,v 1.6 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

@@ -2,10 +2,10 @@
  * misc.c -- contains generic purposes routines
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.29 2002-08-22 00:22:00 themnemonic Exp $
+ * $Id: misc.c,v 1.30 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -316,5 +316,5 @@ void netcat_printversion(void)
 "the GNU General Public License.\n"
 "For more information about these matters, see the file named COPYING.\n\n"
 "Original idea and design by Avian Research <hobbit@avian.org>,\n"
-"Written by Giovanni Giacobbi <johnny@themnemonic.org>.\n"));
+"Written by Giovanni Giacobbi <giovanni@giacobbi.net>.\n"));
 }

@@ -2,10 +2,10 @@
  * udphelper.c -- advanced udp routines for portability
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.5 2002-10-03 10:10:58 themnemonic Exp $
+ * $Id: udphelper.c,v 1.6 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************

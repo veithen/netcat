@@ -2,10 +2,10 @@
  * netcat.h -- main header project file
  * Part of the GNU netcat project
  *
- * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.30 2002-09-16 21:43:12 themnemonic Exp $
+ * $Id: netcat.h,v 1.31 2002-10-03 10:25:16 themnemonic Exp $
  */
 
 /***************************************************************************
