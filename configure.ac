@@ -65,6 +65,8 @@ if test $ac_cv_func_srandom = no; then
   AC_CHECK_FUNCS(srand rand)
 fi
 
+AC_CHECK_FUNCS(inet_pton inet_ntop)
+
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
