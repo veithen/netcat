@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.56 2002-09-16 21:43:12 themnemonic Exp $
+ * $Id: netcat.c,v 1.57 2002-10-02 19:25:26 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -378,7 +378,7 @@ int main(int argc, char *argv[])
     SRAND(time(0));
 #else
     ncprint(NCPRINT_WARNING,
-	    _("Random support not compiled, option `-r' discarded."));
+	    _("Randomization support not compiled, option `-r' discarded."));
 #endif
 
   /* handle the -o option. exit on failure */
