@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.31 2002-11-20 21:24:14 themnemonic Exp $
+ * $Id: core.c,v 1.32 2002-12-08 19:01:49 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,7 +30,6 @@
 
 /* Global variables */
 
-/* Verbosity level 2 exit statistics */
 unsigned long bytes_sent = 0;		/* total bytes received */
 unsigned long bytes_recv = 0;		/* total bytes sent */
 
@@ -82,47 +81,57 @@ static int core_udp_connect(nc_sock_t *ncsock)
 static int core_udp_listen(nc_sock_t *ncsock)
 {
   int ret, *sockbuf, sock, sock_max, timeout = ncsock->timeout;
+  bool need_udphelper = TRUE;
 #ifdef USE_PKTINFO
   int sockopt = 1;
-  struct sockaddr_in myaddr;
 #endif
+  struct sockaddr_in myaddr;
   struct timeval tt;		/* needed by the select() call */
   debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
 
 #ifdef USE_PKTINFO
-  /* simulates a udphelper_sockets_open() call */
-  sockbuf = calloc(2, sizeof(int));
-  sockbuf[0] = 1;
-  sockbuf[1] = sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
+  need_udphelper = FALSE;
 #else
-  sock = udphelper_sockets_open(&sockbuf, ncsock->local_port.netnum);
+  if (ncsock->local_host.iaddrs[0].s_addr)
+    need_udphelper = FALSE;
+#endif
+
+  if (!need_udphelper) {
+    /* simulates a udphelper_sockets_open() call */
+    sockbuf = calloc(2, sizeof(int));
+    sockbuf[0] = 1;
+    sockbuf[1] = sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
+  }
+#ifndef USE_PKTINFO
+  else
+    sock = udphelper_sockets_open(&sockbuf, ncsock->local_port.netnum);
 #endif
   if (sock < 0)
     goto err;
 
-#ifdef USE_PKTINFO
-  /* prepare myaddr for the bind() call */
-  myaddr.sin_family = AF_INET;
-  myaddr.sin_port = ncsock->local_port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
-	sizeof(myaddr.sin_addr));
-  /* bind() MUST be called in this function, since it's the final call for this
-     type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
-  ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
-  if (ret < 0)
-    goto err;
+  /* we know that udphelper_sockets_open() returns the highest socket, and
+     if we didn't call it we have just one socket */
+  sock_max = sock + 1;
 
+  if (!need_udphelper) {
+    /* prepare myaddr for the bind() call */
+    myaddr.sin_family = AF_INET;
+    myaddr.sin_port = ncsock->local_port.netnum;
+    memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
+	   sizeof(myaddr.sin_addr));
+    /* bind() MUST be called in this function, since it's the final call for
+       this type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
+    ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+    if (ret < 0)
+      goto err;
+  }
+
+#ifdef USE_PKTINFO
   /* set the right flag in order to obtain the ancillary data */
   ret = setsockopt(sock, SOL_IP, IP_PKTINFO, &sockopt, sizeof(sockopt));
   if (ret < 0)
     goto err;
 #endif
-
-  /* find the highest sock number and prepare it for select() */
-  for (ret = 1, sock_max = 0; ret <= sockbuf[0]; ret++)
-    if (sockbuf[ret] > sock_max)
-      sock_max = sockbuf[ret];
-  sock_max++;
 
   /* if the port was set to 0 this means that it is assigned randomly by the
      OS.  Find out which port they assigned to us. */
@@ -136,13 +145,12 @@ static int core_udp_listen(nc_sock_t *ncsock)
     netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
   }
 
-#ifdef USE_PKTINFO
-  ncprint(NCPRINT_VERB2, _("Listening on %s"),
-	netcat_strid(&ncsock->local_host, &ncsock->local_port));
-#else
-  ncprint(NCPRINT_VERB2, _("Listening on %s (using %d sockets)"),
-	netcat_strid(&ncsock->local_host, &ncsock->local_port), sockbuf[0]);
-#endif
+  if (!need_udphelper)
+    ncprint(NCPRINT_VERB2, _("Listening on %s"),
+	    netcat_strid(&ncsock->local_host, &ncsock->local_port));
+  else
+    ncprint(NCPRINT_VERB2, _("Listening on %s (using %d sockets)"),
+	    netcat_strid(&ncsock->local_host, &ncsock->local_port), sockbuf[0]);
 
   /* since this protocol is connectionless, we need a special handling here.
      We want to simulate a two-ends connection but in order to do this we need
@@ -248,10 +256,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	/* if the hexdump option is set, hexdump the received data */
 	if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
-	  fprintf(output_fd, "Received %d bytes from %s:%d\n", recv_ret,
+	  fprintf(output_fp, "Received %d bytes from %s:%d\n", recv_ret,
 		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
 #endif
-	  netcat_fhexdump(output_fd, '<', buf, write_ret);
+	  netcat_fhexdump(output_fp, '<', buf, write_ret);
 	}
       }
       else {
@@ -261,8 +269,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	memset(&dup_socket, 0, sizeof(dup_socket));
 	dup_socket.domain = ncsock->domain;
 	dup_socket.proto = ncsock->proto;
-	memcpy(&dup_socket.local_host.iaddrs[0], &local_addr.sin_addr, sizeof(local_addr));
-	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr, sizeof(local_addr));
+	memcpy(&dup_socket.local_host.iaddrs[0], &local_addr.sin_addr,
+	       sizeof(local_addr));
+	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr,
+	       sizeof(local_addr));
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);
 	dup_socket.port.num = ntohs(rem_addr.sin_port);
 	/* copy the received data in the socket's queue */
@@ -338,17 +348,19 @@ static int core_tcp_connect(nc_sock_t *ncsock)
       ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
 	      strerror(errno));
 
-    /* POSIX says that SO_ERROR expects an int, so my_len MUST be untouched */
+    /* POSIX says that SO_ERROR expects an int, so my_len must be untouched */
     assert(get_len == sizeof(get_ret));
 
+    /* FIXME: the error Broken Pipe should probably not stop here */
     debug_v("Connection returned errcode=%d (%s)", get_ret, strerror(get_ret));
     if (get_ret > 0) {
       char tmp;
 
       /* Ok, select() returned a write event for this socket AND getsockopt()
-         said that some errors happened.  This mean that EOF is expected. */
+         said that some error happened.  This mean that EOF is expected. */
       ret = read(sock, &tmp, 1);
       assert(ret == 0);
+      /* FIXME: see the TODO entry about false error detection */
 
       shutdown(sock, 2);
       close(sock);
@@ -395,8 +407,8 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   sock_listen = netcat_socket_new_listen(&ncsock->local_host.iaddrs[0],
 			ncsock->local_port.num);
   if (sock_listen < 0)
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't setup listen socket (err=%d)",
-	    sock_listen);
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+	    _("Couldn't setup listening socket (err=%d)"), sock_listen);
 
   /* if the port was set to 0 this means that it is assigned randomly by the
      OS.  Find out which port they assigned to us. */
@@ -557,7 +569,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       call_select = FALSE;
 
     /* same thing for the other socket */
-    if (nc_slave->recvq.len == 0) {
+    if (nc_slave->recvq.len == 0) { /* FIXME: call_select = false but could call it
+	anyway and one of them could be set.. so what happens? */
       debug_v("watching slave sock for incoming data (recvq is empty)");
       if (use_stdin || (netcat_mode == NETCAT_TUNNEL))
         FD_SET(fd_stdin, &ins);
@@ -574,7 +587,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       if (ret < 0) {
 #ifdef BETA_SIGHANDLER
 	if (errno == EINTR)
-	  break;
+	  goto handle_signal;
 #endif
 	perror("select(core_readwrite)");
 	exit(EXIT_FAILURE);
@@ -622,8 +635,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     if (nc_slave->recvq.len > 0) {
       nc_buffer_t *my_recvq = &nc_slave->recvq;
       nc_buffer_t *rem_sendq = &nc_main->sendq;
-
       debug_v("there are %d data bytes in slave->recvq", my_recvq->len);
+
       /* if the remote send queue is empty, move there the entire data block */
       if (rem_sendq->len == 0) {
 	debug_v("  moved %d data bytes from slave->recvq to main->sendq", my_recvq->len);
@@ -659,8 +672,9 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	if (delayer.tv_sec || delayer.tv_usec)
 	  goto skip_sect;
 
-	/* find the newline character.  We are going to output the first line immediately
-	   while we allocate and safe the rest of the data for a later output. */
+	/* find the newline character.  We are going to output the first line
+	   immediately while we allocate and safe the rest of the data for a
+	   later output. */
 	while (i < data_len)
 	  if (data[i++] == '\n')
 	    break;
@@ -679,14 +693,20 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       }
 
       /* FIXME: unhandled exception */
-      assert(write_ret == data_len);
+      assert((write_ret > 0) && (write_ret <= data_len));
 
-      /* if the option is set, hexdump the received data */
+      if (write_ret < data_len) {
+	debug_v("Damn! I wanted to send to sock %d bytes but it only sent %d",
+		data_len, write_ret);
+	data_len = write_ret;
+      }
+
+      /* if the option is set, hexdump the sent data */
       if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
-	fprintf(output_fd, "Sent %u bytes to the socket\n", write_ret);
+	fprintf(output_fp, "Sent %u bytes to the socket\n", write_ret);
 #endif
-	netcat_fhexdump(output_fd, '>', data, data_len);
+	netcat_fhexdump(output_fp, '>', data, data_len);
       }
 
       /* update the queue */
@@ -780,23 +800,31 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       }
 
       /* FIXME: unhandled exception */
-      assert(write_ret == data_len);
+      assert((write_ret > 0) && (write_ret <= data_len));
+
+      if (write_ret < data_len) {
+	debug_v("Damn! I wanted to send to stdout %d bytes but it only sent %d",
+		data_len, write_ret);
+	data_len = write_ret;
+      }
 
       /* if option is set, hexdump the received data */
       if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
 	if ((nc_main->proto == NETCAT_PROTO_UDP) && opt_zero)
-	  fprintf(output_fd, "Received %d bytes from %s:%d\n", write_ret,
+	  fprintf(output_fp, "Received %d bytes from %s:%d\n", write_ret,
 		  netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
 	else
-	  fprintf(output_fd, "Received %d bytes from the socket\n", write_ret);
+	  fprintf(output_fp, "Received %d bytes from the socket\n", write_ret);
 #endif
-	netcat_fhexdump(output_fd, '<', data, write_ret);
+	netcat_fhexdump(output_fp, '<', data, write_ret);
       }
+
       /* update the queue */
       my_sendq->len -= data_len;
       my_sendq->pos += data_len;
 
+      debug_v("there are %d data bytes left in the queue", my_sendq->len);
       if (my_sendq->len == 0) {
 	free(my_sendq->head);
 	memset(my_sendq, 0, sizeof(*my_sendq));
@@ -807,6 +835,16 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	my_sendq->pos = my_sendq->head;
       }
     }				/* end of reading from the socket section */
+
+#ifdef BETA_SIGHANDLER
+ handle_signal:
+    if (got_sigusr1) {
+      debug_v("LOCAL printstats!");
+      netcat_printstats(TRUE);
+      got_sigusr1 = FALSE;
+    }
+    continue;
+#endif
   }				/* end of while (inloop) */
 
   /* we've got an EOF from the net, close the sockets */
