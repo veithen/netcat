@@ -6,24 +6,18 @@ If you wish to contribute about one of these points, feel free
 to mail me if you need any further information.
 
 
+
     TODO/bugs in Netcat
-==============================
+==================================
 
  o Write the README file!
 
  o I need to study deeply the -g/-G options issue in order to make
    it working properly.
 
- o Add command line switch -X, --input-hexdump so that read from
-   stdin some valid hexdump-style data, and accepts it in some
-   standard forms (more than one)
-
  o I need to fetch information about the history of this tool,
    so I can give credits to the right people for the design and
    the original code.
-
- o It would be nice to add IPv6 support, maybe a command line
-   switch like `-6'.
 
  o If some more critical uncompatibilities will jump out, add
    a configure option `--enable-compat' that implies ALL other
@@ -33,3 +27,20 @@ to mail me if you need any further information.
    the <resolv.h> file.
 
  o Make it compiling on SunOS. It requires -lsocket -lnsl -lresolv.
+
+
+
+    Future features/Planning
+==================================
+
+ o Add IPv6 support
+
+    o This should be controlled by a command line switch like
+      `-6' and `-4'.
+
+    o Netcat should also be able to tunnel ipv6/ipv4 in tunnel
+      mode
+
+ o Add command line switch -X, --input-hexdump so that read from
+   stdin some valid hexdump-style data, and accepts it in some
+   standard forms (more than one)
