@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.29 2002-05-09 21:23:25 themnemonic Exp $
+ * $Id: netcat.c,v 1.30 2002-05-11 19:20:34 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -42,7 +42,7 @@ unsigned long bytes_recv = 0;	/* total bytes sent (statistics) */
 /* will malloc up the following globals: */
 netcat_host **gates = NULL;		/* LSRR hop hostpoop */
 char *optbuf = NULL;		/* LSRR or sockopts */
-static FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
+FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
 
 /* global options flags */
 bool opt_listen = FALSE;		/* listen mode */
@@ -58,6 +58,11 @@ int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
+
+netcat_host local_host;		/* local host for bind()ing operations */
+netcat_port local_port;		/* local port specified with -p option */
+netcat_host remote_host;
+netcat_port remote_port;
 
 /* common functions */
 
@@ -115,183 +120,12 @@ static void ncexec(int fd)
 }				/* end of ncexec */
 #endif
 
-/* handle stdin/stdout/network I/O. */
-
-static int readwrite(int sock, int sock2)
-{
-  int fd_stdin, fd_stdout, fd_max;
-  int read_ret, write_ret, pbuf_len = 0;
-  char buf[1024], *pbuf = NULL, *ptmp = NULL;
-  fd_set ins;
-  bool inloop = TRUE;
-  struct timeval delayer;
-
-  delayer.tv_sec = 0;
-  delayer.tv_usec = 0;
-
-  debug_v("readwrite(sock=%d)", sock);
-
-  if (sock2 < 0) {
-    fd_stdin = STDIN_FILENO;
-    fd_stdout = STDOUT_FILENO;
-  }
-  else {
-    fd_stdin = fd_stdout = sock2;
-  }
-  fd_max = 1 + (fd_stdin > sock ? fd_stdin : sock);
-
-  while (inloop) {
-    FD_ZERO(&ins);
-    FD_SET(sock, &ins);
-
-    if (ptmp == NULL)
-      FD_SET(fd_stdin, &ins);
-    else if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0))
-      delayer.tv_sec = opt_interval;
-
-    debug_v("entering select()...");
-    select(fd_max, &ins, NULL, NULL,
-	   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
-
-    /* reading from stdin.  We support the buffered output by lines, which is
-       controlled by the global variable opt_interval.  If it is set, we fetch
-       the buffer in the usual way, but we park it in a temporary buffer.  Once
-       finished, the buffer is flushed and everything returns normal. */
-    if (FD_ISSET(fd_stdin, &ins)) {
-      read_ret = read(fd_stdin, buf, sizeof(buf));
-      debug_dv("read(stdin) = %d", read_ret);
-
-      if (read_ret < 0) {
-	perror("read(stdin)");
-	exit(EXIT_FAILURE);
-      }
-      else if (read_ret == 0) {
-	debug_v("EOF Received from stdin! (not exiting)");
-	/* FIXME: So, it seems that nc110 stops from setting 0 in the &ins
-	   after it got an eof.. in fact in some circumstances after the initial
-	   eof it won't be recovered and will keep triggering select() for nothing. */
-	/* inloop = FALSE; */
-      }
-      else {
-	if (opt_interval) {
-	  int i = 0;
-
-	  while (i < read_ret)
-	    if (buf[i++] == '\n')
-	      break;
-
-	  if (i < read_ret) {
-	    pbuf_len = read_ret - i;
-	    pbuf = ptmp = malloc(pbuf_len);
-	    memcpy(pbuf, &buf[i], pbuf_len);
-	    /* prepare the timeout timer so we don't fall back to the following
-	       buffer-handling section.  We already sent out something and we
-	       have to wait the right time before sending more. */
-	    delayer.tv_sec = opt_interval;
-	  }
-
-	  read_ret = i;
-        }
-	write_ret = write(sock, buf, read_ret);
-	bytes_sent += write_ret;		/* update statistics */
-	debug_dv("write(net) = %d", write_ret);
-
-	if (write_ret < 0) {
-	  perror("write(net)");
-	  exit(EXIT_FAILURE);
-	}
-
-	/* if the option is set, hexdump the received data */
-	if (opt_hexdump) {
-#ifndef USE_OLD_HEXDUMP
-	  fprintf(output_fd, "Sent %u bytes to the socket\n", write_ret);
-#endif
-	  netcat_fhexdump(output_fd, '>', buf, write_ret);
-	}
-
-      }
-    }				/* end of reading from stdin section */
-
-    /* reading from the socket (net). */
-    if (FD_ISSET(sock, &ins)) {
-      read_ret = read(sock, buf, sizeof(buf));
-      debug_dv("read(net) = %d", read_ret);
-
-      if (read_ret < 0) {
-	perror("read(net)");
-	exit(EXIT_FAILURE);
-      }
-      else if (read_ret == 0) {
-	debug_v("EOF Received from the net");
-	inloop = FALSE;
-      }
-      else {
-	write_ret = write(fd_stdout, buf, read_ret);
-	bytes_recv += write_ret;
-	debug_dv("write(stdout) = %d", write_ret);
-
-	if (write_ret < 0) {
-	  perror("write(stdout)");
-	  exit(EXIT_FAILURE);
-	}
-
-	/* FIXME: handle write_ret != read_ret */
-
-	/* if option is set, hexdump the received data */
-	if (opt_hexdump) {
-#ifndef USE_OLD_HEXDUMP
-	  fprintf(output_fd, "Received %u bytes from the socket\n", write_ret);
-#endif
-	  netcat_fhexdump(output_fd, '<', buf, write_ret);
-	}
-
-      }
-    }			/* end of reading from the socket section */
-
-    /* now handle the buffered data (if any) */
-    if (ptmp && (delayer.tv_sec == 0) && (delayer.tv_usec == 0)) {
-      int i = 0;
-
-      while (i < pbuf_len)
-	if (pbuf[i++] == '\n')
-	  break;
-
-      /* if this reaches 0, the buffer is over and we can clean it */
-      pbuf_len -= i;
-
-      write_ret = write(sock, pbuf, i);
-      bytes_sent += write_ret;
-      debug_dv("write(stdout)[buf] = %d", write_ret);
-
-      if (write_ret < 0) {
-	perror("write(stdout)[buf]");
-	exit(EXIT_FAILURE);
-      }
-
-      bytes_sent += write_ret;
-
-      /* check if the buffer is over.  If so, clean it and start back reading
-         the stdin (or the other socket in case of tunnel mode) */
-      if (pbuf_len == 0) {
-	free(ptmp);
-	ptmp = NULL;
-	pbuf = NULL;
-      }
-      else
-	pbuf += i;
-    }				/* end of buffered data section */
-  }				/* end of while (inloop) */
-
-  return 0;
-}				/* end of readwrite() */
 
 /* main: handle command line arguments and listening status */
 
 int main(int argc, char *argv[])
 {
   int c, total_ports, sock_accept = -1, sock_connect = -1;
-  netcat_host local_host, remote_host;
-  netcat_port local_port, remote_port;
   struct in_addr *ouraddr;
   struct sigaction sv;
 
@@ -387,7 +221,7 @@ int main(int argc, char *argv[])
       opt_tunnel = TRUE;
       break;
     case 'n':			/* numeric-only, no DNS lookups */
-      opt_numeric++;
+      opt_numeric = TRUE;
       break;
     case 'o':			/* output hexdump log to file */
       opt_outputfile = strdup(optarg);
@@ -409,7 +243,7 @@ int main(int argc, char *argv[])
       ouraddr = &local_host.iaddrs[0];
       break;
     case 't':			/* do telnet fakeout */
-      opt_telnet++;
+      opt_telnet = TRUE;
       break;
     case 'u':			/* use UDP protocol */
       opt_udpmode = TRUE;
@@ -430,7 +264,7 @@ int main(int argc, char *argv[])
       opt_hexdump = TRUE;
       break;
     case 'z':			/* little or no data xfer */
-      opt_zero++;
+      opt_zero = TRUE;
       break;
     default:
       fprintf(stderr, _("Try `%s --help' for more information.\n"), argv[0]);
@@ -522,56 +356,22 @@ int main(int argc, char *argv[])
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "No ports specified for connection");
 
   /* Handle listen mode and tunnel mode */
+
   if (opt_listen || opt_tunnel) {
-    int sock_listen;
+    if (opt_udpmode)
+      sock_accept = core_udp_listen(&local_host.iaddrs[0], local_port.num);
+    else
+      sock_accept = core_tcp_listen(&local_host.iaddrs[0], local_port.num, opt_wait);
 
-    sock_listen = netcat_socket_new_listen(&local_host.iaddrs[0], local_port.num);
-
-    if (sock_listen < 0)
-      ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't setup listen socket (err=%d)",
-	      sock_listen);
-
-    debug_dv("Entering SELECT loop");
-
-    do {
-      struct sockaddr_in my_addr;
-      socklen_t my_len = sizeof(my_addr);
-
-      sock_accept = netcat_socket_accept(sock_listen, opt_wait);
-
-      if (sock_accept < 0)
-	ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),
-		strerror(errno));
-
-      getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
-
-      /* if a remote address (and optionally some ports) have been specified
-         AND we are NOT in tunnnel mode, we assume it as the only ip and port
-         that it is allowed to connect to this socket */
-      if (!opt_tunnel) {
-	if ((remote_host.iaddrs[0].s_addr && memcmp(&remote_host.iaddrs[0],
-	     &my_addr.sin_addr, sizeof(local_host.iaddrs[0]))) ||
-	    (netcat_flag_count() && !netcat_flag_get(ntohs(my_addr.sin_port)))) {
-	  ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
-		  netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
-	  shutdown(sock_accept, 2);
-	  close(sock_accept);
-	  continue;
-	}
-      }
-      ncprint(NCPRINT_VERB1, _("Connection from %s:%hu"),
-	      netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
-
-      /* we don't need a listening socket anymore */
-      close(sock_listen);
-      break;
-    } while (TRUE);
+    if (sock_accept < 0)
+      ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),
+	      strerror(errno));
 
     /* if we are in listen mode, run the core loop and exit when it returns.
        otherwise now it's the time to connect to the target host and tunnel
-       them together. */
+       them together (which means passing to the next section. */
     if (opt_listen) {
-      readwrite(sock_accept, -1);
+      core_readwrite(sock_accept, -1);
 
       debug_dv("Listen: EXIT");
       exit(0);
@@ -583,11 +383,6 @@ int main(int argc, char *argv[])
   total_ports = netcat_flag_count();
   c = 0;
   while (total_ports > 0) {
-    int ret;
-    struct timeval timeout;
-    fd_set ins;
-    fd_set outs;
-
     /* `c' is the port number independently of the sorting method (linear
        or random).  While in linear mode it is also used to fetch the next
        port number */
@@ -597,73 +392,36 @@ int main(int argc, char *argv[])
       c = netcat_flag_next(c);
     total_ports--;		/* decrease the total ports number to try */
 
-    debug_dv("Trying connection to %s[:%d]",
-	     netcat_inet_ntop(&remote_host.iaddrs[0]), c);
-
     /* since we are nonblocking now, we can start as many connections as we want
        but it's not a great idea connecting more than one host at time */
-    sock_connect = netcat_socket_new_connect(&remote_host.iaddrs[0], c, NULL,
-					(opt_tunnel ? 0 : local_port.num));
-    /* FIXME: missing some vital checks about the creation of that socket */
-    assert(sock_connect > 0);
+    if (opt_udpmode)
+      sock_connect = core_udp_connect(&remote_host.iaddrs[0], c);
+    else
+      sock_connect = core_tcp_connect(&remote_host.iaddrs[0], c, opt_wait);
 
-    /* initialize select()'s variables */
-    FD_ZERO(&ins);
-    FD_ZERO(&outs);
-    FD_SET(sock_connect, &ins);
-    FD_SET(sock_connect, &outs);
-    timeout.tv_sec = opt_wait;
-    timeout.tv_usec = 0;
-
-    /* FIXME: what happens if: Connection Refused, or calling select on an already
-       connected host */
-    debug_dv("Entering SELECT sock=%d, timeout=%d", sock_connect, opt_wait);
-    select(sock_connect + 1, &ins, &outs, NULL,
-	   (opt_wait > 0 ? &timeout : NULL));
-
-    /* FIXME: why do i get both these? */
-    if (FD_ISSET(sock_connect, &ins)) {
-      char tmp;
-      debug_v("Connect-flag: ins");
-
-      /* since the select() returned flag set for reading, this means that EOF
-         arrived on a closed socket, which means that the connection failed.
-         Because of this, a read() on that socket MUST fail. */
-      ret = read(sock_connect, &tmp, 1);
-      assert(ret < 0);
-
-      /* output the hostname in the message only if it's authoritative */
+    /* connection failure? (we cannot get this in UDP mode) */
+    if (sock_connect < 0) {
+      assert(!opt_udpmode);
       ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
 	      strerror(errno));
-
-      close(sock_connect);
-      continue;			/* go on with next port */
+      continue;			/* go with next port */
     }
 
-    /* connection was successful, enter the core loop */
-    if (FD_ISSET(sock_connect, &outs)) {
-      debug_v("Connect-flag: outs");
-
+    if (!opt_udpmode)
       ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&remote_host, c));
 
-      if (opt_tunnel)
-	readwrite(sock_connect, sock_accept);
-      else {
-	assert(sock_accept == -1);
-	readwrite(sock_connect, -1);
-      }
-
-    }
-
-    if (!FD_ISSET(sock_connect, &ins) && !FD_ISSET(sock_connect, &outs)) {
-      errno = ETIMEDOUT;
-      ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
-	      strerror(errno));
+    if (opt_tunnel)
+      core_readwrite(sock_connect, sock_accept);
+    else {
+      /* if we are not in tunnel mode, sock_accept must be untouched */
+      assert(sock_accept == -1);
+      core_readwrite(sock_connect, -1);
     }
 
     debug_dv("Connect-loop for port %d finished", c);
 
   }
+
   debug_v("EXIT");
 
   printstats();			/* FIXME: is this the RIGHT place? */
