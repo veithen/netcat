@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.6 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: udphelper.c,v 1.7 2002-10-13 17:28:46 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -44,7 +44,7 @@
 # define lifconf ifconf
 #endif
 
-#ifndef SIOCGLIFADDR
+#if !defined(SIOCGLIFADDR) || !defined(SIOCGLIFFLAGS)
 # define SIOCGLIFADDR SIOCGIFADDR
 # define SIOCGLIFFLAGS SIOCGIFFLAGS
 # define SIOCGLIFDSTADDR SIOCGIFDSTADDR
@@ -126,8 +126,8 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 
   /* find out the interfaces configuration, allocating more memory if
      necessary. */
-  do { /* FIXME: set max buffer size (what is max if num?) */
-    /* since we don't need at this point to find out the exact number of
+  do { /* FIXME: set max buffer size (what is max IF num?) */
+    /* since we don't need at this stage to find out the exact number of
        interfaces, use bigger step in order not to do too many ioctl()s on
        systems with many interfaces. */
     if_total += 5;
@@ -136,7 +136,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     /* like many other syscalls, ioctl() will adjust lifc_len to the REAL
        lifc_len, so try to allocate a larger buffer in order to determine
        the total interfaces number. */
-    free(nc_ifreq);	/* don't use realloc here, this way it is faster. */
+    free(nc_ifreq);	/* don't use realloc here, this way it is faster */
     nc_ifreq = malloc(alloc_size);
     nc_ifconf.lifc_len = alloc_size;
     nc_ifconf.lifc_req = nc_ifreq;
@@ -147,19 +147,22 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
       goto err;
     }
 
+    /* FIXME: nc_ifconf has two other members (lifc_family and lifc_flags) on
+       some OS (read: SunOS). They should perhaps be initialized too. */
     ret = ioctl(dummy_sock, SIOCGLIFCONF, (char *)&nc_ifconf);
     if (ret < 0)
       goto err;
-
   } while (nc_ifconf.lifc_len >= alloc_size);
 
   /* Now loop */
   if_total = 0;
   while (if_pos < nc_ifconf.lifc_len) {
     int newsock;
-    struct sockaddr_in *if_addr;
+    struct sockaddr_in if_addr;
 
     nc_ifreq = (struct lifreq *)((char *)nc_ifconf.lifc_req + if_pos);
+
+    /* calculate the starting offset of the next nc_ifreq */
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
     if (nc_ifreq->lifr_addr.sa_len > sizeof(struct sockaddr))
       if_pos += sizeof(nc_ifreq->lifr_name) + nc_ifreq->lifr_addr.sa_len;
@@ -172,12 +175,15 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     /* truncated? */
     assert(if_pos <= nc_ifconf.lifc_len);
 
+    /* interfaces counter (not really needed, but useful */
     if_total++;
 
     /* discard any interface not devoted to IP */
     if (nc_ifreq->lifr_addr.ss_family != AF_INET)
       continue;
-    if_addr = (struct sockaddr_in *)&nc_ifreq->lifr_addr;
+
+    /* save the sockaddr_in struct before successive ioctl() calls */
+    memcpy(&if_addr, &nc_ifreq->lifr_addr, sizeof(if_addr));
 
     /* we need to sort out interesting interfaces, so fetch the interface
        flags */
@@ -190,7 +196,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
       continue;
 
     debug("(udphelper) Found interface %s (IP address: %s)\n",
-	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr->sin_addr));
+	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr.sin_addr));
 
     newsock = socket(PF_INET, SOCK_DGRAM, 0);
     if (newsock < 0)
@@ -205,15 +211,25 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     }
     my_sockbuf[sock_total] = newsock;
 
-    /* FIXME: WHY does SIOCGIFFLAGS mess with sin_family?? */
-    if_addr->sin_family = AF_INET;
-    if_addr->sin_port = nport;
-    /* FIXME: nport could be INPORT_ANY, we need to use ONE random value */
-
-    ret = bind(newsock, (struct sockaddr *)if_addr, sizeof(*if_addr));
+    /* bind this address to his address and to the common port */
+    if_addr.sin_port = nport;
+    ret = bind(newsock, (struct sockaddr *)&if_addr, sizeof(if_addr));
     if (ret < 0)
       goto err;
 
+    /* if the nport was set to 0 it means that it is randomly assigned by the
+       kernel, but we don't want a different port for each interface, so stick
+       to this one. */
+    if (nport == 0) {
+      int sa_tmp_len = sizeof(if_addr);
+
+      /* we don't need anymore if_addr, so we may corrupt it safely */
+      ret = getsockname(newsock, (struct sockaddr *)&if_addr, &sa_tmp_len);
+      if (ret < 0)
+        goto err;
+
+      nport = if_addr.sin_port;
+    }
   }				/* end of while (all_interfaces) */
 
   /* ok we don't need anymore the interfaces list and the dummy socket */
