@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.33 2003-01-06 23:00:46 themnemonic Exp $
+ * $Id: core.c,v 1.34 2003-01-11 22:47:21 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -235,7 +235,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
 	strncpy(tmpbuf, netcat_inet_ntop(&rem_addr.sin_addr), sizeof(tmpbuf));
 	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d -> %s:%d (local)"),
-		tmpbuf, ntohs(rem_addr.sin_port), netcat_inet_ntop(&local_addr.sin_addr),
+		tmpbuf, ntohs(rem_addr.sin_port),
+		netcat_inet_ntop(&local_addr.sin_addr),
 		ntohs(local_addr.sin_port));
       }
       else
@@ -411,8 +412,8 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   int sock_listen, sock_accept, timeout = ncsock->timeout;
   debug_v("core_tcp_listen(ncsock=%p)", (void *)ncsock);
 
-  sock_listen = netcat_socket_new_listen(&ncsock->local_host.iaddrs[0],
-			ncsock->local_port.num);
+  sock_listen = netcat_socket_new_listen(PF_INET, &ncsock->local_host.iaddrs[0],
+			ncsock->local_port.netnum);
   if (sock_listen < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 	    _("Couldn't setup listening socket (err=%d)"), sock_listen);
@@ -449,8 +450,7 @@ static int core_tcp_listen(nc_sock_t *ncsock)
       return -1;
 
     /* FIXME: i want a library function like netcat_peername() that fetches it
-       and resolves with netcat_resolvehost().
-       i also must check _resolvehost() */
+       and resolves with netcat_resolvehost(). */
     getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
 
     /* if a remote address (and optionally some ports) have been specified we

@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.37 2002-12-08 19:00:37 themnemonic Exp $
+ * $Id: proto.h,v 1.38 2003-01-11 22:47:21 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -67,7 +67,8 @@ int netcat_socket_new(int domain, int type);
 int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
 		in_port_t port, const struct in_addr *local_addr,
 		in_port_t local_port);
-int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port);
+int netcat_socket_new_listen(int domain, const struct in_addr *addr,
+			     in_port_t port);
 int netcat_socket_accept(int fd, int timeout);
 
 /* telnet.c */
