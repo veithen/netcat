@@ -1,15 +1,18 @@
 
-[*] Thu Jun  6 2002 - netcat (cvs)
+[*] Sat Jun  8 2002 - netcat v0.5.1
 
   o Completely rewritten the function core_readwrite() in order to allow more
-    possibilities of featuring adding.
+    possibilities of features adding.
   o Minor code cleanup.
   o Fixed a variable not correctly initialized, causing netcat to bind() with
     bogus information in certain circumstances.
-  o Changed the prototype of the telnet codes parsing function to match the new
-    objects-based design.
+  o Changed the prototype of the telnet codes parsing function to match the
+    new objects-based design.
   o With udp listening mode the first 1024 bytes of the first incoming packet
     are no longer lost.
+  o More updates to the man and info documentation files.
+  o Now compiles correctly on Solaris (there was some configure checks
+    missing).
 
 
 [*] Fri May 31 2002 - netcat v0.5.0
