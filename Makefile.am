@@ -1,7 +1,7 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.3 2002-04-30 20:47:59 themnemonic Exp $
+# $Id: Makefile.am,v 1.4 2002-04-30 21:25:33 themnemonic Exp $
 
-AUTOMAKE_OPTIONS = no-dependencies foreign 1.4
+AUTOMAKE_OPTIONS = no-dependencies foreign 1.4 dist-bzip2
 
 ACLOCAL_AMFLAGS = -I m4
 
