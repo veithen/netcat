@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.6 2002-05-17 21:49:02 themnemonic Exp $
+ * $Id: core.c,v 1.7 2002-05-20 16:33:06 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -50,7 +50,7 @@ int core_udp_connect(struct in_addr *host, unsigned short port)
 
 /* Returns a new socket */
 
-int core_udp_listen(struct in_addr *local_host, unsigned short local_port)
+int core_udp_listen(struct in_addr *local_host, unsigned short local_port, int timeout)
 {
   int ret, sock;
   struct sockaddr_in myaddr;
@@ -70,8 +70,40 @@ int core_udp_listen(struct in_addr *local_host, unsigned short local_port)
 
   ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
   if (ret < 0)
-    return -11;
+    return -1;
+  else {
+    fd_set ins;
+    struct timeval tt;
 
+    tt.tv_usec = 0;
+    tt.tv_sec = timeout;
+    FD_ZERO(&ins);
+    FD_SET(sock, &ins);
+
+    select(sock + 1, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
+    if (FD_ISSET(sock, &ins)) {
+      char buf[1];
+      struct sockaddr_in ix;
+      int slen = sizeof(ix);
+
+      ret = recvfrom(sock, buf, sizeof(buf), MSG_PEEK, (struct sockaddr *)&ix, &slen);
+      debug_v("received packet from %s:%d, using as default dest",
+	netcat_inet_ntop(&ix.sin_addr), ntohs(ix.sin_port));
+      connect(sock, (struct sockaddr *)&ix, slen);
+
+      /* connect and all */
+      return sock;
+    }
+  }
+
+  /* no packets until timeout */
+  return -1;
+
+
+  /* FIXME: this function is supposed to return a working I/O socket, which
+     this one is NOT. This means that we may want to recv() with MSG_PEEK
+     and then connect() it and then return, but this would require calling
+     select() although it's not a problem. */
   return sock;
 }				/* end of core_udp_listen() */
 
@@ -254,7 +286,7 @@ int core_readwrite(int sock, int sock2)
       if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0))
 	delayer.tv_sec = opt_interval;
     }
-    else if (!opt_udpmode || core_initialized)
+    else /* if (!opt_udpmode || core_initialized) */
       FD_SET(fd_stdin, &ins);	/* if (opt_udpmode -> core_initialized) */
 
     debug_v("entering select()...");
@@ -322,6 +354,7 @@ int core_readwrite(int sock, int sock2)
 
     /* reading from the socket (net). */
     if (FD_ISSET(sock, &ins)) {
+#if 0
       /* hold on! before reading, make sure we don't really need to know the
          sender's address */
       if (opt_udpmode && !core_initialized) {
@@ -336,10 +369,11 @@ int core_readwrite(int sock, int sock2)
 		netcat_inet_ntop(&myad.sin_addr));
 	goto skipread;
       }
+#endif
       read_ret = read(sock, buf, sizeof(buf));
       debug_dv("read(net) = %d", read_ret);
 
- skipread:
+ /* skipread: */
 
       if (read_ret < 0) {
 	perror("read(net)");
