@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.11 2002-05-27 20:45:37 themnemonic Exp $
+ * $Id: core.c,v 1.12 2002-05-28 20:53:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -64,9 +64,14 @@ static int core_udp_connect(nc_sock_t *ncsock)
   return -1;
 }				/* end of core_udp_connect() */
 
+/* Emulates a TCP connection but using the UDP protocol.  There is a listening
+   socket that catches the first valid packet and assumes the packet endpoints
+   as the endpoints for the final connection. */
+
 static int core_udp_listen(nc_sock_t *ncsock)
 {
   int ret, sock, sockopt = 1, timeout = ncsock->timeout;
+  bool use_ancillary = FALSE;
   struct sockaddr_in myaddr;
   struct timeval tt;		/* needed by the select() call */
   debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
@@ -86,16 +91,21 @@ static int core_udp_listen(nc_sock_t *ncsock)
       goto err;
   }
 
+#ifdef USE_PKTINFO
   /* set the right flag in order to obtain the ancillary data */
   ret = setsockopt(sock, SOL_IP, IP_PKTINFO, &sockopt, sizeof(sockopt));
-  if (ret < 0)
-    return -1;
+  if (ret >= 0)
+    use_ancillary = TRUE;
+#else
+# warning "Couldn't setup ancillary data helpers"
+#endif
 
   /* since this protocol is connectionless, we need a special handling here.
      We want to simulate a two-ends connection but in order to do this we need
-     a remote address.  Wait here until a packet is received, and use its
-     source address as default remote address.  If we have the zero-I/O option
-     we just eat the packet and will never return (if a timeout is not set) */
+     a remote address and a local address (in case we bound to INADDR_ANY).
+     Wait here until a packet is received, and use its source and destination
+     addresses as default endpoints.  If we have the zero-I/O option set, we
+     just eat the packet and will never return (if a timeout is not set). */
   tt.tv_sec = timeout;
   tt.tv_usec = 0;
 
@@ -113,18 +123,16 @@ static int core_udp_listen(nc_sock_t *ncsock)
       struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
       struct sockaddr_in local_addr;
-      bool local_fetch = TRUE;
-      int addr_len = sizeof(rem_addr);
+      bool local_fetch = FALSE;
 
-      /* Warning, incredible hack around.  I've looked for this code for a lot
-         of hours, and finally found the RFC 2292 which provides a socket API
-         for fetching the destination interface of the incoming packet. */
+      /* I've looked for this code for a lot of hours, and finally found the
+         RFC 2292 which provides a socket API for fetching the destination
+         interface of the incoming packet. */
       memset(&my_hdr, 0, sizeof(my_hdr));
       memset(&rem_addr, 0, sizeof(rem_addr));
       memset(&local_addr, 0, sizeof(local_addr));
       my_hdr.msg_name = &rem_addr;
       my_hdr.msg_namelen = sizeof(rem_addr);
-
       /* initialize the vector struct and then the vectory member of the header */
       my_hdr_vec.iov_base = buf;
       my_hdr_vec.iov_len = sizeof(buf);
@@ -141,30 +149,44 @@ static int core_udp_listen(nc_sock_t *ncsock)
       debug_v("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
 		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest"));
 
-      debug_v("Ancillary data=%d", my_hdr.msg_controllen);
+      /* let's hope that there is some ancillary data! */
       if (my_hdr.msg_controllen > 0) {
 	struct cmsghdr *get_cmsg;
 
+	/* We don't know which is the order of the ancillary messages and we
+	   dont know how many are there.  So I simply parse all of them until
+	   we find the right one, checking the index type. */
 	for (get_cmsg = CMSG_FIRSTHDR(&my_hdr); get_cmsg;
 		get_cmsg = CMSG_NXTHDR(&my_hdr, get_cmsg)) {
 	  debug_v("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type);
 
+#ifdef USE_PKTINFO
 	  if (get_cmsg->cmsg_type == IP_PKTINFO) {
 	    struct in_pktinfo *get_pktinfo;
 
+	    /* can we get this field double? RFC isn't clear on this */
+	    assert(local_fetch == FALSE);
 	    get_pktinfo = (struct in_pktinfo *) CMSG_DATA(get_cmsg);
 	    memcpy(&local_addr.sin_addr, &get_pktinfo->ipi_spec_dst, sizeof(local_addr.sin_addr));
 	    local_addr.sin_port = myaddr.sin_port;
 	    local_addr.sin_family = myaddr.sin_family;
 	    local_fetch = TRUE;
 	  }
+#endif
 	}
       }
 
       if (local_fetch) {
-	debug_v("Found destination address! %s:%d", netcat_inet_ntop(&local_addr.sin_addr),
+	char buf[127];
+
+	strncpy(buf, netcat_inet_ntop(&rem_addr.sin_addr), sizeof(buf));
+	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d -> %s:%d (local)"),
+		buf, ntohs(rem_addr.sin_port), netcat_inet_ntop(&local_addr.sin_addr),
 		ntohs(local_addr.sin_port));
       }
+      else
+	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d"),
+		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
 
       if (opt_zero) {
 	/* FIXME: why don't allow -z with -L? but only for udp! (?) */
@@ -189,11 +211,20 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	}
       }
       else {
-	/* FIXME: here put the sock duplication etc in tcp style */
-	connect(sock, (struct sockaddr *)&rem_addr, addr_len);
+	nc_sock_t dup_socket;
+
+	memset(&dup_socket, 0, sizeof(dup_socket));
+	dup_socket.domain = ncsock->domain;
+	dup_socket.proto = ncsock->proto;
+	memcpy(&dup_socket.local_host.iaddrs[0], &local_addr.sin_addr, sizeof(local_addr));
+	memcpy(&dup_socket.host.iaddrs[0], &rem_addr.sin_addr, sizeof(local_addr));
+	dup_socket.local_port.num = ntohs(local_addr.sin_port);
+	dup_socket.port.num = ntohs(rem_addr.sin_port);
+	close(sock);
 
 	/* this is all we want from this function */
-	return sock;
+	debug_dv("calling the udp_connect() function...");
+	return core_udp_connect(&dup_socket);
       }
     }
     else			/* select() timed out! */
@@ -493,9 +524,11 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_tunnel)
       unsigned int recv_len = sizeof(recv_addr);
 
       if (nc_main->proto == NETCAT_PROTO_UDP) {
+	memset(&recv_addr, 0, sizeof(recv_addr));
 	/* this allows us to fetch packets from different addresses */
 	read_ret = recvfrom(fd_sock, buf, sizeof(buf), 0,
 			    (struct sockaddr *)&recv_addr, &recv_len);
+	/* when recvfrom() call fails, recv_addr remains untouched */
 	debug_dv("recvfrom(net) = %d (address=%s:%d)", read_ret,
 		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
       }
