@@ -22,7 +22,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.6.2+cvs)
+AM_INIT_AUTOMAKE(netcat, 0.6.2)
 AC_PREREQ(2.54)
 
 dnl without this order in this file, automake will be confused!
@@ -111,15 +111,15 @@ AC_ARG_WITH(included-getopt, AC_HELP_STRING([--with-included-getopt],
 
 
 # apply the acquired enable options
-if test "x$nc_enab_compat" == "xyes"; then
+if test "x$nc_enab_compat" = "xyes"; then
   AC_DEFINE(USE_OLD_COMPAT,  , misc old compat behaviours)
 fi
 
-if test "x$nc_enab_oldhexdump" == "xyes"; then
+if test "x$nc_enab_oldhexdump" = "xyes"; then
   AC_DEFINE(USE_OLD_HEXDUMP,  , use the old style hexdump format)
 fi
 
-if test "x$nc_enab_oldtelnet" == "xyes"; then
+if test "x$nc_enab_oldtelnet" = "xyes"; then
   AC_DEFINE(USE_OLD_TELNET,  , use the old telnet codes parsing policy)
 fi
 
