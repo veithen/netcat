@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.4 2002-05-31 13:16:25 themnemonic Exp $
+@c $Id: netcat.texi,v 1.5 2002-05-31 13:41:30 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -21,7 +21,7 @@
 
 @dircategory Net Utilities
 @direntry
-* Netcat: (nc).         The GNU famous networking tool.
+* Netcat: (netcat).     The GNU famous networking tool.
 @end direntry
 
 @ifinfo
