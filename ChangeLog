@@ -1,5 +1,5 @@
 
-[*] Sat Jun 15 2002 - netcat (cvs)
+[*] Sun Jun 16 2002 - netcat (cvs)
 
   o Fixed a bug in UDP listen mode with unspecified port where Netcat was not
     actually listening.
@@ -15,6 +15,8 @@
   o Error messages on connect failure (both in connecting mode and tunneling
     mode) were totally wrong.
   o Fixed tunnel mode exit not printing statistics.
+  o Statistics now use a human readable output and are printed even in the listen
+    mode and tunnel mode. [BUG #569618]
 
 
 [*] Mon Jun 10 2002 - netcat v0.5.1

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.28 2002-06-16 09:50:06 themnemonic Exp $
+ * $Id: proto.h,v 1.29 2002-06-16 14:13:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -37,9 +37,10 @@ int netcat_flag_count(void);
 unsigned short netcat_flag_rand(void);
 
 /* misc.c */
-char *netcat_string_split(char **buf);
 int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen);
+int netcat_snprintnum(char *str, size_t size, unsigned long number);
 void ncprint(int type, const char *fmt, ...);
+char *netcat_string_split(char **buf);
 void netcat_commandline_read(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
 void netcat_printversion(void);

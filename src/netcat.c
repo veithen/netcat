@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.46 2002-06-16 10:07:59 themnemonic Exp $
+ * $Id: netcat.c,v 1.47 2002-06-16 14:13:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -57,9 +57,13 @@ nc_proto_t opt_proto = NETCAT_PROTO_TCP;	/* protocol to use for connections */
 
 static void printstats(void)
 {
+  char str_recv[32], str_sent[32];
+
+  netcat_snprintnum(str_recv, sizeof(str_recv), bytes_recv);
+  netcat_snprintnum(str_sent, sizeof(str_sent), bytes_sent);
   ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
-	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
-	  bytes_recv, bytes_sent);
+	  _("Total received bytes: %s\nTotal sent bytes: %s\n"),
+	  str_recv, str_sent);
 }
 
 /* signal handling */
@@ -449,8 +453,8 @@ int main(int argc, char *argv[])
       debug_dv("Tunnel: EXIT");
     }
 
-    /* all jobs should be ok */
-    exit(EXIT_SUCCESS);
+    /* all jobs should be ok, go to the cleanup */
+    goto main_exit;
   }				/* end of listen and tunnel mode handling */
 
   /* we need to connect outside, this is the connect mode */
@@ -500,8 +504,10 @@ int main(int argc, char *argv[])
     }
   }			/* end of while (total_ports > 0) */
 
-  debug_v("EXIT");
+  /* all basic modes should return here for the final cleanup */
+ main_exit:
+  debug_v("Main: EXIT (cleaning up)");
 
-  printstats();			/* FIXME: is this the RIGHT place? */
+  printstats();
   return 0;
 }				/* end of main */

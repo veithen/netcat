@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.24 2002-05-31 13:42:15 themnemonic Exp $
+ * $Id: misc.c,v 1.25 2002-06-16 14:13:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -109,6 +109,19 @@ int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen)
   }
 
   return 0;
+}
+
+/* fills the buffer pointed to by `str' with the formatted value of `number' */
+
+int netcat_snprintnum(char *str, size_t size, unsigned long number)
+{
+  char *p = "\0kMGT";
+
+  while ((number > 9999) && (*p != 'T')) {
+    number = (number + 500) / 1000;
+    p++;
+  }
+  return snprintf(str, size, "%lu%c", number, *p);
 }
 
 /* ... */
@@ -237,7 +250,8 @@ void netcat_printhelp(char *argv0)
   printf(_("GNU netcat %s, a rewrite of the famous networking tool.\n"), VERSION);
   printf(_("Basic usages:\n"));
   printf(_("connect to somewhere:  %s [options] hostname port [port] ...\n"), argv0);
-  printf(_("listen for inbound:    %s -l -p port [options] [hostname] [port]\n"), argv0);
+  printf(_("listen for inbound:    %s -l -p port [options] [hostname] [port] ...\n"), argv0);
+  printf(_("tunnel to somewhere:   %s -L hostname:port -p port [options]\n"), argv0);
   printf("\n");
   printf(_("Mandatory arguments to long options are mandatory for short options too.\n"));
   printf(_("Options:\n"
