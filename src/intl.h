@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: intl.h,v 1.4 2002-05-06 15:08:11 themnemonic Exp $
+ * $Id: intl.h,v 1.5 2002-08-17 10:22:54 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -38,11 +38,18 @@
 
 #else
 
+/* Disabled NLS.
+   The casts to 'const char *' serve the purpose of producing warnings
+   for invalid uses of the value returned from these functions.
+   On pre-ANSI systems without 'const', the config.h file is supposed to
+   contain "#define const". */
+
+#define textdomain(Domainname) ((const char *) (Domainname))
+#define bindtextdomain(Domainname, Dirname) ((const char *) (Dirname))
+#define bind_textdomain_codeset(Domainname, Codeset) ((const char *) (Codeset))
+
 #define _(String) (String)
 #define N_(String) String
 #define PL_(String1, String2, n) ((n) == 1 ? (String1) : (String2))
-
-#define textdomain(Domain)
-#define bindtextdomain(Package, Directory)
 
 #endif	/* ENABLE_NLS */
