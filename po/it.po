@@ -5,31 +5,31 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: netcat 0.5.0\n"
-"POT-Creation-Date: 2002-05-31 15:47+0200\n"
-"PO-Revision-Date: 2002-05-31 15:49+0200\n"
+"Project-Id-Version: netcat 0.5.1\n"
+"POT-Creation-Date: 2002-06-10 11:47+0200\n"
+"PO-Revision-Date: 2002-06-10 11:48+0200\n"
 "Last-Translator: Giovanni Giacobbi <johnny@themnemonic.org>\n"
 "Language-Team: Italian <johnny@themnemonic.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:183
+#: src/core.c:198
 #, c-format
 msgid "Received packet from %s:%d -> %s:%d (local)"
 msgstr "Pacchetto ricevuto da %s:%d -> %s:%d (locale)"
 
-#: src/core.c:188
+#: src/core.c:203
 #, c-format
 msgid "Received packet from %s:%d"
 msgstr "Pacchetto ricevuto da %s:%d"
 
-#: src/core.c:356
+#: src/core.c:385
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr "Connessione non voluta da %s:%hu (rifiutata)"
 
-#: src/core.c:360
+#: src/core.c:389
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr "Connessione da %s:%hu"
@@ -174,7 +174,7 @@ msgstr ""
 "Design e idea originale di Avian Research <hobbit@avian.org>,\n"
 "Scritto da Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 
-#: src/netcat.c:65
+#: src/netcat.c:63
 #, c-format
 msgid ""
 "Total received bytes: %ld\n"
@@ -183,81 +183,81 @@ msgstr ""
 "Totale byte ricevuti: %ld\n"
 "Totale byte inviati: %ld\n"
 
-#: src/netcat.c:95
+#: src/netcat.c:93
 msgid "Exiting."
 msgstr "Uscita."
 
-#: src/netcat.c:207
+#: src/netcat.c:208
 msgid "Cannot specify `-e' option double"
 msgstr "Impossibile utilizzare l'opzione `-e' più volte"
 
-#: src/netcat.c:221
+#: src/netcat.c:222
 #, c-format
 msgid "Invalid interval time \"%s\""
 msgstr "Tempo di intervallo non valido \"%s\""
 
-#: src/netcat.c:226 src/netcat.c:232
+#: src/netcat.c:227 src/netcat.c:233
 msgid "`-L' and `-l' options are incompatible"
 msgstr "Le opzioni `-L' e `-l' sono incompatibili"
 
-#: src/netcat.c:235 src/netcat.c:322
+#: src/netcat.c:236 src/netcat.c:323
 msgid "`-L' and `-z' options are incompatible"
 msgstr "Le opzioni `-L' e `-z' sono incompatibili"
 
-#: src/netcat.c:243
+#: src/netcat.c:244
 msgid "Invalid target string for `-L' option"
 msgstr "Specificazione del tunnel non valida per il parametro `-L'"
 
-#: src/netcat.c:247
+#: src/netcat.c:248
 #, c-format
 msgid "Couldn't resolve tunnel target host: %s"
 msgstr "Impossibile risolvere l'obbiettivo del tunnel: %s"
 
-#: src/netcat.c:250
+#: src/netcat.c:251
 #, c-format
 msgid "Invalid tunnel target port: %s"
 msgstr "Porta del tunnel non valida: %s"
 
-#: src/netcat.c:267
+#: src/netcat.c:268
 #, c-format
 msgid "Invalid local port: %s"
 msgstr "Porta locale specificata non valida: %s"
 
-#: src/netcat.c:272
+#: src/netcat.c:273
 #, c-format
 msgid "Invalid tunnel connect port: %s"
 msgstr "Porta specificata per la connessione del tunnel non valida: %s"
 
-#: src/netcat.c:281
+#: src/netcat.c:282
 #, c-format
 msgid "Couldn't resolve local host: %s"
 msgstr "Porta locale non valida: %s"
 
-#: src/netcat.c:286
+#: src/netcat.c:287
 #, c-format
 msgid "Couldn't resolve tunnel local host: %s"
 msgstr "Impossibile risolvere l'host di connessione del tunnel: %s"
 
-#: src/netcat.c:313
+#: src/netcat.c:314
 #, c-format
 msgid "Invalid wait-time: %s"
 msgstr "Tempo di attesa non valido: %s"
 
-#: src/netcat.c:326
+#: src/netcat.c:327
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr "Usare `%s --help' per ulteriori informazioni.\n"
 
-#: src/netcat.c:342
+#: src/netcat.c:343
 msgid "Failed to open output file"
 msgstr "Impossibile aprire il file di output"
 
-#: src/netcat.c:355
+#: src/netcat.c:356
 #, c-format
 msgid "Couldn't resolve host \"%s\""
 msgstr "Impossibile risolvere l'host \"%s\""
 
-#: src/netcat.c:402
+#: src/netcat.c:403
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr "Specificazione porta non valida: %s"
@@ -267,11 +267,11 @@ msgstr "Specificazione porta non valida: %s"
 msgid "Listen mode failed: %s"
 msgstr "Modalità di attesa fallita: %s"
 
-#: src/netcat.c:480
+#: src/netcat.c:481
 msgid "No ports specified for connection"
 msgstr "Nessuna porta specificata per la connessione"
 
-#: src/netcat.c:514
+#: src/netcat.c:515
 #, c-format
 msgid "%s open"
 msgstr "%s è aperto"
