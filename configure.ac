@@ -22,8 +22,8 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.6.2)
-AC_PREREQ(2.54)
+AM_INIT_AUTOMAKE(netcat, 0.7.0)
+AC_PREREQ(2.53)
 
 dnl without this order in this file, automake will be confused!
 AM_CONFIG_HEADER(config.h)
