@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.34 2003-01-11 22:47:21 themnemonic Exp $
+ * $Id: core.c,v 1.35 2003-08-19 12:15:16 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -41,7 +41,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
 {
   int ret, sock;
   struct sockaddr_in myaddr;
-  debug_v("core_udp_connect(ncsock=%p)", (void *)ncsock);
+  debug_v(("core_udp_connect(ncsock=%p)", (void *)ncsock));
 
   sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
   if (sock < 0)
@@ -87,7 +87,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 #endif
   struct sockaddr_in myaddr;
   struct timeval tt;		/* needed by the select() call */
-  debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
+  debug_v(("core_udp_listen(ncsock=%p)", (void *)ncsock));
 
 #ifdef USE_PKTINFO
   need_udphelper = FALSE;
@@ -169,7 +169,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
     FD_ZERO(&ins);
     for (socks_loop = 1; socks_loop <= sockbuf[0]; socks_loop++) {
-      debug_v("Setting sock %d on ins", sockbuf[socks_loop]);
+      debug_v(("Setting sock %d on ins", sockbuf[socks_loop]));
       FD_SET(sockbuf[socks_loop], &ins);
     }
 
@@ -218,8 +218,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
          use the MSG_PEEK flag, which leaves the received packet untouched */
       recv_ret = recvmsg(sock, &my_hdr, (opt_zero ? 0 : MSG_PEEK));
 
-      debug_v("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
-		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest"));
+      debug_v(("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
+		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest")));
 
 #ifdef USE_PKTINFO
       ret = udphelper_ancillary_read(&my_hdr, &local_addr);
@@ -246,7 +246,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
       if (opt_zero) {		/* output the packet right here right now */
 	write_ret = write(STDOUT_FILENO, buf, recv_ret);
 	bytes_recv += write_ret;
-	debug_dv("write_u(stdout) = %d", write_ret);
+	debug_dv(("write_u(stdout) = %d", write_ret));
 
 	if (write_ret < 0) {
 	  perror("write_u(stdout)");
@@ -295,7 +295,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
 #ifdef USE_PKTINFO
 	/* this is all we want from this function */
-	debug_dv("calling the udp_connect() function...");
+	debug_dv(("calling the udp_connect() function..."));
 	return core_udp_connect(&dup_socket);
 #else
 	return sock;
@@ -321,7 +321,7 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   int ret, sock, timeout = ncsock->timeout;
   struct timeval timest;
   fd_set outs;
-  debug_v("core_tcp_connect(ncsock=%p)", (void *)ncsock);
+  debug_v(("core_tcp_connect(ncsock=%p)", (void *)ncsock));
 
   /* since we are nonblocking now, we could start as many connections as we
      want but it's not a great idea connecting more than one host at time.
@@ -360,7 +360,7 @@ static int core_tcp_connect(nc_sock_t *ncsock)
     assert(get_len == sizeof(get_ret));
 
     /* FIXME: the error Broken Pipe should probably not stop here */
-    debug_v("Connection returned errcode=%d (%s)", get_ret, strerror(get_ret));
+    debug_v(("Connection returned errcode=%d (%s)", get_ret, strerror(get_ret)));
     if (get_ret > 0) {
       char tmp;
 
@@ -410,7 +410,7 @@ static int core_tcp_connect(nc_sock_t *ncsock)
 static int core_tcp_listen(nc_sock_t *ncsock)
 {
   int sock_listen, sock_accept, timeout = ncsock->timeout;
-  debug_v("core_tcp_listen(ncsock=%p)", (void *)ncsock);
+  debug_v(("core_tcp_listen(ncsock=%p)", (void *)ncsock));
 
   sock_listen = netcat_socket_new_listen(PF_INET, &ncsock->local_host.iaddrs[0],
 			ncsock->local_port.netnum);
@@ -529,7 +529,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   struct timeval delayer;
   assert(nc_main && nc_slave);
 
-  debug_v("readwrite(nc_main=%p, nc_slave=%p)", (void *)nc_main, (void *)nc_slave);
+  debug_v(("core_readwrite(nc_main=%p, nc_slave=%p)", (void *)nc_main,
+	  (void *)nc_slave));
 
   /* set the actual input and output fds and find out the max fd + 1 */
   fd_sock = nc_main->fd;
@@ -556,7 +557,12 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     struct sockaddr_in recv_addr;	/* only used by UDP proto */
     unsigned int recv_len = sizeof(recv_addr);
 
-    /* if we received a terminating signal exit now */
+    /* if we received an interrupt signal break this function */
+    if (got_sigint) {
+      got_sigint = FALSE;
+      break;
+    }
+    /* if we received a terminating signal we must terminate */
     if (got_sigterm)
       break;
 
@@ -567,7 +573,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
        happening (for example the target sending queue is delaying the output
        and so requires some more time to free up. */
     if (nc_main->recvq.len == 0) {
-      debug_v("watching main sock for incoming data (recvq is empty)");
+      debug_v(("watching main sock for incoming data (recvq is empty)"));
       FD_SET(fd_sock, &ins);
     }
     else
@@ -576,7 +582,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     /* same thing for the other socket */
     if (nc_slave->recvq.len == 0) { /* FIXME: call_select = false but could call it
 	anyway and one of them could be set.. so what happens? */
-      debug_v("watching slave sock for incoming data (recvq is empty)");
+      debug_v(("watching slave sock for incoming data (recvq is empty)"));
       if (use_stdin || (netcat_mode == NETCAT_TUNNEL))
         FD_SET(fd_stdin, &ins);
     }
@@ -586,7 +592,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     if (call_select || delayer.tv_sec || delayer.tv_usec) {
       int ret;
 
-      debug_v("entering with timeout=%d:%d select() ...", delayer.tv_sec, delayer.tv_usec);
+      debug_v(("entering with timeout=%d:%d select() ...", delayer.tv_sec, delayer.tv_usec));
       ret = select(fd_max, &ins, NULL, NULL,
 		   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
       if (ret < 0) {
@@ -605,7 +611,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
        watched. */
     if (call_select && FD_ISSET(fd_stdin, &ins)) {
       read_ret = read(fd_stdin, buf, sizeof(buf));
-      debug_dv("read(stdin) = %d", read_ret);
+      debug_dv(("read(stdin) = %d", read_ret));
 
       if (read_ret < 0) {
 	perror("read(stdin)");
@@ -615,11 +621,11 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	/* when we receive EOF and this is a tunnel say goodbye, otherwise
 	   it means that stdin has finished its input. */
 	if ((netcat_mode == NETCAT_TUNNEL) || (opt_eofclose)) {
-	  debug_v("EOF Received from stdin! (exiting from loop..)");
+	  debug_v(("EOF Received from stdin! (exiting from loop..)"));
 	  inloop = FALSE;
 	}
 	else {
-	  debug_v("EOF Received from stdin! (removing from lookups..)");
+	  debug_v(("EOF Received from stdin! (removing from lookups..)"));
 	  use_stdin = FALSE;
 	}
       }
@@ -638,17 +644,17 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     if (nc_slave->recvq.len > 0) {
       nc_buffer_t *my_recvq = &nc_slave->recvq;
       nc_buffer_t *rem_sendq = &nc_main->sendq;
-      debug_v("there are %d data bytes in slave->recvq", my_recvq->len);
+      debug_v(("there are %d data bytes in slave->recvq", my_recvq->len));
 
       /* if the remote send queue is empty, move there the entire data block */
       if (rem_sendq->len == 0) {
-	debug_v("  moved %d data bytes from slave->recvq to main->sendq", my_recvq->len);
+	debug_v(("  moved %d data bytes from slave->recvq to main->sendq", my_recvq->len));
 	memcpy(rem_sendq, my_recvq, sizeof(*rem_sendq));
 	memset(my_recvq, 0, sizeof(*my_recvq));
       }
       else if (!my_recvq->head) {
 	/* move the data block in a dedicated allocated space */
-	debug_v("  reallocating %d data bytes in slave->recvq", my_recvq->len);
+	debug_v(("  reallocating %d data bytes in slave->recvq", my_recvq->len));
 	my_recvq->head = malloc(my_recvq->len);
 	memcpy(my_recvq->head, my_recvq->pos, my_recvq->len);
 	my_recvq->pos = my_recvq->head;
@@ -664,7 +670,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       int data_len = nc_main->sendq.len;
       nc_buffer_t *my_sendq = &nc_main->sendq;
 
-      debug_v("there are %d data bytes in main->sendq", my_sendq->len);
+      debug_v(("there are %d data bytes in main->sendq", my_sendq->len));
 
       /* we have a delayed output, but at this point we might have the
          send queue pointing to a stack buffer.  In this case, allocate a
@@ -688,7 +694,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
       write_ret = write(fd_sock, data, data_len);
       bytes_sent += write_ret;		/* update statistics */
-      debug_dv("write(net) = %d (buf=%p)", write_ret, (void *)data);
+      debug_dv(("write(net) = %d (buf=%p)", write_ret, (void *)data));
 
       if (write_ret < 0) {
 	perror("write(net)");
@@ -699,8 +705,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       assert((write_ret > 0) && (write_ret <= data_len));
 
       if (write_ret < data_len) {
-	debug_v("Damn! I wanted to send to sock %d bytes but it only sent %d",
-		data_len, write_ret);
+	debug_v(("Damn! I wanted to send to sock %d bytes but it only sent %d",
+		data_len, write_ret));
 	data_len = write_ret;
       }
 
@@ -717,7 +723,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       my_sendq->pos += data_len;
 
  skip_sect:
-      debug_v("there are %d data bytes left in the queue", my_sendq->len);
+      debug_v(("there are %d data bytes left in the queue", my_sendq->len));
       if (my_sendq->len == 0) {
 	free(my_sendq->head);
 	memset(my_sendq, 0, sizeof(*my_sendq));
@@ -738,13 +744,13 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	read_ret = recvfrom(fd_sock, buf, sizeof(buf), 0,
 			    (struct sockaddr *)&recv_addr, &recv_len);
 	/* when recvfrom() call fails, recv_addr remains untouched */
-	debug_dv("recvfrom(net) = %d (address=%s:%d)", read_ret,
-		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
+	debug_dv(("recvfrom(net) = %d (address=%s:%d)", read_ret,
+		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port)));
       }
       else {
 	/* common file read fallback */
 	read_ret = read(fd_sock, buf, sizeof(buf));
-	debug_dv("read(net) = %d", read_ret);
+	debug_dv(("read(net) = %d", read_ret));
       }
 
       if (read_ret < 0) {
@@ -752,7 +758,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	exit(EXIT_FAILURE);
       }
       else if (read_ret == 0) {
-	debug_v("EOF Received from the net");
+	debug_v(("EOF Received from the net"));
 	inloop = FALSE;
       }
       else {
@@ -795,7 +801,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
       write_ret = write(fd_stdout, data, data_len);
       bytes_recv += write_ret;		/* update statistics */
-      debug_dv("write(stdout) = %d", write_ret);
+      debug_dv(("write(stdout) = %d", write_ret));
 
       if (write_ret < 0) {
 	perror("write(stdout)");
@@ -806,8 +812,8 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       assert((write_ret > 0) && (write_ret <= data_len));
 
       if (write_ret < data_len) {
-	debug_v("Damn! I wanted to send to stdout %d bytes but it only sent %d",
-		data_len, write_ret);
+	debug_v(("Damn! I wanted to send to stdout %d bytes but it only sent %d",
+		data_len, write_ret));
 	data_len = write_ret;
       }
 
@@ -827,7 +833,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       my_sendq->len -= data_len;
       my_sendq->pos += data_len;
 
-      debug_v("there are %d data bytes left in the queue", my_sendq->len);
+      debug_v(("there are %d data bytes left in the queue", my_sendq->len));
       if (my_sendq->len == 0) {
 	free(my_sendq->head);
 	memset(my_sendq, 0, sizeof(*my_sendq));
@@ -841,7 +847,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
  handle_signal:			/* FIXME: i'm not sure this is the right place */
     if (got_sigusr1) {
-      debug_v("LOCAL printstats!");
+      debug_v(("LOCAL printstats!"));
       netcat_printstats(TRUE);
       got_sigusr1 = FALSE;
     }
