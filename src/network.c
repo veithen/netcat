@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.27 2002-08-16 12:01:34 themnemonic Exp $
+ * $Id: network.c,v 1.28 2002-08-21 00:45:48 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -105,8 +105,8 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
          tool", thus it's good to see the case they chose for this host. */
       if (strcasecmp(dst->name, hostent->h_name))
 	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("this host doesn't match! %s -- %s"), hostent->h_name,
-		dst->name);
+		_("This host's reverse DNS doesn't match! %s -- %s"),
+		hostent->h_name, dst->name);
       else if (!host_auth) {	/* take only the first one as auth */
 	strncpy(dst->name, hostent->h_name, sizeof(dst->name));
 	host_auth = TRUE;
@@ -337,7 +337,14 @@ int netcat_socket_new(int domain, int type)
   return sock;
 }
 
-/* ... */
+/* Creates a full outgoing async socket connection in the specified `domain'
+   and `type' to the specified `addr' and `port'.  The connection is
+   originated using the optionally specified `local_addr' and `local_port'.
+   If `local_addr' is NULL and `local_port' is 0 the bind(2) call is skipped.
+   Returns the descriptor referencing the new socket on success, otherwise
+   returns -1 or -2 if the socket(2) call failed (see netcat_socket_new()),
+   or -3 if the bind(2) call failed, or -4 if the fcntl(2) call failed, or -5
+   if the connect(2) call failed. */
 
 int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
 		unsigned short port, const struct in_addr *local_addr,
@@ -421,7 +428,7 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
   debug_dv("netcat_socket_new_listen(addr=%p, port=%hu)", (void *)addr, port);
 
   /* Reset the sockaddr structure */
-  my_addr.sin_family = AF_INET;
+  my_addr.sin_family = AF_INET;				/* FIXME */
   my_addr.sin_port = htons(port);
   memcpy(&my_addr.sin_addr, addr, sizeof(my_addr.sin_addr));
 
