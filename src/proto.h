@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.2 2002-04-29 10:32:28 themnemonic Exp $
+ * $Id: proto.h,v 1.3 2002-04-29 14:53:14 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,12 +27,18 @@ char *netcat_string_split(char **buf);
 void debug_output(bool wrap, const char *fmt, ...);
 void netcat_commandline(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
+int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen);
 
 /* netcat.c */
-extern bool opt_listen, opt_numeric, opt_random, opt_wfile, opt_udpmode,
+extern bool opt_listen, opt_numeric, opt_random, opt_hexdump, opt_udpmode,
 		opt_telnet, opt_zero;
 extern int opt_verbose;
+extern char *opt_outputfile;
 extern char unknown[];
+extern int netfd;
 
 /* network.c */
 netcat_host *netcat_resolvehost(char *name);
+
+/* telnet.c */
+void atelnet(unsigned char *buf, unsigned int size);

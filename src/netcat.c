@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.11 2002-04-29 10:32:28 themnemonic Exp $
+ * $Id: netcat.c,v 1.12 2002-04-29 14:53:13 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -32,7 +32,6 @@
 #include <resolv.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 #include <getopt.h>
 
@@ -40,7 +39,6 @@
 jmp_buf jbuf;			/* timer crud */
 int jval = 0;			/* timer crud */
 int netfd = -1;
-int ofd = 0;			/* hexdump output fd */
 char unknown[] = "(UNKNOWN)";
 static char p_tcp[] = "tcp";	/* for getservby* */
 static char p_udp[] = "udp";
@@ -66,7 +64,7 @@ unsigned int insaved = 0;	/* stdin-buffer size for multi-mode */
 unsigned int wrote_out = 0;	/* total stdout bytes */
 unsigned int wrote_net = 0;	/* total net bytes */
 static char wrote_txt[] = " sent %d, rcvd %d";
-static char hexnibs[20] = "0123456789abcdef  ";
+char hexnibs[20] = "0123456789abcdef  ";
 
 /* will malloc up the following globals: */
 struct timeval *timer1 = NULL;
@@ -80,7 +78,6 @@ char *bigbuf_net;
 fd_set *ding1;			/* for select loop */
 fd_set *ding2;
 PINF *portpoop = NULL;		/* for getportpoop / getservby* */
-unsigned char *stage = NULL;	/* hexdump line buffer */
 
 /* global options flags */
 unsigned int o_interval = 0;
@@ -89,12 +86,13 @@ bool opt_listen = FALSE;		/* listen mode */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;		/* use random ports */
 bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
-bool opt_wfile = FALSE;		/* hexdump to specified file */
 bool opt_telnet = FALSE;		/* answer in telnet mode */
+bool opt_hexdump = FALSE;	/* hexdump traffic */
 bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
 int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
+char *opt_outputfile = NULL;	/* hexdump output file */
 
-
+static FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
 
 /* support routines -- the bulk of this thing.  Placed in such an order that
    we don't have to forward-declare anything: */
@@ -764,138 +762,6 @@ int udptest(int fd, IA *where)
   return -1;
 }				/* udptest */
 
-/* oprint :
-   Hexdump bytes shoveled either way to a running logfile, in the format:
-D offset       -  - - - --- 16 bytes --- - - -  -     # .... ascii .....
-   where "which" sets the direction indicator, D:
-	0 -- sent to network, or ">"
-	1 -- rcvd and printed to stdout, or "<"
-   and "buf" and "n" are data-block and length.  If the current block generates
-   a partial line, so be it; we *want* that lockstep indication of who sent
-   what when.  Adapted from dgaudet's original example -- but must be ripping
-   *fast*, since we don't want to be too disk-bound... */
-void oprint(int which, char *buf, int n)
-{
-  int bc;			/* in buffer count */
-  int obc;			/* current "global" offset */
-  int soc;			/* stage write count */
-  register unsigned char *p;	/* main buf ptr; m.b. unsigned here */
-  register unsigned char *op;	/* out hexdump ptr */
-  register unsigned char *a;	/* out asc-dump ptr */
-  register int x;
-  register unsigned int y;
-
-  if (!ofd)
-    bail("oprint called with no open fd?!");
-  if (n == 0)
-    return;
-
-  op = stage;
-  if (which) {
-    *op = '<';
-    obc = wrote_out;		/* use the globals! */
-  }
-  else {
-    *op = '>';
-    obc = wrote_net;
-  }
-  op++;				/* preload "direction" */
-  *op = ' ';
-  p = (unsigned char *) buf;
-  bc = n;
-  stage[59] = '#';		/* preload separator */
-  stage[60] = ' ';
-
-  while (bc) {			/* for chunk-o-data ... */
-    x = 16;
-    soc = 78;			/* len of whole formatted line */
-    if (bc < x) {
-      soc = soc - 16 + bc;	/* fiddle for however much is left */
-      x = (bc * 3) + 11;	/* 2 digits + space per, after D & offset */
-      op = &stage[x];
-      x = 16 - bc;
-      while (x) {
-	*op++ = ' ';		/* preload filler spaces */
-	*op++ = ' ';
-	*op++ = ' ';
-	x--;
-      }
-      x = bc;			/* re-fix current linecount */
-    }				/* if bc < x */
-
-    bc -= x;			/* fix wrt current line size */
-    sprintf(&stage[2], "%8.8x ", obc);	/* xxx: still slow? */
-    obc += x;			/* fix current offset */
-    op = &stage[11];		/* where hex starts */
-    a = &stage[61];		/* where ascii starts */
-
-    while (x) {			/* for line of dump, however long ... */
-      y = (int) (*p >> 4);	/* hi half */
-      *op = hexnibs[y];
-      op++;
-      y = (int) (*p & 0x0f);	/* lo half */
-      *op = hexnibs[y];
-      op++;
-      *op = ' ';
-      op++;
-      if ((*p > 31) && (*p < 127))
-	*a = *p;		/* printing */
-      else
-	*a = '.';		/* nonprinting, loose def */
-      a++;
-      p++;
-      x--;
-    }				/* while x */
-    *a = '\n';			/* finish the line */
-    x = write(ofd, stage, soc);
-    if (x < 0)
-      bail("ofd write err");
-  }				/* while bc */
-}				/* oprint */
-
-
-
-/* atelnet :
-   Answer anything that looks like telnet negotiation with don't/won't.
-   This doesn't modify any data buffers, update the global output count,
-   or show up in a hexdump -- it just shits into the outgoing stream.
-   Idea and codebase from Mudge@l0pht.com. */
- /* it has to be unsigned here! */
-void atelnet(unsigned char *buf, unsigned int size)
-{
-  static unsigned char obuf[4];	/* tiny thing to build responses into */
-  register int x;
-  register unsigned char y;
-  register unsigned char *p;
-
-  y = 0;
-  p = buf;
-  x = size;
-  while (x > 0) {
-    if (*p != 255)		/* IAC? */
-      goto notiac;
-    obuf[0] = 255;
-    p++;
-    x--;
-    if ((*p == 251) || (*p == 252))	/* WILL or WONT */
-      y = 254;			/* -> DONT */
-    if ((*p == 253) || (*p == 254))	/* DO or DONT */
-      y = 252;			/* -> WONT */
-    if (y) {
-      obuf[1] = y;
-      p++;
-      x--;
-      obuf[2] = *p;		/* copy actual option byte */
-      (void) write(netfd, obuf, 3);
-/* if one wanted to bump wrote_net or do a hexdump line, here's the place */
-      y = 0;
-    }				/* if y */
-  notiac:
-    p++;
-    x--;
-  }				/* while x */
-}				/* atelnet */
-
 /* readwrite :
    handle stdin/stdout/network I/O.  Bwahaha!! -- the select loop from hell.
    In this instance, return what might become our exit status. */
@@ -1030,8 +896,8 @@ int readwrite(int fd)
     if (rnleft) {
       rr = write(1, np, rnleft);
       if (rr > 0) {
-	if (opt_wfile)
-	  oprint(1, np, rr);	/* log the stdout */
+	if (opt_hexdump)
+	  netcat_fhexdump(output_fd, np, rr);	/* log the stdout */
 	np += rr;		/* fix up ptrs and whatnot */
 	rnleft -= rr;		/* will get sanity-checked above */
 	wrote_out += rr;	/* global count */
@@ -1044,8 +910,8 @@ int readwrite(int fd)
 	rr = rzleft;
       rr = write(fd, zp, rr);	/* one line, or the whole buffer */
       if (rr > 0) {
-	if (opt_wfile)
-	  oprint(0, zp, rr);	/* log what got sent */
+	if (opt_hexdump)
+	  netcat_fhexdump(output_fd, zp, rr);	/* log what got sent */
 	zp += rr;
 	rzleft -= rr;
 	wrote_net += rr;	/* global count */
@@ -1140,11 +1006,12 @@ int main(int argc, char *argv[])
 	{ "telnet",	no_argument,		NULL, 't' },
 	{ "udp",		no_argument,		NULL, 'u' },
 	{ "verbose",	no_argument,		NULL, 'v' },
+	{ "hexdump",	no_argument,		NULL, 'x' },
 	{ "zero",	no_argument,		NULL, 'z' },
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "g:G:hi:lno:p:rtuvz", long_options, &option_index);
+    c = getopt_long(argc, argv, "g:G:hi:lno:p:rtuvxz", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1186,8 +1053,8 @@ int main(int argc, char *argv[])
       opt_numeric++;
       break;
     case 'o':			/* hexdump log */
-      stage = (unsigned char *) optarg;
-      opt_wfile = TRUE;
+      opt_outputfile = strdup(optarg);
+      opt_hexdump = TRUE;	/* implied */
       break;
     case 'p':			/* local source port */
       o_lport = getportpoop(optarg, 0);
@@ -1221,12 +1088,15 @@ int main(int argc, char *argv[])
       timer2 = (struct timeval *) Hmalloc(sizeof(struct timeval));
       timer1->tv_sec = o_wait;	/* we need two.  see readwrite()... */
       break;
+    case 'x':			/* hexdump traffic */
+      opt_hexdump = TRUE;
+      break;
     case 'z':			/* little or no data xfer */
       opt_zero++;
       break;
     default:
-      errno = 0;
-      bail("nc -h for help");
+      fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
+      exit(EXIT_FAILURE);
     }				/* switch c */
   }				/* while getopt */
 
@@ -1240,16 +1110,21 @@ int main(int argc, char *argv[])
 #ifdef GAPING_SECURITY_HOLE
   if (pr00gie) {
     close(0);			/* won't need stdin */
-    opt_wfile = FALSE;		/* -o with -e is meaningless! */
-    ofd = 0;
+    opt_hexdump = FALSE;		/* -o with -e is meaningless! */
+    output_fd = NULL;
   }
 #endif /* G_S_H */
-  if (opt_wfile) {
-    ofd = open(stage, O_WRONLY | O_CREAT | O_TRUNC, 0664);
-    if (ofd <= 0)		/* must be > extant 0/1/2 */
-      bail("can't open %s", stage);
-    stage = (unsigned char *) Hmalloc(100);
+
+  if (opt_outputfile) {
+    output_fd = fopen(opt_outputfile, "w");
+    if (!output_fd) {
+      perror("Failed to open output file: ");
+      exit(EXIT_FAILURE);
+    }
   }
+  else
+    output_fd = stdout;
+
 
 /* optind is now index of first non -x arg */
   Debug(("after go: x now %c, optarg %x optind %d", x, (int)optarg, optind))
