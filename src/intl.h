@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: intl.h,v 1.1 2002-04-30 20:47:59 themnemonic Exp $
+ * $Id: intl.h,v 1.2 2002-05-04 15:11:53 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -25,9 +25,11 @@
 #ifdef ENABLE_NLS
 #include <libintl.h>
 
-// #ifdef HAVE_LOCALE_H
+#ifdef HAVE_LOCALE_H
 #include <locale.h>
-// #endif	/* HAVE_LOCALE_H */
+#else
+#error "You must have locale.h in your system"
+#endif	/* HAVE_LOCALE_H */
 
 /* Our dear (and very common) gettext macros */
 #define _(String) gettext(String)
