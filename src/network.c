@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.31 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: network.c,v 1.32 2002-12-08 18:59:36 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -396,7 +396,7 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
     goto err;
   }
 
-  /* now launch the real connection. Since we are in non-blocking mode, this
+  /* now launch the real connection.  Since we are in non-blocking mode, this
      call will return -1 in MOST cases (on some systems, a connect() to a local
      address may immediately return successfully) */
   ret = connect(sock, (struct sockaddr *)&rem_addr, sizeof(rem_addr));
@@ -477,12 +477,13 @@ int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port)
    valid timeout specified is used.  If it reached zero, or if the timeout
    haven't been initialized already, this function will wait forever.
    Returns -1 on error, setting the errno variable.  If it succeeds, it
-   returns a non-negative integer that is the descriptor for the accepted
+   returns a non-negative integer that is the file descriptor for the accepted
    socket. */
 
 int netcat_socket_accept(int s, int timeout)
 {
   fd_set in;
+  int ret;
   static bool timeout_init = FALSE;
   static struct timeval timest;
 
@@ -501,8 +502,17 @@ int netcat_socket_accept(int s, int timeout)
     timeout = 0;
   }
 
-  /* now go into select. use timest only if we don't wait forever */
-  select(s + 1, &in, NULL, NULL, (timeout ? &timest : NULL));
+  /* now call select(2).  use timest only if we won't wait forever */
+ call_select:
+  ret = select(s + 1, &in, NULL, NULL, (timeout ? &timest : NULL));
+  if (ret < 0) {
+    /* if the call was interrupted by a signal nothing happens. signal at this
+       stage ought to be handled externally. */
+    if (errno == EINTR)
+      goto call_select;
+    perror("select(sock_accept)");
+    exit(EXIT_FAILURE);
+  }
 
   /* have we got this connection? */
   if (FD_ISSET(s, &in)) {
