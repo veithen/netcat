@@ -47,6 +47,10 @@
      which means that they won't be showed in the standard output nor in the
      hexdump (if active).  This behaviour differs from nc110.
 
+   o The source routing hops support (`-g' and `-G' command line switches are
+     not supported yet.  Anyway they will be hopefully implemented as soon as
+     possible and before any stable release.
+
 
 
 * 2.2.  Fixes and additions
