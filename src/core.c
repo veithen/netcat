@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.10 2002-05-24 18:06:47 themnemonic Exp $
+ * $Id: core.c,v 1.11 2002-05-27 20:45:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -66,7 +66,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
 
 static int core_udp_listen(nc_sock_t *ncsock)
 {
-  int ret, sock, timeout = ncsock->timeout;
+  int ret, sock, sockopt = 1, timeout = ncsock->timeout;
   struct sockaddr_in myaddr;
   struct timeval tt;		/* needed by the select() call */
   debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
@@ -86,13 +86,18 @@ static int core_udp_listen(nc_sock_t *ncsock)
       goto err;
   }
 
+  /* set the right flag in order to obtain the ancillary data */
+  ret = setsockopt(sock, SOL_IP, IP_PKTINFO, &sockopt, sizeof(sockopt));
+  if (ret < 0)
+    return -1;
+
   /* since this protocol is connectionless, we need a special handling here.
      We want to simulate a two-ends connection but in order to do this we need
      a remote address.  Wait here until a packet is received, and use its
      source address as default remote address.  If we have the zero-I/O option
      we just eat the packet and will never return (if a timeout is not set) */
-  tt.tv_usec = 0;
   tt.tv_sec = timeout;
+  tt.tv_usec = 0;
 
   while (TRUE) {
     fd_set ins;
@@ -103,17 +108,63 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
     if (FD_ISSET(sock, &ins)) {
       int recv_ret, write_ret;
-      char buf[1024];
+      struct msghdr my_hdr;
+      char buf[1024], anc_buf[512];
+      struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
+      struct sockaddr_in local_addr;
+      bool local_fetch = TRUE;
       int addr_len = sizeof(rem_addr);
+
+      /* Warning, incredible hack around.  I've looked for this code for a lot
+         of hours, and finally found the RFC 2292 which provides a socket API
+         for fetching the destination interface of the incoming packet. */
+      memset(&my_hdr, 0, sizeof(my_hdr));
+      memset(&rem_addr, 0, sizeof(rem_addr));
+      memset(&local_addr, 0, sizeof(local_addr));
+      my_hdr.msg_name = &rem_addr;
+      my_hdr.msg_namelen = sizeof(rem_addr);
+
+      /* initialize the vector struct and then the vectory member of the header */
+      my_hdr_vec.iov_base = buf;
+      my_hdr_vec.iov_len = sizeof(buf);
+      my_hdr.msg_iov = &my_hdr_vec;
+      my_hdr.msg_iovlen = 1;
+      /* now the most important part: the ancillary data, used to recovering the dst */
+      my_hdr.msg_control = anc_buf;
+      my_hdr.msg_controllen = sizeof(anc_buf);
 
       /* now check the remote address.  If we are simulating a routing then
          use the MSG_PEEK flag, which leaves the received packet untouched */
-      recv_ret = recvfrom(sock, buf, sizeof(buf), (opt_zero ? 0 : MSG_PEEK),
-		     (struct sockaddr *)&rem_addr, &addr_len);
+      recv_ret = recvmsg(sock, &my_hdr, (opt_zero ? 0 : MSG_PEEK));
 
       debug_v("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
 		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest"));
+
+      debug_v("Ancillary data=%d", my_hdr.msg_controllen);
+      if (my_hdr.msg_controllen > 0) {
+	struct cmsghdr *get_cmsg;
+
+	for (get_cmsg = CMSG_FIRSTHDR(&my_hdr); get_cmsg;
+		get_cmsg = CMSG_NXTHDR(&my_hdr, get_cmsg)) {
+	  debug_v("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type);
+
+	  if (get_cmsg->cmsg_type == IP_PKTINFO) {
+	    struct in_pktinfo *get_pktinfo;
+
+	    get_pktinfo = (struct in_pktinfo *) CMSG_DATA(get_cmsg);
+	    memcpy(&local_addr.sin_addr, &get_pktinfo->ipi_spec_dst, sizeof(local_addr.sin_addr));
+	    local_addr.sin_port = myaddr.sin_port;
+	    local_addr.sin_family = myaddr.sin_family;
+	    local_fetch = TRUE;
+	  }
+	}
+      }
+
+      if (local_fetch) {
+	debug_v("Found destination address! %s:%d", netcat_inet_ntop(&local_addr.sin_addr),
+		ntohs(local_addr.sin_port));
+      }
 
       if (opt_zero) {
 	/* FIXME: why don't allow -z with -L? but only for udp! (?) */
@@ -138,10 +189,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	}
       }
       else {
+	/* FIXME: here put the sock duplication etc in tcp style */
 	connect(sock, (struct sockaddr *)&rem_addr, addr_len);
 
-        /* this is all we want from this function */
-        return sock;
+	/* this is all we want from this function */
+	return sock;
       }
     }
     else			/* select() timed out! */

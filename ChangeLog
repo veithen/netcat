@@ -19,6 +19,8 @@
   o The udp listening mode now recognizes the `-z' command line switch.
   o Changed telnet command line switch from `-t' to `-T', added the change
     notify to doc/migration.
+  o Fixed a design bug in the UDP protocol in listen mode.  The connection should
+    be created with the exact interface as identified by the incoming packet.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0
