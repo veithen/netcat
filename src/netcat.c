@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.35 2002-05-15 20:56:39 themnemonic Exp $
+ * $Id: netcat.c,v 1.36 2002-05-20 16:30:38 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
   }
 
   /* initialize the flag buffer to keep track of the specified ports */
-  netcat_flag_init();
+  netcat_flag_init(65535);
 
   /* randomize only if needed */
   if (opt_random)
@@ -362,13 +362,14 @@ int main(int argc, char *argv[])
   /* FIXME: i don't like this check here but we must do that in order to make
      sure it doesn't fail after we accepted a connection for the tunnel mode */
   if ((netcat_flag_count() == 0) && !opt_listen)
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "No ports specified for connection");
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+	_("No ports specified for connection"));
 
   /* Handle listen mode and tunnel mode */
 
   if (opt_listen || opt_tunnel) {
     if (opt_udpmode)
-      sock_accept = core_udp_listen(&local_host.iaddrs[0], local_port.num);
+      sock_accept = core_udp_listen(&local_host.iaddrs[0], local_port.num, opt_wait);
     else
       sock_accept = core_tcp_listen(&local_host.iaddrs[0], local_port.num, opt_wait);
 
