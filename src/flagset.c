@@ -1,11 +1,11 @@
 /*
  * flagset.c -- description
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: flagset.c,v 1.1 2002-05-04 10:37:34 themnemonic Exp $
+ * $Id: flagset.c,v 1.2 2002-05-05 09:05:58 themnemonic Exp $
  */
 
 /***************************************************************************

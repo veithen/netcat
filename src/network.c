@@ -1,11 +1,11 @@
 /*
  * network.c -- description
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.12 2002-05-05 08:39:57 themnemonic Exp $
+ * $Id: network.c,v 1.13 2002-05-05 09:05:59 themnemonic Exp $
  */
 
 /***************************************************************************

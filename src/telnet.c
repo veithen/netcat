@@ -1,11 +1,11 @@
 /*
  * telnet.c -- contains the telnet protocol routines
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: telnet.c,v 1.4 2002-05-05 08:42:58 themnemonic Exp $
+ * $Id: telnet.c,v 1.5 2002-05-05 09:05:59 themnemonic Exp $
  */
 
 /***************************************************************************

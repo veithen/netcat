@@ -16,6 +16,7 @@
   o Fixed the delayed (-i) output sending not displaying incoming data
     immediately.
   o Verbose messages are now printed automatically in debug mode.
+  o Changed copyrighter name
 
 
 [*] Wed May  1 2002 - netcat v0.2.2

@@ -1,11 +1,11 @@
 /*
  * proto.h -- main header project file
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.11 2002-05-04 22:21:09 themnemonic Exp $
+ * $Id: proto.h,v 1.12 2002-05-05 09:05:59 themnemonic Exp $
  */
 
 /***************************************************************************

@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.2 2002-04-28 11:38:10 themnemonic Exp $
+@c $Id: netcat.texi,v 1.3 2002-05-05 09:05:58 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -30,7 +30,7 @@ This file documents the the Netcat utility for network operations
 data.
 
 @c man begin COPYRIGHT
-Copyright @copyright{} 2002 Johnny Mnemonic
+Copyright @copyright{} 2002  Giovanni Giacobbi
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -55,11 +55,11 @@ entitled ``GNU Free Documentation License''.
 @titlepage
 @title GNU Netcat
 @subtitle The famous networking tool
-@author by Johnny Mnemonic
+@author by Giovanni Giacobbi
 
 @ignore
 @c man begin AUTHOR
-Originally written by Johnny Mnemonic <johnny@themnemonic.org>.
+Originally written by Giovanni Giacobbi <johnny@themnemonic.org>.
 @c man end
 @c man begin SEEALSO
 GNU Info entry for @file{netcat}.

@@ -1,11 +1,11 @@
 /*
  * misc.c -- description
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.15 2002-05-05 08:43:13 themnemonic Exp $
+ * $Id: misc.c,v 1.16 2002-05-05 09:05:58 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,7 +30,7 @@
 
 /* Hexdump `datalen' bytes starting at `data' to the file pointed to by `stream'.
    If the given block generates a partial line it's rounded up with blank spaces.
-   This function was written by Johnny Mnemonic for the netcat project,
+   This function was written by Giovanni Giacobbi for The GNU Netcat project,
    credits must be given for any use of this code outside this project */
 
 int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
@@ -220,11 +220,11 @@ void netcat_printhelp(char *argv0)
 void netcat_printversion(void)
 {
   printf("netcat (The GNU Netcat) %s\n", VERSION);
-  printf(_("Copyright (c) 2002 Johnny Mnemonic\n\n"
+  printf(_("Copyright (C) 2002  Giovanni Giacobbi\n\n"
 "This program comes with NO WARRANTY, to the extent permitted by law.\n"
 "You may redistribute copies of this program under the terms of\n"
 "the GNU General Public License.\n"
 "For more information about these matters, see the file named COPYING.\n\n"
 "Original idea and design by Avian Research <hobbit@avian.org>,\n"
-"Written by Johnny Mnemonic <johnny@themnemonic.org>.\n"));
+"Written by Giovanni Giacobbi <johnny@themnemonic.org>.\n"));
 }

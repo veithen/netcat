@@ -1,11 +1,11 @@
 /*
  * netcat.h -- main header project file
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.13 2002-05-05 08:40:59 themnemonic Exp $
+ * $Id: netcat.h,v 1.14 2002-05-05 09:05:59 themnemonic Exp $
  */
 
 /***************************************************************************

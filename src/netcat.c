@@ -1,11 +1,11 @@
 /*
  * netcat.c -- main project file
- * Part of the netcat project
+ * Part of the GNU netcat project
  *
- * Author: Johnny Mnemonic <johnny@themnemonic.org>
- * Copyright (c) 2002 by Johnny Mnemonic
+ * Author: Giovanni Giacobbi <johnny@themnemonic.org>
+ * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.20 2002-05-05 08:44:19 themnemonic Exp $
+ * $Id: netcat.c,v 1.21 2002-05-05 09:05:58 themnemonic Exp $
  */
 
 /***************************************************************************

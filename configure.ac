@@ -1,9 +1,9 @@
 #
 #  configure.ac
 #
-#  Author: Johnny Mnemonic <johnny@themnemonic.org>
+#  Author: Giovanni Giacobbi <johnny@themnemonic.org>
 #
-#  Copyright (C) 2002 Johnny Mnemonic
+#  Copyright (C) 2002  Giovanni Giacobbi
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
