@@ -1,11 +1,11 @@
 /*
- * misc.c -- contains generic needed routines
+ * misc.c -- contains generic purposes routines
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.21 2002-05-07 18:50:18 themnemonic Exp $
+ * $Id: misc.c,v 1.22 2002-05-23 17:40:17 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -127,10 +127,10 @@ void ncprint(int type, const char *fmt, ...)
 #ifndef DEBUG
   /* return if this requires some verbosity levels and we haven't got it */
   if ((flags & NCPRINT_VERB2) && (opt_verbose < 2))
-    return;
+    goto end;
 
   if ((flags & NCPRINT_VERB1) && (opt_verbose < 1))
-    return;
+    goto end;
 #endif
 
   /* known flags */
@@ -165,7 +165,11 @@ void ncprint(int type, const char *fmt, ...)
   if (flags & NCPRINT_DELAY)
     usleep(NCPRINT_WAITTIME);
 
-  /* of course assume that this is a failure exit */
+#ifndef DEBUG
+ end:
+#endif
+  /* now resolve the EXIT flag. If this was a verbosity but the required level
+     wasn't given, exit anyway */
   if (flags & NCPRINT_EXIT)
     exit(EXIT_FAILURE);
 }
