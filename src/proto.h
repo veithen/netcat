@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.17 2002-05-12 21:17:53 themnemonic Exp $
+ * $Id: proto.h,v 1.18 2002-05-20 16:29:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -25,12 +25,12 @@
 /* core.c */
 int core_readwrite(int sock, int sock2);
 int core_udp_connect(struct in_addr *host, unsigned short port);
-int core_udp_listen(struct in_addr *local_host, unsigned short local_port);
+int core_udp_listen(struct in_addr *local_host, unsigned short local_port, int timeout);
 int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout);
 int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int timeout);
 
 /* flagset.c */
-bool netcat_flag_init(void);
+bool netcat_flag_init(unsigned int len);
 void netcat_flag_set(unsigned short port, bool flag);
 bool netcat_flag_get(unsigned short port);
 unsigned short netcat_flag_next(unsigned short port);
