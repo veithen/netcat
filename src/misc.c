@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.31 2002-11-20 21:24:15 themnemonic Exp $
+ * $Id: misc.c,v 1.32 2002-12-08 19:00:32 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -95,7 +95,7 @@ int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen)
     p += 3;
 
 #ifndef USE_OLD_HEXDUMP
-    if ((pos + 1) % 4 == 0)
+    if (((pos + 1) % 4) == 0)
       *p++ = ' ';
 #endif
 
@@ -125,8 +125,8 @@ int netcat_snprintnum(char *str, size_t size, unsigned long number)
   return snprintf(str, size, "%lu%c", number, *p);
 }
 
-/* This is an advanced function for printing normal and errors messages for the
-   user.  It supports various types and flags declared in the misc.h file. */
+/* This is an advanced function for printing normal and error messages for the
+   user.  It supports various types and flags which are declared in misc.h. */
 
 void ncprint(int type, const char *fmt, ...)
 {
@@ -150,7 +150,7 @@ void ncprint(int type, const char *fmt, ...)
   /* known flags */
   if (flags & NCPRINT_STDOUT)
     fstream = stdout;
-  else if (flags & NCPRINT_NONEWLINE)
+  if (flags & NCPRINT_NONEWLINE)
     newline = '\0';
 
   /* from now on, it's very probable that we will need the string formatted */
@@ -190,10 +190,36 @@ void ncprint(int type, const char *fmt, ...)
     usleep(NCPRINT_WAITTIME);
 
  end:
-  /* now resolve the EXIT flag. If this was a verbosity but the required level
-     wasn't given, exit anyway */
+  /* now resolve the EXIT flag. If this was a verbosity message but we don't
+     have the required level, exit anyway. */
   if (flags & NCPRINT_EXIT)
     exit(EXIT_FAILURE);
+}
+
+/* prints statistics to stderr with the right verbosity level.  If `force' is
+   TRUE, then the verbosity level is overridden and the statistics are printed
+   anyway. */
+
+void netcat_printstats(bool force)
+{
+  char *p, str_recv[64], str_sent[64];
+
+  /* fill in the buffers but preserve the space for adding the label */
+  netcat_snprintnum(str_recv, 32, bytes_recv);
+  assert(str_recv[0]);
+  for (p = str_recv; *(p + 1); p++);	/* find the last char */
+  if ((bytes_recv > 0) && !isdigit((int)*p))
+    snprintf(++p, sizeof(str_recv) - 32, " (%lu)", bytes_recv);
+
+  netcat_snprintnum(str_sent, 32, bytes_sent);
+  assert(str_sent[0]);
+  for (p = str_sent; *(p + 1); p++);	/* find the last char */
+  if ((bytes_sent > 0) && !isdigit((int)*p))
+    snprintf(++p, sizeof(str_sent) - 32, " (%lu)", bytes_sent);
+
+  ncprint(NCPRINT_NONEWLINE | (force ? 0 : NCPRINT_VERB2),
+	  _("Total received bytes: %s\nTotal sent bytes: %s\n"),
+	  str_recv, str_sent);
 }
 
 /* This is a safe string split function.  It will return a valid pointer

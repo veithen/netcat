@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.59 2002-11-20 21:24:15 themnemonic Exp $
+ * $Id: netcat.c,v 1.60 2002-12-08 19:00:34 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -32,23 +32,28 @@
 #include <getopt.h>
 #include <time.h>		/* time(2) used as random seed */
 
+#ifdef BETA_SIGHANDLER
+#warning Using beta code for signal handling functions
+#endif
+
 /* int gatesidx = 0; */		/* LSRR hop count */
 /* int gatesptr = 4; */		/* initial LSRR pointer, settable */
 /* nc_host_t **gates = NULL; */	/* LSRR hop hostpoop */
 /* char *optbuf = NULL; */	/* LSRR or sockopts */
-FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
+FILE *output_fp = NULL;		/* output fd (FIXME: i don't like this) */
 bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
-bool got_sigterm = FALSE;	/* when this TRUE the application must exit */
 bool signal_handler = TRUE;	/* handle the signals externally */
+bool got_sigterm = FALSE;	/* when this TRUE the application must exit */
+bool got_sigusr1 = FALSE;	/* when set, the application should print stats */
 
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
 bool opt_eofclose = FALSE;	/* close connection on EOF from stdin */
 bool opt_debug = FALSE;		/* debugging output */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
-bool opt_random = FALSE;		/* use random ports */
+bool opt_random = FALSE;	/* use random ports */
 bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
-bool opt_telnet = FALSE;		/* answer in telnet mode */
+bool opt_telnet = FALSE;	/* answer in telnet mode */
 bool opt_hexdump = FALSE;	/* hexdump traffic */
 bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
 int opt_interval = 0;		/* delay (in seconds) between lines/ports */
@@ -56,31 +61,8 @@ int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
-nc_proto_t opt_proto = NETCAT_PROTO_TCP;  /* protocol to use for connections */
+nc_proto_t opt_proto = NETCAT_PROTO_TCP; /* protocol to use for connections */
 
-/* prints statistics to stderr with the right verbosity level */
-
-static void printstats(void)
-{
-  char *p, str_recv[64], str_sent[64];
-
-  /* fill in the buffers but preserve the space for adding the label */
-  netcat_snprintnum(str_recv, 32, bytes_recv);
-  assert(str_recv[0]);
-  for (p = str_recv; *(p + 1); p++);	/* find the last char */
-  if ((bytes_recv > 0) && !isdigit((int)*p))
-    snprintf(++p, sizeof(str_recv) - 32, " (%lu)", bytes_recv);
-
-  netcat_snprintnum(str_sent, 32, bytes_sent);
-  assert(str_sent[0]);
-  for (p = str_sent; *(p + 1); p++);	/* find the last char */
-  if ((bytes_sent > 0) && !isdigit((int)*p))
-    snprintf(++p, sizeof(str_sent) - 32, " (%lu)", bytes_sent);
-
-  ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
-	  _("Total received bytes: %s\nTotal sent bytes: %s\n"),
-	  str_recv, str_sent);
-}
 
 /* signal handling */
 
@@ -89,27 +71,45 @@ static void got_term(int z)
   if (!got_sigterm)
     ncprint(NCPRINT_VERB1, _("Terminated."));
 #ifdef BETA_SIGHANDLER
+  debug_v("_____ RECEIVED SIGTERM _____ [signal_handler=%s]",
+	  BOOL_TO_STR(signal_handler));
   got_sigterm = TRUE;
-  debug_dv("_____ RECEIVED SIGTERM _____");
-  if (signal_handler)
+  if (signal_handler)			/* default action */
     exit(EXIT_FAILURE);
 #else
   exit(EXIT_FAILURE);
 #endif
 }
+
 static void got_int(int z)
 {
   if (!got_sigterm)
     ncprint(NCPRINT_VERB1, _("Exiting."));
 #ifdef BETA_SIGHANDLER
-#warning "Using beta code for signal handling functions"
+  debug_v("_____ RECEIVED SIGINT _____ [signal_handler=%s]",
+	  BOOL_TO_STR(signal_handler));
   got_sigterm = TRUE;
-  debug_dv("_____ RECEIVED SIGINT _____");
-  if (signal_handler)
+  if (signal_handler) {			/* default action */
+    netcat_printstats(FALSE);
     exit(EXIT_FAILURE);
+  }
 #else
-  printstats();
+  netcat_printstats(FALSE);
   exit(EXIT_FAILURE);
+#endif
+}
+
+static void got_usr1(int z)
+{
+#ifdef BETA_SIGHANDLER
+  debug_dv("_____ RECEIVED SIGUSR1 _____ [signal_handler=%s]",
+	   BOOL_TO_STR(signal_handler));
+  if (signal_handler)			/* default action */
+    netcat_printstats(TRUE);
+  else
+    got_sigusr1 = TRUE;
+#else
+  netcat_printstats(TRUE);
 #endif
 }
 
@@ -184,6 +184,8 @@ int main(int argc, char *argv[])
   sigaction(SIGINT, &sv, NULL);
   sv.sa_handler = got_term;
   sigaction(SIGTERM, &sv, NULL);
+  sv.sa_handler = got_usr1;
+  sigaction(SIGUSR1, &sv, NULL);
   /* ignore some boring signals */
   sv.sa_handler = SIG_IGN;
   sigaction(SIGPIPE, &sv, NULL);
@@ -388,13 +390,13 @@ int main(int argc, char *argv[])
 
   /* handle the -o option. exit on failure */
   if (opt_outputfile) {
-    output_fd = fopen(opt_outputfile, "w");
-    if (!output_fd)
+    output_fp = fopen(opt_outputfile, "w");
+    if (!output_fp)
       ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Failed to open output file: %s"),
 	      strerror(errno));
   }
   else
-    output_fd = stderr;
+    output_fp = stderr;
 
   debug_v("Trying to parse non-args parameters (argc=%d, optind=%d)", argc,
 	  optind);
@@ -490,7 +492,7 @@ int main(int argc, char *argv[])
       /* since i'm planning to make `-z' compatible with `-L' I need to check
          the exact error that caused this failure. */
       if (opt_zero && (errno == ETIMEDOUT))
-        exit(0);
+	exit(0);
 
       ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),
 	      strerror(errno));
@@ -606,6 +608,6 @@ int main(int argc, char *argv[])
  main_exit:
   debug_v("Main: EXIT (cleaning up)");
 
-  printstats();
+  netcat_printstats(FALSE);
   return glob_ret;
 }				/* end of main() */

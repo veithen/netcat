@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.36 2002-11-20 21:24:15 themnemonic Exp $
+ * $Id: proto.h,v 1.37 2002-12-08 19:00:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -40,6 +40,7 @@ unsigned short netcat_flag_rand(void);
 int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen);
 int netcat_snprintnum(char *str, size_t size, unsigned long number);
 void ncprint(int type, const char *fmt, ...);
+void netcat_printstats(bool force);
 char *netcat_string_split(char **buf);
 void netcat_commandline_read(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
@@ -52,8 +53,8 @@ extern bool opt_eofclose, opt_debug, opt_numeric, opt_random, opt_hexdump,
 extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern nc_proto_t opt_proto;
-extern FILE *output_fd;
-extern bool use_stdin, got_sigterm, signal_handler;
+extern FILE *output_fp;
+extern bool use_stdin, signal_handler, got_sigterm, got_sigusr1;
 
 /* network.c */
 bool netcat_resolvehost(nc_host_t *dst, const char *name);
