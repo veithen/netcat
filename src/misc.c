@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.33 2003-01-03 22:44:40 themnemonic Exp $
+ * $Id: misc.c,v 1.34 2003-02-28 22:06:23 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -131,7 +131,7 @@ int netcat_snprintnum(char *str, size_t size, unsigned long number)
 void ncprint(int type, const char *fmt, ...)
 {
   int flags = type & 0xFF;
-  char buf[1024], newline = '\n';
+  char buf[512], newline = '\n';
   FILE *fstream = stderr;		/* output stream */
   va_list args;
 
@@ -153,10 +153,17 @@ void ncprint(int type, const char *fmt, ...)
   if (flags & NCPRINT_NONEWLINE)
     newline = 0;
 
-  /* from now on, it's very probable that we will need the string formatted */
-  va_start(args, fmt);
-  vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
+  /* from now on, it's very probable that we will need the string formatted,
+     so unless we have the NOFMT flag, resolve it */
+  if (!(flags & NCPRINT_NOFMT)) {
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+  }
+  else {
+    strncpy(buf, fmt, sizeof(buf));
+    buf[sizeof(buf) - 1] = 0;
+  }
 
   switch (type) {
   case NCPRINT_NORMAL:
@@ -348,3 +355,20 @@ void netcat_printversion(void)
 "Original idea and design by Avian Research <hobbit@avian.org>,\n"
 "Written by Giovanni Giacobbi <giovanni@giacobbi.net>.\n"));
 }
+
+#ifdef DEBUG
+/* This function resolves in a totally non-threadsafe way the format strings in
+   the debug messages in order to wrap the call to the ncprint facility */
+
+const char *debug_fmt(const char *fmt, ...)
+{
+  static char buf[512];
+  va_list args;
+
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  return buf;
+}
+#endif
