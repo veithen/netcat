@@ -87,11 +87,8 @@ dnl *********************************************************************
 
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 	[enable use of Memory Debug (default: no)]),
-	if test "x$enableval" = "xyes"; then
-	  CFLAGS="$CFLAGS -O0 -Wall -g3 -ggdb3 -DDEBUG"
-	else
-	  CFLAGS="$CFLAGS -Wall -DNDEBUG"
-	fi , debug=no)
+	[CFLAGS="$CFLAGS -O0 -Wall -g3 -ggdb3 -DDEBUG"],
+	[CFLAGS="$CFLAGS -Wall -DNDEBUG"])
 
 AC_ARG_ENABLE(oldhexdump, AC_HELP_STRING([--enable-oldhexdump],
 	[use the old style hexdump format (default: no)]),
