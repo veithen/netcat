@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.7 2002-04-28 17:17:01 themnemonic Exp $
+ * $Id: netcat.h,v 1.8 2002-04-28 17:33:30 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -135,17 +135,6 @@ struct port_poop
 #define debug_v(fmt, args...)
 #endif
 
-extern int o_verbose;
-extern char unknown[];
-
-/* misc.c */
-char *netcat_string_split(char **buf);
-void debug_output(bool wrap, const char *fmt, ...);
-void netcat_commandline(int *argc, char ***argv);
-void netcat_printhelp(char *argv0);
-
-/* network.c */
-netcat_host *netcat_resolvehost(char *name, bool numeric);
-
+#include "proto.h"
 
 #endif	/* !NETCAT_H */

@@ -9,6 +9,7 @@
     the equivalent of the old gethostpoop().
   o Added debug() and debug_v() routines, to improve debugging output.
     Debug() is now obsolete and will be removed soon.
+  o Added file proto.h, containing all externs and function declarations.
 
 
 [*] Sun Apr 28 2002 - netcat v0.1.0
