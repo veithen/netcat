@@ -5,64 +5,74 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: netcat 0.4.0\n"
-"POT-Creation-Date: 2002-05-15 23:03+0200\n"
-"PO-Revision-Date: 2002-05-15 23:04+0200\n"
+"Project-Id-Version: netcat 0.5.0\n"
+"POT-Creation-Date: 2002-05-31 15:47+0200\n"
+"PO-Revision-Date: 2002-05-31 15:49+0200\n"
 "Last-Translator: Giovanni Giacobbi <johnny@themnemonic.org>\n"
 "Language-Team: Italian <johnny@themnemonic.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:191
+#: src/core.c:183
+#, c-format
+msgid "Received packet from %s:%d -> %s:%d (local)"
+msgstr "Pacchetto ricevuto da %s:%d -> %s:%d (locale)"
+
+#: src/core.c:188
+#, c-format
+msgid "Received packet from %s:%d"
+msgstr "Pacchetto ricevuto da %s:%d"
+
+#: src/core.c:356
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr "Connessione non voluta da %s:%hu (rifiutata)"
 
-#: src/core.c:196
+#: src/core.c:360
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr "Connessione da %s:%hu"
 
-#: src/misc.c:156
+#: src/misc.c:155
 msgid "Error:"
 msgstr "Errore:"
 
-#: src/misc.c:159
+#: src/misc.c:158
 msgid "Warning:"
 msgstr "Attenzione:"
 
-#: src/misc.c:202
+#: src/misc.c:205
 msgid "Cmd line:"
 msgstr "Riga comando:"
 
-#: src/misc.c:234
+#: src/misc.c:237
 #, c-format
 msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
 msgstr "GNU netcat %s, una reimplementazione del famoso tool per networking.\n"
 
-#: src/misc.c:235
+#: src/misc.c:238
 msgid "Basic usages:\n"
 msgstr "Utilizzo di base:\n"
 
-#: src/misc.c:236
+#: src/misc.c:239
 #, c-format
 msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
 msgstr "connessione ad un host: %s [opzioni] hostname port [port] ...\n"
 
-#: src/misc.c:237
+#: src/misc.c:240
 #, c-format
 msgid "listen for inbound:    %s -l -p port [options] [hostname] [port]\n"
 msgstr "attesa connessione:     %s -l -p port [opzioni] [hostname] [port]\n"
 
-#: src/misc.c:239
+#: src/misc.c:242
 msgid ""
 "Mandatory arguments to long options are mandatory for short options too.\n"
 msgstr ""
 "Gli argomenti che sono obbligatori per le istruzioni lunghe lo sono anche "
 "per quelle corte.\n"
 
-#: src/misc.c:240
+#: src/misc.c:243
 msgid ""
 "Options:\n"
 "  -e, --exec=PROGRAM         program to exec after connect\n"
@@ -71,19 +81,7 @@ msgid ""
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
-"  -L, --tunnel               forward local port to remote address\n"
-"  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
-"  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
-"  -p, --local-port=NUM       local port number\n"
-"  -r, --randomize            randomize local and remote ports\n"
-"  -s, --source=ADDRESS       local source address (ip or hostname)\n"
-"  -t, --telnet               answer using TELNET negotiation\n"
-"  -u, --udp                  UDP mode\n"
-"  -v, --verbose              verbose (use twice to be more verbose)\n"
-"  -V, --version              output version information and exit\n"
-"  -x, --hexdump              hexdump incoming and outgoing traffic\n"
-"  -w, --wait=SECS            timeout for connects and final net reads\n"
-"  -z, --zero                 zero-I/O mode (used for scanning)\n"
+"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 msgstr ""
 "Opzioni:\n"
 "  -e, --exec=PROGRAM         programma da eseguire dopo la connessione\n"
@@ -94,13 +92,52 @@ msgstr ""
 "                             provate.\n"
 "  -l, --listen               modalità di ascolto, per le connessioni in "
 "entrata\n"
+"  -L, --tunnel=ADDRESS:PORT  modalità tunnel, inoltra una porta "
+"all'indirizzo\n"
+"                             specificato\n"
+
+#: src/misc.c:251
+msgid ""
+"  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
+"  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
+"  -p, --local-port=NUM       local port number\n"
+"  -r, --randomize            randomize local and remote ports\n"
+"  -s, --source=ADDRESS       local source address (ip or hostname)\n"
+msgstr ""
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          scrivi l'output del traffico sul FILE (implica -"
 "x)\n"
 "  -p, --local-port=NUM       specifica la porta locale usata\n"
 "  -r, --randomize            randomizza le porte locali e remote\n"
 "  -s, --source=ADDRESS       specifica l'indirizzo sorgente (ip o hostname)\n"
+
+#: src/misc.c:258
+msgid ""
+"  -t, --tcp                  TCP mode (default)\n"
+"  -T, --telnet               answer using TELNET negotiation\n"
+msgstr ""
+"  -t, --tcp                  modalità TCP (default)\n"
+"  -T, --telnet               rispondi alle negoziazioni TELNET\n"
+
+#: src/misc.c:262
+msgid ""
+"      --tcp                  TCP mode (default)\n"
+"  -t, --telnet               answer using TELNET negotiation\n"
+"  -T                         same as --telnet (compat)\n"
+msgstr ""
+"      --tcp                  modalità TCP (default)\n"
 "  -t, --telnet               rispondi alle negoziazioni TELNET\n"
+"  -T                         uguale a --telnet (compat)\n"
+
+#: src/misc.c:267
+msgid ""
+"  -u, --udp                  UDP mode\n"
+"  -v, --verbose              verbose (use twice to be more verbose)\n"
+"  -V, --version              output version information and exit\n"
+"  -x, --hexdump              hexdump incoming and outgoing traffic\n"
+"  -w, --wait=SECS            timeout for connects and final net reads\n"
+"  -z, --zero                 zero-I/O mode (used for scanning)\n"
+msgstr ""
 "  -u, --udp                  modalità UDP\n"
 "  -v, --verbose              dettagli (due volte significa più dettagli)\n"
 "  -V, --version              mostra informazioni sulla versione ed esce\n"
@@ -109,12 +146,12 @@ msgstr ""
 "connessioni\n"
 "  -z, --zero                 modalità di zero-I/O (usata per lo scanning)\n"
 
-#: src/misc.c:261
+#: src/misc.c:275
 msgid "Remote port number can also be specified as range.  Example: '1-1024'\n"
 msgstr ""
 "La porta remota può essere specificata come intervallo.  Esempio: '1-1024'\n"
 
-#: src/misc.c:271
+#: src/misc.c:285
 msgid ""
 "Copyright (C) 2002  Giovanni Giacobbi\n"
 "\n"
@@ -137,7 +174,7 @@ msgstr ""
 "Design e idea originale di Avian Research <hobbit@avian.org>,\n"
 "Scritto da Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 
-#: src/netcat.c:68
+#: src/netcat.c:65
 #, c-format
 msgid ""
 "Total received bytes: %ld\n"
@@ -146,67 +183,95 @@ msgstr ""
 "Totale byte ricevuti: %ld\n"
 "Totale byte inviati: %ld\n"
 
-#: src/netcat.c:98
+#: src/netcat.c:95
 msgid "Exiting."
 msgstr "Uscita."
 
-#: src/netcat.c:195
+#: src/netcat.c:207
 msgid "Cannot specify `-e' option double"
 msgstr "Impossibile utilizzare l'opzione `-e' più volte"
 
-#: src/netcat.c:209
+#: src/netcat.c:221
 #, c-format
 msgid "Invalid interval time \"%s\""
 msgstr "Tempo di intervallo non valido \"%s\""
 
-#: src/netcat.c:214 src/netcat.c:220
-msgid "`-L' and '-l' options are incompatible"
+#: src/netcat.c:226 src/netcat.c:232
+msgid "`-L' and `-l' options are incompatible"
 msgstr "Le opzioni `-L' e `-l' sono incompatibili"
 
-#: src/netcat.c:223 src/netcat.c:272
-msgid "`-L' and '-z' options are incompatible"
+#: src/netcat.c:235 src/netcat.c:322
+msgid "`-L' and `-z' options are incompatible"
 msgstr "Le opzioni `-L' e `-z' sono incompatibili"
 
-#: src/netcat.c:235
+#: src/netcat.c:243
+msgid "Invalid target string for `-L' option"
+msgstr "Specificazione del tunnel non valida per il parametro `-L'"
+
+#: src/netcat.c:247
+#, c-format
+msgid "Couldn't resolve tunnel target host: %s"
+msgstr "Impossibile risolvere l'obbiettivo del tunnel: %s"
+
+#: src/netcat.c:250
+#, c-format
+msgid "Invalid tunnel target port: %s"
+msgstr "Porta del tunnel non valida: %s"
+
+#: src/netcat.c:267
 #, c-format
 msgid "Invalid local port: %s"
 msgstr "Porta locale specificata non valida: %s"
 
-#: src/netcat.c:244
+#: src/netcat.c:272
+#, c-format
+msgid "Invalid tunnel connect port: %s"
+msgstr "Porta specificata per la connessione del tunnel non valida: %s"
+
+#: src/netcat.c:281
 #, c-format
 msgid "Couldn't resolve local host: %s"
 msgstr "Porta locale non valida: %s"
 
-#: src/netcat.c:263
+#: src/netcat.c:286
+#, c-format
+msgid "Couldn't resolve tunnel local host: %s"
+msgstr "Impossibile risolvere l'host di connessione del tunnel: %s"
+
+#: src/netcat.c:313
 #, c-format
 msgid "Invalid wait-time: %s"
 msgstr "Tempo di attesa non valido: %s"
 
-#: src/netcat.c:276
+#: src/netcat.c:326
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr "Usare `%s --help' per ulteriori informazioni.\n"
 
-#: src/netcat.c:291
+#: src/netcat.c:342
 msgid "Failed to open output file"
 msgstr "Impossibile aprire il file di output"
 
-#: src/netcat.c:304
+#: src/netcat.c:355
 #, c-format
 msgid "Couldn't resolve host \"%s\""
 msgstr "Impossibile risolvere l'host \"%s\""
 
-#: src/netcat.c:348
+#: src/netcat.c:402
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr "Specificazione porta non valida: %s"
 
-#: src/netcat.c:382
+#: src/netcat.c:445
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr "Modalità di attesa fallita: %s"
 
-#: src/netcat.c:426
+#: src/netcat.c:480
+msgid "No ports specified for connection"
+msgstr "Nessuna porta specificata per la connessione"
+
+#: src/netcat.c:514
 #, c-format
 msgid "%s open"
 msgstr "%s è aperto"
