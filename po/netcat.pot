@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-05-06 22:43+0200\n"
+"POT-Creation-Date: 2002-05-08 22:43+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,43 +15,43 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/misc.c:157
+#: src/misc.c:156
 msgid "Error:"
 msgstr ""
 
-#: src/misc.c:160
+#: src/misc.c:159
 msgid "Warning:"
 msgstr ""
 
-#: src/misc.c:200
-msgid "Cmd line: "
-msgstr ""
-
-#: src/misc.c:232
-#, c-format
-msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
-msgstr ""
-
-#: src/misc.c:233
-msgid "Basic usages:\n"
+#: src/misc.c:202
+msgid "Cmd line:"
 msgstr ""
 
 #: src/misc.c:234
 #, c-format
-msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
+msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
 msgstr ""
 
 #: src/misc.c:235
+msgid "Basic usages:\n"
+msgstr ""
+
+#: src/misc.c:236
+#, c-format
+msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
+msgstr ""
+
+#: src/misc.c:237
 #, c-format
 msgid "listen for inbound:    %s -l -p port [options] [hostname] [port]\n"
 msgstr ""
 
-#: src/misc.c:237
+#: src/misc.c:239
 msgid ""
 "Mandatory arguments to long options are mandatory for short options too.\n"
 msgstr ""
 
-#: src/misc.c:238
+#: src/misc.c:240
 msgid ""
 "Options:\n"
 "  -e, --exec=PROGRAM         program to exec after connect\n"
@@ -75,11 +75,11 @@ msgid ""
 "  -z, --zero                 zero-I/O mode (used for scanning)\n"
 msgstr ""
 
-#: src/misc.c:259
+#: src/misc.c:261
 msgid "Remote port number can also be specified as range.  Example: '1-1024'\n"
 msgstr ""
 
-#: src/misc.c:269
+#: src/misc.c:271
 msgid ""
 "Copyright (C) 2002  Giovanni Giacobbi\n"
 "\n"
@@ -92,82 +92,82 @@ msgid ""
 "Written by Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 msgstr ""
 
-#: src/netcat.c:72
-msgid "Exiting."
-msgstr ""
-
-#: src/netcat.c:74
+#: src/netcat.c:67
 #, c-format
 msgid ""
 "Total received bytes: %ld\n"
 "Total sent bytes: %ld\n"
 msgstr ""
 
-#: src/netcat.c:357
+#: src/netcat.c:91
+msgid "Exiting."
+msgstr ""
+
+#: src/netcat.c:361
+msgid "Cannot specify `-e' option double"
+msgstr ""
+
+#: src/netcat.c:375
 #, c-format
 msgid "Invalid interval time \"%s\""
 msgstr ""
 
-#: src/netcat.c:361 src/netcat.c:368
-msgid "Error: `-L' and `-l' options are incompatible\n"
+#: src/netcat.c:380 src/netcat.c:386
+msgid "`-L' and '-l' options are incompatible"
 msgstr ""
 
-#: src/netcat.c:382
+#: src/netcat.c:398
 #, c-format
-msgid "Error: invalid local port: %s\n"
+msgid "Invalid local port: %s"
 msgstr ""
 
-#: src/netcat.c:392
+#: src/netcat.c:407
 #, c-format
-msgid "Error: Couldn't resolve local host: %s\n"
+msgid "Couldn't resolve local host: %s"
 msgstr ""
 
-#: src/netcat.c:412
+#: src/netcat.c:426
 #, c-format
 msgid "Invalid wait-time: %s"
 msgstr ""
 
-#: src/netcat.c:422
+#: src/netcat.c:436
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr ""
 
-#: src/netcat.c:437
-msgid "Failed to open output file: "
+#: src/netcat.c:451
+msgid "Failed to open output file"
 msgstr ""
 
-#: src/netcat.c:450
+#: src/netcat.c:464
 #, c-format
-msgid "Error: Couldn't resolve host \"%s\"\n"
+msgid "Couldn't resolve host \"%s\""
 msgstr ""
 
-#: src/netcat.c:490
+#: src/netcat.c:505
 #, c-format
-msgid "Error: Invalid port specification: %s\n"
+msgid "Invalid port specification: %s"
 msgstr ""
 
-#: src/netcat.c:508
-msgid "Error: No ports specified for connection\n"
-msgstr ""
-
-#: src/netcat.c:519
-#, c-format
-msgid "Error: Couldn't setup listen socket (err=%d)\n"
-msgstr ""
-
-#: src/netcat.c:533
+#: src/netcat.c:543
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr ""
 
-#: src/netcat.c:545
+#: src/netcat.c:555
 #, c-format
-msgid "Unwanted connection from %s:%d (refused)"
+msgid "Unwanted connection from %s:%hu (refused)"
 msgstr ""
 
-#: src/netcat.c:552
+#: src/netcat.c:562
 #, c-format
-msgid "Connection from %s:%d"
+msgid "Connection from %s:%hu"
+msgstr ""
+
+#: src/netcat.c:647
+#, c-format
+msgid "%s open"
 msgstr ""
 
 #: src/network.c:84
