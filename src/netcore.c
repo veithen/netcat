@@ -1,11 +1,11 @@
 /*
- * core.c -- core loops and most critical routines
+ * netcore.c -- core loops and most critical routines
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.38 2004-01-03 16:42:07 themnemonic Exp $
+ * $Id: netcore.c,v 1.1 2004-01-15 22:07:21 themnemonic Exp $
  */
 
 /***************************************************************************

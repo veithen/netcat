@@ -15,7 +15,7 @@
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
 
-# $Id: Makefile.am,v 1.15 2004-01-15 21:56:20 themnemonic Exp $
+# $Id: Makefile.am,v 1.16 2004-01-15 22:07:21 themnemonic Exp $
 
 localedir = $(datadir)/locale
 DEFS = -DLOCALEDIR=\"\$(localedir)\" @DEFS@
@@ -26,10 +26,10 @@ endif
 
 bin_PROGRAMS = netcat
 netcat_SOURCES = \
-	core.c \
 	flagset.c \
 	misc.c \
 	netcat.c \
+	netcore.c \
 	network.c \
 	telnet.c \
 	udphelper.c
