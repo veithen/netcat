@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.16 2002-05-08 20:29:37 themnemonic Exp $
+ * $Id: network.c,v 1.17 2002-05-11 19:02:40 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -237,11 +237,11 @@ const char *netcat_inet_ntop(const void *src)
 
 /* ... */
 
-int netcat_socket_new()
+int netcat_socket_new(int domain, int type)
 {
   int sock, ret, sockopt = 0;
 
-  sock = socket(PF_INET, SOCK_STREAM, 0);
+  sock = socket(domain, type, 0);
   if (sock < 0)
     return -1;
 
@@ -255,8 +255,9 @@ int netcat_socket_new()
 
 /* ... */
 
-int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
-		const struct in_addr *local_addr, unsigned short local_port)
+int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
+		unsigned short port, const struct in_addr *local_addr,
+		unsigned short local_port)
 {
   int sock, ret;
   struct sockaddr_in rem_addr;
@@ -269,7 +270,7 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
   memcpy(&rem_addr.sin_addr, addr, sizeof(rem_addr.sin_addr));
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new();
+  sock = netcat_socket_new(domain, type);
   if (sock < 0)
     return sock;
 
@@ -320,7 +321,7 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
   memcpy(&my_addr.sin_addr, addr, sizeof(my_addr.sin_addr));
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new();
+  sock = netcat_socket_new(PF_INET, SOCK_STREAM);
   if (sock < 0)
     return sock;
 
@@ -338,8 +339,10 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
 }
 
 /* This function is much like the accept(2) call, but implements also the
-   parameter `timeout', which specifies the time (in seconds) after which
-   the function returns.
+   parameter `timeout', which specifies the time (in seconds) after which the
+   function returns.  If `timeout' is negative, the remaining of the last
+   valid timeout specified is used.  If it reached zero, or if the timeout
+   haven't been initialized already, this function will wait forever.
    Returns -1 on error, setting the errno variable.  If it succeeds, it
    returns a non-negative integer that is the descriptor for the accepted
    socket. */
@@ -347,18 +350,26 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
 int netcat_socket_accept(int s, int timeout)
 {
   fd_set in;
-  struct timeval timest;
+  static bool timeout_init = FALSE;
+  static struct timeval timest;
 
   debug_v("netcat_socket_accept(s=%d, timeout=%d)", s, timeout);
 
   /* initialize the select() variables */
   FD_ZERO(&in);
   FD_SET(s, &in);
-  timest.tv_sec = timeout;
-  timest.tv_usec = 0;
+  if (timeout > 0) {
+    timest.tv_sec = timeout;
+    timest.tv_usec = 0;
+    timeout_init = TRUE;
+  }
+  else if (timeout && !timeout_init) {
+    /* means that timeout is < 0 and timest hasn't been initialized */
+    timeout = 0;
+  }
 
-  /* now go into select. use the timeout only if it is valid */
-  select(s + 1, &in, NULL, NULL, (timeout > 0 ? &timest : NULL));
+  /* now go into select. use timest only if we don't wait forever */
+  select(s + 1, &in, NULL, NULL, (timeout ? &timest : NULL));
 
   /* have we got this connection? */
   if (FD_ISSET(s, &in)) {
@@ -371,6 +382,10 @@ int netcat_socket_accept(int s, int timeout)
        It's application's work to handle the right errno. */
     return new_sock;
   }
+
+  /* since we've got a timeout, the timest is now zero and thus it is like
+     uninitialized.  Next time assume wait forever. */
+  timeout_init = FALSE;
 
   /* no connections arrived during the given time. nothing happens */
   errno = ETIMEDOUT;
