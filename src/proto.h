@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.14 2002-05-06 15:02:55 themnemonic Exp $
+ * $Id: proto.h,v 1.15 2002-05-06 20:37:13 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -35,7 +35,6 @@ char *netcat_string_split(char **buf);
 int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
 		    size_t datalen);
 void ncprint(int type, const char *fmt, ...);
-void debug_output(bool wrap, const char *fmt, ...);
 void netcat_commandline_read(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
 void netcat_printversion(void);
@@ -45,7 +44,6 @@ extern bool opt_listen, opt_tunnel, opt_numeric, opt_random, opt_hexdump,
 		opt_udpmode, opt_telnet, opt_zero;
 extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
-extern int netfd;
 
 /* network.c */
 bool netcat_resolvehost(netcat_host *dst, char *name);
@@ -58,7 +56,6 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
 		const struct in_addr *local_addr, unsigned short local_port);
 int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
 int netcat_socket_accept(int fd, int timeout);
-
 
 /* telnet.c */
 void atelnet(unsigned char *buf, unsigned int size);
