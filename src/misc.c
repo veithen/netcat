@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.37 2004-01-03 16:42:07 themnemonic Exp $
+ * $Id: misc.c,v 1.38 2004-10-24 01:33:57 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,6 +27,75 @@
 #endif
 
 #include "netcat.h"
+
+/* This function takes a binary string and converts its endlines to the
+   specified ones.  It also adds a NUL character at the end of the string,
+   without compromising its result given that only first *target_len chars are
+   used.  If target_len is NULL, the only way to sort out the end of the
+   returned string is using NUL char. */
+
+char *netcat_ascii_convert(const char *source, int source_len,
+			   nc_convert_t conversion, int *target_len)
+{
+  int i, ret_len, ret_pos;
+  int cnt = 0;
+  char *ret;
+
+  /* small memo about the endlines chars:
+       \r\n   CRLF  0x0d 0x0a  carriage return line feed (win32)
+       \r     CR    0x0d       carriage return (mac)
+       \n     LF    0x0a       linefeed (linux) */
+
+  /* first calculate the difference between initial string and resulting string */
+  for (i = 0; i < source_len; i++) {
+    if ((source[i] == '\r') && ((i + 1) < source_len) && (source[i + 1] == '\n')) {
+      if (conversion != NETCAT_CONVERT_CRLF)
+        cnt--;
+    }
+    else if ((source[i] == '\r') || (source[i] == '\n')) {
+      if (conversion == NETCAT_CONVERT_CRLF)
+	cnt++;
+    }
+  }
+
+  fprintf(stderr, "modifier=%d\n", cnt);
+
+  ret_len = source_len + cnt + 1;
+  ret = malloc(ret_len);
+  ret[ret_len - 1] = 0;
+  ret_pos = 0;
+
+  for (i = 0; i < source_len; i++) {
+    if (source[i] == '\r') {
+      if (((i + 1) < source_len) && (source[i + 1] == '\n'))
+        i++;
+    }
+
+    if ((source[i] == '\r') || (source[i] == '\n')) {
+      fprintf(stderr, "here1 retpos=%d\n", ret_pos);
+      switch (conversion) {
+      case NETCAT_CONVERT_CRLF:
+	ret[ret_pos++] = '\r';
+      case NETCAT_CONVERT_LF:
+	ret[ret_pos++] = '\n';
+	break;
+      case NETCAT_CONVERT_CR:
+	ret[ret_pos++] = '\r';
+	break;
+      default:
+	abort();
+      }
+
+      fprintf(stderr, "here1_! retpos=%d\n", ret_pos);
+    }
+    else {
+      fprintf(stderr, "here2\n");
+
+      ret[ret_pos++] = source[i];
+    }
+  }
+  return ret;
+}
 
 /* Hexdump `datalen' bytes starting at `data' to the file pointed to by `stream'.
    If the given block generates a partial line it's rounded up with blank spaces.
@@ -311,16 +380,19 @@ void netcat_printhelp(char *argv0)
   printf("\n");
   printf(_("Mandatory arguments to long options are mandatory for short options too.\n"));
   printf(_("Options:\n"
+"  -4, --ipv4                 select IPv4 protocol family\n"
+"  -6, --ipv6                 select IPv6 protocol family\n"
 "  -c, --close                close connection on EOF from stdin\n"
 "  -e, --exec=PROGRAM         program to exec after connect\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
 "  -h, --help                 display this help and exit\n"
-"  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
-"  -l, --listen               listen mode, for inbound connects\n"));
+"  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"));
   printf(_(""
+"  -l, --listen               listen mode, for inbound connects\n"
 "  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
+"  -N, --convert=CRLF|CR|LF   treat data as ASCII and perform this conversion\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
