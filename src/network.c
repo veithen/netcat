@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.6 2002-04-30 20:47:59 themnemonic Exp $
+ * $Id: network.c,v 1.7 2002-05-01 13:47:29 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -29,10 +29,10 @@
 #include "netcat.h"
 #include <netdb.h>		/* hostent, gethostby*, getservby* */
 
-/* ========================== netcat_resolvehost =========================== */
 /* Fills the structure pointed to by `dst' with the resolved host `name'.
- * `name' can be either a valid IP string in dotted notation or a FQDN.
- * ... */
+   `name' can be either a valid IP string in dotted notation or a FQDN.
+   ... */
+
 bool netcat_resolvehost(netcat_host *dst, char *name)
 {
   struct hostent *hostent;
@@ -113,19 +113,13 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
   return TRUE;
 }
 
-/* =========================== netcat_getport ============================== */
 /* Identifies a port and fills in the netcat_port structure pointed to by
- * `dst'.  If `port_string' is not NULL, it is used to identify the port
- * (either by port name, listed in /etc/services, or by a string number).
- * In this case `port_num' is discarded.
- * If `port_string' is NULL then `port_num' is used to identify the port
- * and the port name is looked up reversely. */
+   `dst'.  If `port_string' is not NULL, it is used to identify the port
+   (either by port name, listed in /etc/services, or by a string number).
+   In this case `port_num' is discarded.
+   If `port_string' is NULL then `port_num' is used to identify the port
+   and the port name is looked up reversely. */
 
-/* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
-   Despite this, we still have to treat it as a short when copying it around.
-   Not only that, but we have to convert it *back* into net order for
-   getservbyport to work.  Manpages generally aren't clear on all this, but
-   there are plenty of examples in which it is just quietly done. -hobbit */
 
 bool netcat_getport(netcat_port *dst, const char *port_string,
 		    unsigned short port_num)
@@ -135,6 +129,12 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
 
   debug_v("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
 		(void *) dst, port_string, port_num);
+
+/* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
+   Despite this, we still have to treat it as a short when copying it around.
+   Not only that, but we have to convert it *back* into net order for
+   getservbyport to work.  Manpages generally aren't clear on all this, but
+   there are plenty of examples in which it is just quietly done. -hobbit */
 
   /* reset the dst struct for debugging cleanup purposes */
   memset(dst, 0, sizeof(*dst));

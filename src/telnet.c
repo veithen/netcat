@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: telnet.c,v 1.2 2002-04-30 08:25:10 themnemonic Exp $
+ * $Id: telnet.c,v 1.3 2002-05-01 13:47:29 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -58,12 +58,11 @@
 				 * to perform, the indicated option. */
 #define TELNET_IAC	255	/* Data Byte 255. */
 
-/* atelnet :
-   Answer anything that looks like telnet negotiation with don't/won't.
+/* Answer anything that looks like telnet negotiation with don't/won't.
    This doesn't modify any data buffers, update the global output count,
    or show up in a hexdump -- it just shits into the outgoing stream.
    Idea and codebase from Mudge@l0pht.com. */
- /* it has to be unsigned here! */
+
 void atelnet(unsigned char *buf, unsigned int size)
 {
   static unsigned char obuf[4];	/* tiny thing to build responses into */
@@ -97,4 +96,4 @@ void atelnet(unsigned char *buf, unsigned int size)
     p++;
     x--;
   }				/* while x */
-}				/* atelnet */
+}
