@@ -7,7 +7,7 @@ by the GNU configure scripts to build the source.
 In order to build this sources, you need the following tools properly installed
 in your system:
 
-	autoconf (GNU Autoconf) 2.54
+	autoconf (GNU Autoconf) 2.53
 	automake (GNU automake) 1.6.3
 	GNU Make version 3.79.1
 
