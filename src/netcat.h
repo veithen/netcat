@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.24 2002-06-13 23:09:23 themnemonic Exp $
+ * $Id: netcat.h,v 1.25 2002-06-16 09:48:04 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -72,6 +72,10 @@
    string notation. */
 #define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
 
+/* FIXME: I should search more about this portnames standards. Currently
+   i'll fix my own size for this */
+#define NETCAT_MAXPORTNAMELEN 64
+
 /* Find out whether we can use the RFC 2292 extensions on this machine
    (I've found out only linux supporting this feature so far) */
 #ifdef HAVE_PKTINFO
@@ -90,7 +94,7 @@
 # define INADDR_NONE 0xffffffff
 #endif
 
-/* FIXME: shall we really change this define? prolly not. */
+/* FIXME: shall we really change this define? probably not. */
 #ifdef MAXHOSTNAMELEN
 # undef MAXHOSTNAMELEN		/* might be too small on aix, so fix it */
 #endif
@@ -111,11 +115,7 @@
 # endif
 #endif
 
-typedef struct {
-  unsigned char *head;
-  unsigned char *pos;
-  int len;
-} nc_buffer_t;
+/* Netcat basic operating modes */
 
 typedef enum {
   NETCAT_UNSPEC,
@@ -124,11 +124,30 @@ typedef enum {
   NETCAT_TUNNEL
 } nc_mode_t;
 
+/* Recognized protocols */
+
 typedef enum {
   NETCAT_PROTO_UNSPEC,
   NETCAT_PROTO_TCP,
   NETCAT_PROTO_UDP
 } nc_proto_t;
+
+/* used for queues buffering and data tracking purposes.  The `head' field is
+   a pointer to the begin of the buffer segment, while `pos' indicates the
+   actual position of the data stream.  If `head' is NULL, it means that there
+   is no dynamically-allocated data in this buffer, *BUT* it MAY still contain
+   some local data segment (for example allocated inside the stack).
+   `len' indicates the length of the buffer starting from `pos'. */
+
+typedef struct {
+  unsigned char *head;
+  unsigned char *pos;
+  int len;
+} nc_buffer_t;
+
+/* this is the standard netcat hosts record.  It contains an "authoritative"
+   `name' field, which may be empty, and a list of IP addresses in the network
+   notation and in the dotted string notation. */
 
 typedef struct {
   char name[MAXHOSTNAMELEN];			/* dns name */
@@ -136,11 +155,16 @@ typedef struct {
   struct in_addr iaddrs[MAXINETADDRS];		/* real addresses */
 } nc_host_t;
 
+/* standard netcat port record.  It contains the port `name', which may be
+   empty, and the port number both as number and as string. */
+
 typedef struct {
-  char name[64];
+  char name[NETCAT_MAXPORTNAMELEN];
   char ascnum[8];
   unsigned short num;
 } nc_port_t;
+
+/* This is a more complex struct that holds socket records. [...] */
 
 typedef struct {
   int fd, domain, timeout;
