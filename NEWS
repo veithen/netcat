@@ -1,10 +1,26 @@
-       ============================
-       =                          =
-       =      The GNU Netcat      =
-       =                          =
-       =        NEWS FILE         =
-       =                          =
-       ============================
+             ============================
+             =                          =
+             =      The GNU Netcat      =
+             =                          =
+             =        NEWS FILE         =
+             =                          =
+             ============================
+
+
+
+* Netcat 0.6.0 - 22 Aug 2002 - Release Notes
+
+The summer brought advice and this is the new major release of
+Netcat.  In this version many important improvements and fixes
+are introduced, like the new UDP protocol routines and the ability
+to cross-protocol bridge between TCP and UDP in tunnel mode, and
+the new signal handling functions that allow sockets to be cleanly
+closed and shutdown before Netcat terminates.
+Also some portability problems were fixed but there is still
+something to do to achieve a good cross-platform support.
+This version introduces much new development code and thus may
+contain bugs.  Please test a lot and always report bugs through
+the Netcat bug tracking system.
 
 
 
@@ -28,6 +44,7 @@ packet to be lost, and a internal problem causing a "socket
 already in use" error which shouldn't happen.
 There are also many fixes for the portability.  Netcat now
 compiles correctly under Solaris and some other OSes.
+
 
 
 * Netcat 0.5.0 - 31 May 2002 - Release Notes
