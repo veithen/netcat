@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.63 2003-08-21 15:27:18 themnemonic Exp $
+ * $Id: netcat.c,v 1.63.2.1 2004-02-28 01:39:40 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
 
   /* try to get an hostname parameter */
   if (optind < argc) {
-    char *myhost = argv[optind++];
+    const char *myhost = argv[optind++];
     if (!netcat_resolvehost(&remote_host, myhost))
       ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve host \"%s\""),
 	      myhost);
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
 
   /* Handle listen mode and tunnel mode (whose index number is higher) */
   if (netcat_mode > NETCAT_CONNECT) {
-    /* in tunnel mode the opt_zero flag is illegal, while on listen mode it
+    /* in tunnel mode the opt_zero flag is illegal, while in listen mode it
        means that no connections should be accepted.  For UDP it means that
        no remote addresses should be used as default endpoint, which means
        that we can't send anything.  In both situations, stdin is no longer
@@ -507,7 +507,7 @@ int main(int argc, char *argv[])
 
       /* connection failure? (we cannot get this in UDP mode) */
       if (connect_ret < 0) {
-	assert(opt_proto != NETCAT_PROTO_UDP);
+	assert(connect_sock.proto != NETCAT_PROTO_UDP);
 	ncprint(NCPRINT_VERB1, "%s: %s",
 		netcat_strid(&connect_sock.host, &connect_sock.port),
 		strerror(errno));
