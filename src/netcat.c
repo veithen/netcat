@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.3 2002-04-26 16:40:36 themnemonic Exp $
+ * $Id: netcat.c,v 1.4 2002-04-26 16:47:40 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -26,6 +26,9 @@
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 /* globals: */
 jmp_buf jbuf;			/* timer crud */

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.2 2002-04-26 16:40:36 themnemonic Exp $
+ * $Id: netcat.h,v 1.3 2002-04-26 16:47:40 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -30,24 +30,12 @@
 #include <stdlib.h>
 
 
-
-// #include "generic.h"         /* same as with L5, skey, etc */
-
 /* conditional includes -- a very messy section which you may have to dink
    for your own architecture [and please send diffs...]: */
-/* #undef _POSIX_SOURCE		/* might need this for something? */
+/* #undef _POSIX_SOURCE	*/	/* might need this for something? */
 #define HAVE_BIND		/* ASSUMPTION -- seems to work everywhere! */
 #define HAVE_HELP		/* undefine if you dont want the help text */
-/* #define ANAL			/* if you want case-sensitive DNS matching */
-
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#else
-#include <malloc.h>
-#endif
-#ifdef HAVE_SELECT_H		/* random SV variants need this */
-#include <sys/select.h>
-#endif
+/* #define ANAL	*/		/* if you want case-sensitive DNS matching */
 
 /* have to do this *before* including types.h. xxx: Linux still has it wrong */
 #ifdef FD_SETSIZE		/* should be in types.h, butcha never know. */
