@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.14 2002-05-05 09:05:59 themnemonic Exp $
+ * $Id: netcat.h,v 1.15 2002-05-05 10:27:01 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -44,16 +44,30 @@
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
 #include <time.h>
 
+/* These are useful to keep the source readable */
+#ifndef STDIN_FILENO
+# define STDIN_FILENO 0
+#endif
+
+#ifndef STDOUT_FILENO
+# define STDOUT_FILENO 1
+#endif
+
+#ifndef STDERR_FILENO
+# define STDERR_FILENO 2
+#endif
+
 /* #undef _POSIX_SOURCE	*/	/* might need this for something? */
 
+
 #ifdef HAVE_RANDOM		/* try with most modern random routines */
-#define SRAND srandom
-#define RAND random
+# define SRAND srandom
+# define RAND random
 #elif defined HAVE_RAND		/* otherwise fallback to the older rand() */
-#define SRAND srand
-#define RAND rand
+# define SRAND srand
+# define RAND rand
 #else				/* if none of them are here, CHANGE OS! */
-#error "Couldn't find any random() library function"
+# error "Couldn't find any random() library function"
 #endif
 
 /* handy stuff: */
@@ -63,10 +77,10 @@
 #define BIGSIZ 8192		/* big buffers */
 
 #ifndef INADDR_NONE
-#define INADDR_NONE 0xffffffff
+# define INADDR_NONE 0xffffffff
 #endif
 #ifdef MAXHOSTNAMELEN
-#undef MAXHOSTNAMELEN		/* might be too small on aix, so fix it */
+# undef MAXHOSTNAMELEN		/* might be too small on aix, so fix it */
 #endif
 #define MAXHOSTNAMELEN 256
 
