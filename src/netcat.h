@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.3 2002-04-26 16:47:40 themnemonic Exp $
+ * $Id: netcat.h,v 1.4 2002-04-26 21:33:58 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -22,9 +22,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#ifndef NETCAT_H
+#define NETCAT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -110,3 +109,8 @@ struct port_poop
 #else
 #define Debug(x)		/* nil... */
 #endif
+
+/* misc.c */
+void netcat_printhelp();
+
+#endif	/* !NETCAT_H */
