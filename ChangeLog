@@ -1,9 +1,9 @@
 
-[*] Sat Aug 17 2002 - netcat (cvs)
+[*] Thu Aug 22 2002 - netcat (cvs)
 
-  o Rewritten the udp listening routines. Now it uses the newly added udphelper
-    routines in order to allow a portable way to simulate two-ends connections
-    in UDP mode.
+  o Rewritten the udp listening routines.  Now it uses the newly added
+    udphelper routines in order to allow a portable way to simulate two-ends
+    connections in UDP mode.
   o Added the NEWS file containing release notes since version 0.2.1.
   o Fixes and additions to the configure script.
   o Now compiles even if random support is not present in the OS.
@@ -19,6 +19,8 @@
   o Fixed global return status to match the program specifications.
   o Sockets shouldn't be left in a TIME_WAIT status anymore. [BUG #588961]
   o Updated internal gettext support to version 0.11.5.
+  o The hexdump function now doesn't buffer more than one data block anymore.
+    This caused some packets not to be logged if Netcat dead unexpectedly.
 
 
 [*] Tue Jun 18 2002 - netcat v0.5.2

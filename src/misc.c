@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.28 2002-08-16 11:47:49 themnemonic Exp $
+ * $Id: misc.c,v 1.29 2002-08-22 00:22:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -108,6 +108,7 @@ int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen)
     }
   }
 
+  fflush(stream);
   return 0;
 }
 
