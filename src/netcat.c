@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.15 2002-04-29 23:41:00 themnemonic Exp $
+ * $Id: netcat.c,v 1.16 2002-04-29 23:52:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -866,7 +866,7 @@ int readwrite(int fd)
    now we pull it all together... */
 int main(int argc, char *argv[])
 {
-  register int x;
+  int x;
   register char *cp;
   netcat_host *gp;
   netcat_host *whereto = NULL;
@@ -1059,7 +1059,7 @@ int main(int argc, char *argv[])
 
 
 /* optind is now index of first non -x arg */
-  debug_d("after go: x now %c, optarg %x optind %d\n", x, (int)optarg, optind);
+  debug_d("after go: c now %c, optarg %x optind %d\n", c, (int)optarg, optind);
 /* Debug (("optind up to %d at host-arg %s", optind, argv[optind])) */
 /* gonna only use first addr of host-list, like our IQ was normal; if you wanna
    get fancy with addresses, look up the list yourself and plug 'em in for now.
@@ -1189,6 +1189,6 @@ int main(int argc, char *argv[])
   if (opt_verbose > 1)		/* normally we don't care */
     holler(wrote_txt, wrote_net, wrote_out);
   if (Single)
-    exit(x);			/* give us status on one connection */
+    exit(0);			/* give us status on one connection */
   exit(0);			/* otherwise, we're just done */
 }				/* main */
