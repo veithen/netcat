@@ -1,11 +1,11 @@
 /*
- * misc.h -- ncprint header symbols and constants
+ * misc.h -- ncprint constants and debugging functions definition
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: misc.h,v 1.7 2003-02-28 22:08:36 themnemonic Exp $
+ * $Id: misc.h,v 1.8 2003-03-06 00:20:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -38,7 +38,7 @@
 /* normal message printed to stderr by default */
 #define NCPRINT_NORMAL		0x0000
 
-/* debug message.  This type of message is only printed if opt_debug is true */
+/* debug message.  This type of message is only printed if `opt_debug' is true */
 #define NCPRINT_DEBUG		0x1000
 
 /* special debug message.  Prepends "(debug)" before the actual string */
@@ -64,8 +64,8 @@
 # define debug_dv(fmtstring) \
   ncprint(NCPRINT_NOFMT | NCPRINT_DEBUG_V | NCPRINT_DELAY, debug_fmt fmtstring)
 #else
-# define debug(fmt, args...)
-# define debug_d(fmt, args...)
-# define debug_v(fmt, args...)
-# define debug_dv(fmt, args...)
+# define debug(fmtstring)
+# define debug_d(fmtstring)
+# define debug_v(fmtstring)
+# define debug_dv(fmtstring)
 #endif
