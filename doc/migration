@@ -42,6 +42,11 @@
      order to allows total backward compatibility to scripts that for example
      automatically parse the output file.
 
+   o The command line switch `-t', which enables incoming telnet codes parsing
+     and acknowledgment, rewrites the buffer with those codes stripped out,
+     which means that they won't be showed in the standard output nor in the
+     hexdump (if active).  This behaviour differs from nc110.
+
 
 
 * 2.2.  Fixes and additions
