@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-04-30 22:55+0200\n"
+"POT-Creation-Date: 2002-05-01 18:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,35 +15,35 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/misc.c:151
+#: src/misc.c:154
 msgid "Cmd line: "
-msgstr ""
-
-#: src/misc.c:183
-#, c-format
-msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
-msgstr ""
-
-#: src/misc.c:184
-msgid "Basic usages:\n"
-msgstr ""
-
-#: src/misc.c:185
-#, c-format
-msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
 msgstr ""
 
 #: src/misc.c:186
 #, c-format
-msgid "listen for inbound:    %s -l -p port [options] [hostname] [port]\n"
+msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
+msgstr ""
+
+#: src/misc.c:187
+msgid "Basic usages:\n"
 msgstr ""
 
 #: src/misc.c:188
+#, c-format
+msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
+msgstr ""
+
+#: src/misc.c:189
+#, c-format
+msgid "listen for inbound:    %s -l -p port [options] [hostname] [port]\n"
+msgstr ""
+
+#: src/misc.c:191
 msgid ""
 "Mandatory arguments to long options are mandatory for short options too.\n"
 msgstr ""
 
-#: src/misc.c:189
+#: src/misc.c:193
 msgid ""
 "Options:\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
@@ -55,6 +55,7 @@ msgid ""
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
+"  -s, --source=ADDRESS       local source address (ip or hostname)\n"
 "  -t, --telnet               answer using TELNET negotiation\n"
 "  -u, --udp                  UDP mode\n"
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
@@ -62,10 +63,13 @@ msgid ""
 "  -x, --hexdump              hexdump incoming and outgoing traffic\n"
 "  -w, --wait=SECS            timeout for connects and final net reads\n"
 "  -z, --zero                 zero-I/O mode (used for scanning)\n"
-"\n"
 msgstr ""
 
 #: src/misc.c:212
+msgid "Remote port number can also be specified as range.  Example: '1-1024'\n"
+msgstr ""
+
+#: src/misc.c:222
 msgid ""
 "Copyright (c) 2002 Johnny Mnemonic\n"
 "\n"
@@ -74,16 +78,26 @@ msgid ""
 "the GNU General Public License.\n"
 "For more information about these matters, see the file named COPYING.\n"
 "\n"
-"Original design by Avian Research,\n"
-"Written by Johnny Mnemonic.\n"
+"Original idea and design by Avian Research <hobbit@avian.org>,\n"
+"Written by Johnny Mnemonic <johnny@themnemonic.org>.\n"
 msgstr ""
 
-#: src/netcat.c:1037
+#: src/netcat.c:995
+#, c-format
+msgid "Error: invalid local port: %s\n"
+msgstr ""
+
+#: src/netcat.c:1024
+#, c-format
+msgid "Error: invalid wait-time: %s\n"
+msgstr ""
+
+#: src/netcat.c:1038
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr ""
 
-#: src/netcat.c:1060
+#: src/netcat.c:1061
 msgid "Failed to open output file: "
 msgstr ""
 
