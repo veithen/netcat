@@ -1,0 +1,33 @@
+# $Id: Makefile.cvs,v 1.1.1.1 2002-04-26 14:58:12 themnemonic Exp $
+
+default: all
+
+dist:
+	@echo "Preparing release package..."
+	@aclocal
+	@libtoolize --copy --force
+	@aclocal
+	@autoheader
+	@automake --include-deps --add-missing --copy
+	@autoconf
+	@if [ -f config.cache ]; then \
+		rm -f config.cache; \
+	fi
+	@#LIST=`find ./po -name "*.po"`; \
+	@#@for i in $$LIST; do \
+	@# file2=`echo $$i | sed -e "s#\.po#\.gmo#"`; \
+	@# msgfmt -o $$file2 $$i; \
+	@#done 
+	@#@rm -f Makefile.cvs
+	@echo "Reminder: Update release dates and tag cvs"
+
+all:
+	@aclocal
+	@libtoolize --copy --force
+	@aclocal
+	@autoheader
+	@automake --add-missing --copy
+	@autoconf
+	@if [ -f config.cache ]; then \
+		rm -f config.cache; \
+	fi
