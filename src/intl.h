@@ -1,11 +1,11 @@
 /*
- * intl.h -- description
+ * intl.h -- main i18n support header file
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: intl.h,v 1.3 2002-05-05 09:05:58 themnemonic Exp $
+ * $Id: intl.h,v 1.4 2002-05-06 15:08:11 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -28,7 +28,7 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #else
-#error "You must have locale.h in your system"
+#error You must have locale.h in your system
 #endif	/* HAVE_LOCALE_H */
 
 /* Our dear (and very common) gettext macros */
