@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.43 2002-06-09 08:56:50 themnemonic Exp $
+ * $Id: netcat.c,v 1.44 2002-06-12 23:08:13 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -62,23 +62,6 @@ static void printstats(void)
   ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
 	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
 	  bytes_recv, bytes_sent);
-}
-
-/* returns a pointer to a static buffer containing a description of the remote
-   host in the best form available (using hostnames and portnames) */
-
-static char *netcat_strid(nc_host_t *host, unsigned short port)
-{
-  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
-
-  /* FIXME: this should use the portnames also */
-  /* FIXME: this is broken, cause they fill in (unknown) */
-  if (host->name[0])
-    snprintf(buf, sizeof(buf), "%s [%s] %d", host->name, host->addrs[0], port);
-  else
-    snprintf(buf, sizeof(buf), "%s %d", host->addrs[0], port);
-
-  return buf;
 }
 
 /* signal handling */
@@ -339,10 +322,9 @@ int main(int argc, char *argv[])
   /* handle the -o option. exit on failure */
   if (opt_outputfile) {
     output_fd = fopen(opt_outputfile, "w");
-    if (!output_fd) {
-      perror(_("Failed to open output file"));
-      exit(EXIT_FAILURE);
-    }
+    if (!output_fd)
+      ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Failed to open output file: %s"),
+	      strerror(errno));
   }
   else
     output_fd = stderr;
@@ -470,10 +452,10 @@ int main(int argc, char *argv[])
       debug_dv("Tunnel: EXIT");
       exit(EXIT_SUCCESS);
     }
-    abort();
+    abort();			/* should never reach this */
   }				/* end of listen and tunnel mode handling */
 
-  /* we need to connect outside */
+  /* we need to connect outside, this is the connect mode */
 
   /* since ports are the second argument, checking ports might be enough */
   if (netcat_flag_count() == 0)
@@ -510,9 +492,6 @@ int main(int argc, char *argv[])
 	      strerror(errno));
       continue;			/* go with next port */
     }
-
-    if (connect_sock.proto == NETCAT_PROTO_TCP)	/* FIXME: move this to core? */
-      ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&remote_host, c));
 
     if (opt_tunnel)
       core_readwrite(&connect_sock, &listen_sock);

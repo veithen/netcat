@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.21 2002-05-24 18:06:47 themnemonic Exp $
+ * $Id: network.c,v 1.22 2002-06-12 23:08:13 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -194,6 +194,23 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
   snprintf(dst->ascnum, sizeof(dst->ascnum), "%hu", dst->num);
   return TRUE;
 }			/* end of netcat_getport() */
+
+/* returns a pointer to a static buffer containing a description of the remote
+   host in the best form available (using hostnames and portnames) */
+
+const char *netcat_strid(const nc_host_t *host, unsigned short port)
+{
+  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
+
+  /* FIXME: this should use the portnames also */
+  /* FIXME: this is broken, cause they fill in (unknown) */
+  if (host->name[0])
+    snprintf(buf, sizeof(buf), "%s [%s] %hu", host->name, host->addrs[0], port);
+  else
+    snprintf(buf, sizeof(buf), "%s %hu", host->addrs[0], port);
+
+  return buf;
+}
 
 /* ... */
 
