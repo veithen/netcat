@@ -1,8 +1,14 @@
 
-[*] Wed Nov 20 2002 - netcat (cvs)
+[*] Sun Dec  8 2002 - netcat (cvs)
 
   o Added command line switch `-c' (close), which shuts down the connection
     on EOF from stdin without waiting for any answer from remote host.
+  o Now the SIGUSR1 signal is handled and prints the current sending/receiving
+    statistics to stderr, disregarding the verbosity level given.
+  o Added some development sheets for those that may want to study GNU Netcat's
+    development, in the doc/drafts directory.
+  o Fixed a bug in UDP listening mode without pktinfo support and specifying
+    the listening interface with `-s'.
 
 
 [*] Tue Oct 15 2002 - netcat v0.6.1
