@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.2 2002-05-11 19:47:50 themnemonic Exp $
+ * $Id: core.c,v 1.3 2002-05-11 20:27:46 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -141,13 +141,18 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
   return -1;
 }
 
-/* This function loops inside the accept() loop until a *VALID* connection is fetched.
-   If an unwanted connection arrives, it is shutdown() and close()d.
-   Returns: The new */
+/* This function loops inside the accept() loop until a *VALID* connection is
+   fetched.  If an unwanted connection arrives, it is shutdown() and close()d.
+   If zero I/O mode is enabled, ALL connections are refused and it stays
+   unconditionally in listen mode until timeout elapses, if given, otherwise
+   forever.
+   Returns: The new socket descriptor for the fetched connection */
 
 int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int timeout)
 {
   int sock_listen, sock_accept;
+  debug_v("core_tcp_listen(local_host=%p, local_port=%hu, timeout=%d)",
+	  (void *)local_host, local_port, timeout);
 
   sock_listen = netcat_socket_new_listen(local_host, local_port);
 
@@ -183,16 +188,23 @@ int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int t
 	  (netcat_flag_count() && !netcat_flag_get(ntohs(my_addr.sin_port)))) {
 	ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
 		netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
-	shutdown(sock_accept, 2);
-	close(sock_accept);
-	continue;
+	goto refuse;
       }
     }
     ncprint(NCPRINT_VERB1, _("Connection from %s:%hu"),
 	    netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
 
+    /* with zero I/O mode we don't really accept any connection */
+    if (opt_zero)
+      goto refuse;
+
     /* we have got our socket, now exit the loop */
     break;
+
+ refuse:
+    shutdown(sock_accept, 2);
+    close(sock_accept);
+    continue;
   }			/* end of infinite accepting loop */
 
   /* we don't need a listening socket anymore */

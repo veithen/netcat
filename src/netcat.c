@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.31 2002-05-11 20:13:25 themnemonic Exp $
+ * $Id: netcat.c,v 1.32 2002-05-11 20:27:46 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -368,6 +368,12 @@ int main(int argc, char *argv[])
       sock_accept = core_udp_listen(&local_host.iaddrs[0], local_port.num);
     else
       sock_accept = core_tcp_listen(&local_host.iaddrs[0], local_port.num, opt_wait);
+
+    /* in zero I/O mode the core_tcp_listen() call will always return -1
+       (ETIMEDOUT) since no connections are accepted, because of this our job
+       is completed now. */
+    if (opt_zero)
+      exit(0);
 
     if (sock_accept < 0)
       ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),

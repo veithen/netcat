@@ -69,6 +69,11 @@
    o The timeout system was broken for port-scanning or multiple ports
      connections (it applied only for the first attempt).
 
+   o The Zero I/O mode command line switch (`-z') associated with the listen
+     mode (`-l') now causes all incoming connections to be refused.  This
+     particular situation was NOT handled in the old nc110 as it simply
+     discarded the Zero I/O option while listening.
+
 
 
 * 3. What's new in the new core 0.3.0

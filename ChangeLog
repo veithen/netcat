@@ -9,7 +9,8 @@
     I have some logistic problems to resolve before fixing the
     implementation.
   o Fixed various socket leaks.
-  o Reimplemented command line switch `-z'.
+  o Reimplemented command line switch `-z' for TCP protocol.
+  o Handled the listen mode-zero I/O case situation.
 
 
 [*] Thu May  9 2002 - netcat v0.3.1
