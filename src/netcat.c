@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.22 2002-05-05 18:15:39 themnemonic Exp $
+ * $Id: netcat.c,v 1.23 2002-05-06 15:07:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,10 +27,8 @@
 #endif
 
 #include "netcat.h"
-#include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-#include <sys/time.h>
 #include <signal.h>
 #include <getopt.h>
 
@@ -44,6 +42,7 @@ unsigned long bytes_recv = 0;	/* total bytes sent (statistics) */
 /* will malloc up the following globals: */
 netcat_host **gates = NULL;		/* LSRR hop hostpoop */
 char *optbuf = NULL;		/* LSRR or sockopts */
+static FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
 
 /* global options flags */
 bool opt_listen = FALSE;		/* listen mode */
@@ -58,8 +57,8 @@ int opt_interval = 0;		/* delay (in seconds) between lines/ports */
 int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time (FIXME) */
 char *opt_outputfile = NULL;	/* hexdump output file */
+char *opt_exec = NULL;		/* program to exec after connecting */
 
-static FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
 
 
 /* fiddle all the file descriptors around, and hand off to another prog.  Sort
@@ -96,6 +95,7 @@ static void got_int(int z)
 {
   dprintf(1, (_("Exiting.\nTotal received bytes: %ld\nTotal sent bytes: %ld\n"),
 	  bytes_recv, bytes_sent));
+
   exit(EXIT_FAILURE);
 }
 
@@ -104,7 +104,7 @@ static void got_int(int z)
 int readwrite(int sock, int sock2)
 {
   int fd_stdin, fd_stdout, fd_max;
-  int read_ret, write_ret, pbuf_len;
+  int read_ret, write_ret, pbuf_len = 0;
   char buf[1024], *pbuf = NULL, *ptmp = NULL;
   fd_set ins;
   bool inloop = TRUE;
@@ -272,7 +272,7 @@ int readwrite(int sock, int sock2)
 
 int main(int argc, char *argv[])
 {
-  int c, sock_accept = -1, sock_connect = -1;
+  int c, total_ports, sock_accept = -1, sock_connect = -1;
   netcat_host local_host, remote_host;
   netcat_port local_port, remote_port;
   struct in_addr *ouraddr;
@@ -340,6 +340,7 @@ int main(int argc, char *argv[])
 
     switch (c) {
     case 'e':			/* prog to exec */
+      opt_exec = strdup(optarg);
       break;
     case 'G':			/* srcrt gateways pointer val */
       break;
@@ -350,10 +351,9 @@ int main(int argc, char *argv[])
       exit(EXIT_SUCCESS);
     case 'i':			/* line/ports interval time (seconds) */
       opt_interval = atoi(optarg);
-      if (opt_interval <= 0) {
-	fprintf(stderr, _("Error: Invalid interval time \"%s\"\n"), optarg);
-	exit(EXIT_FAILURE);
-      }
+      if (opt_interval <= 0)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Invalid interval time \"%s\""), optarg);
       break;
     case 'l':			/* listen mode */
       if (opt_tunnel) {
@@ -543,19 +543,19 @@ int main(int argc, char *argv[])
 	  /* FIXME: ALL addresses should be tried */
 	  if (memcmp(&remote_host.iaddrs[0], &my_addr.sin_addr,
 		     sizeof(local_host.iaddrs[0]))) {
-	    dprintf(2, (_("Unwanted connection from %s:%d\n"),
-		    netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port));
+	    ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%d (refused)"),
+		    netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port);
 	    shutdown(sock_accept, 2);
 	    close(sock_accept);
 	    continue;
 	  }
 	}
-	dprintf(1, ("Connection from %s:%d\n", netcat_inet_ntop(&my_addr.sin_addr),
-		my_addr.sin_port));
+	ncprint(NCPRINT_VERB1, _("Connection from %s:%d"),
+		netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port);
       }
 
       /* we don't need a listening socket anymore */
-      close(sock_listen);	/* FIXME: do we have to shutdown() here? */
+      close(sock_listen);
       break;
     } while (TRUE);
 
@@ -572,11 +572,21 @@ int main(int argc, char *argv[])
 
   /* we need to connect outside */
 
+  total_ports = netcat_flag_count();
   c = 0;
-  while ((c = netcat_flag_next(c))) {
+  while (total_ports > 0) {
     int ret;
     fd_set ins;
     fd_set outs;
+
+    /* `c' is the port number independently of the sorting method (linear
+       or random).  While in linear mode it is also used to fetch the next
+       port number */
+    if (opt_random)
+      c = netcat_flag_rand();
+    else
+      c = netcat_flag_next(c);
+    total_ports--;		/* decrease the total ports number to try */
 
     FD_ZERO(&ins);
     FD_ZERO(&outs);
