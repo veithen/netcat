@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: flagset.c,v 1.6 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: flagset.c,v 1.7 2003-12-10 16:18:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -182,7 +182,9 @@ unsigned short netcat_flag_rand(void)
   /* fetch a random number from the high-order bits */
   rand = 1 + (int) ((float)randmax * RAND() / (RAND_MAX + 1.0));
 #else
-# warning "random routines not found, removed random support"
+# ifdef __GNUC__
+#  warning "random routines not found, removed random support"
+# endif
   rand = 1;				/* simulates a random number */
 #endif
 

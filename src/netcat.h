@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.33 2003-08-17 21:48:22 themnemonic Exp $
+ * $Id: netcat.h,v 1.34 2003-12-10 16:18:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -56,6 +56,9 @@
 #endif
 #ifndef STDERR_FILENO
 # define STDERR_FILENO 2
+#endif
+#ifndef SHUT_RDWR
+# define SHUT_RDWR 2
 #endif
 
 /* find a random routine */

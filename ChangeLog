@@ -1,7 +1,11 @@
 
-[*] Thu Aug 28 2003 - netcat (cvs)
+[*] Wed Dec 10 2003 - netcat (cvs)
 
   o Fixed bug in UDP connection code, using pktinfo support. [BUG #796765]
+  o Fixed a segfault in the DNS lookup routines, caused by invalid DNS
+    configurations.
+  o Fixed two compilation issues on SCO Unix 3.2 v 5.0.4. [BUG #857650],
+    [BUG #857657]
 
 
 [*] Thu Aug 21 2003 - netcat v0.7.0
