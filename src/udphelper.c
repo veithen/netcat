@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.4 2002-09-16 21:38:35 themnemonic Exp $
+ * $Id: udphelper.c,v 1.5 2002-10-03 10:10:58 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -37,11 +37,24 @@
 
 /* Support Solaris extended GIFCONF */
 #ifndef SIOCGLIFCONF
-#define SIOCGLIFCONF SIOCGIFCONF
-#define lifc_len ifc_len
-#define lifc_buf ifc_buf
-#define lifc_req ifc_req
-#define lifconf ifconf
+# define SIOCGLIFCONF SIOCGIFCONF
+# define lifc_len ifc_len
+# define lifc_buf ifc_buf
+# define lifc_req ifc_req
+# define lifconf ifconf
+#endif
+
+#ifndef SIOCGLIFADDR
+# define SIOCGLIFADDR SIOCGIFADDR
+# define SIOCGLIFFLAGS SIOCGIFFLAGS
+# define SIOCGLIFDSTADDR SIOCGIFDSTADDR
+# define SIOCGLIFNETMASK SIOCGIFNETMASK
+# define lifr_addr ifr_addr
+# define lifr_name ifr_name
+# define lifr_dstaddr ifr_dstaddr
+# define lifr_flags ifr_flags
+# define ss_family sa_family
+# define lifreq ifreq
 #endif
 #endif	/* !USE_PKTINFO */
 
@@ -96,7 +109,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
   int *my_sockbuf = NULL, sock_total = 0;
   unsigned int if_pos = 0;
   struct lifconf nc_ifconf;
-  struct ifreq *nc_ifreq = NULL;
+  struct lifreq *nc_ifreq = NULL;
 
   /* initialize the sockbuf (assuming the function will be positive */
   my_sockbuf = malloc(sizeof(int));
@@ -146,10 +159,10 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     int newsock;
     struct sockaddr_in *if_addr;
 
-    nc_ifreq = (struct ifreq *)((char *)nc_ifconf.lifc_req + if_pos);
+    nc_ifreq = (struct lifreq *)((char *)nc_ifconf.lifc_req + if_pos);
 #ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
-    if (nc_ifreq->ifr_addr.sa_len > sizeof(struct sockaddr))
-      if_pos += sizeof(nc_ifreq->ifr_name) + nc_ifreq->ifr_addr.sa_len;
+    if (nc_ifreq->lifr_addr.sa_len > sizeof(struct sockaddr))
+      if_pos += sizeof(nc_ifreq->lifr_name) + nc_ifreq->lifr_addr.sa_len;
     else
       if_pos += sizeof(*nc_ifreq);
 #else
@@ -162,22 +175,22 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     if_total++;
 
     /* discard any interface not devoted to IP */
-    if (nc_ifreq->ifr_addr.sa_family != AF_INET)
+    if (nc_ifreq->lifr_addr.ss_family != AF_INET)
       continue;
-    if_addr = (struct sockaddr_in *)&nc_ifreq->ifr_addr;
+    if_addr = (struct sockaddr_in *)&nc_ifreq->lifr_addr;
 
     /* we need to sort out interesting interfaces, so fetch the interface
        flags */
-    ret = ioctl(dummy_sock, SIOCGIFFLAGS, (char *)nc_ifreq);
+    ret = ioctl(dummy_sock, SIOCGLIFFLAGS, (char *)nc_ifreq);
     if (ret < 0)
       goto err;
 
     /* check that this interface is up and running */
-    if (!(nc_ifreq->ifr_flags & IFF_UP))
+    if (!(nc_ifreq->lifr_flags & IFF_UP))
       continue;
 
     debug("(udphelper) Found interface %s (IP address: %s)\n",
-	  nc_ifreq->ifr_name, netcat_inet_ntop(&if_addr->sin_addr));
+	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr->sin_addr));
 
     newsock = socket(PF_INET, SOCK_DGRAM, 0);
     if (newsock < 0)
