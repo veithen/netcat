@@ -1,6 +1,11 @@
 
-Original netcat author: Avian
+Netcat was started in the year 1995 and was developed until first months of
+the 1996, when it reached release 1.10, released by Avian Research
+(avian.org).
 
-GNU Version author: Johnny Mnemonic <johnny@themnemonic.org>
+The credits for the original design and alpha source code goes to the Avian
+Research team, while this development branch (called "The GNU Netcat") have
+been started by Johnny Mnemonic, to improve portability, usability and
+features provided.
 
-Please, go to http://netcat.sourceforge.net for more information.
+Project official homepage: http://netcat.sourceforge.net.
