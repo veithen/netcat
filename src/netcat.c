@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.10 2002-04-28 17:17:01 themnemonic Exp $
+ * $Id: netcat.c,v 1.11 2002-04-29 10:32:28 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -82,18 +82,17 @@ fd_set *ding2;
 PINF *portpoop = NULL;		/* for getportpoop / getservby* */
 unsigned char *stage = NULL;	/* hexdump line buffer */
 
-/* global cmd flags: */
+/* global options flags */
 unsigned int o_interval = 0;
-USHORT o_listen = 0;
-USHORT o_nflag = 0;
-USHORT o_wfile = 0;
-USHORT o_random = 0;
-USHORT o_udpmode = 0;
-int o_verbose = 0;
 unsigned int o_wait = 0;
-USHORT o_zero = 0;
-
-/* o_tn in optional section */
+bool opt_listen = FALSE;		/* listen mode */
+bool opt_numeric = FALSE;	/* don't resolve hostnames */
+bool opt_random = FALSE;		/* use random ports */
+bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
+bool opt_wfile = FALSE;		/* hexdump to specified file */
+bool opt_telnet = FALSE;		/* answer in telnet mode */
+bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
+int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 
 
 
@@ -108,7 +107,7 @@ void holler(str, p1, p2, p3, p4, p5, p6)
      char *str;
      char *p1, *p2, *p3, *p4, *p5, *p6;
 {
-  if (o_verbose) {
+  if (opt_verbose) {
     fprintf(stderr, str, p1, p2, p3, p4, p5, p6);
 #ifdef HAVE_BIND
     if (h_errno) {		/* if host-lookup variety of error ... */
@@ -134,7 +133,7 @@ void bail(str, p1, p2, p3, p4, p5, p6)
      char *str;
      char *p1, *p2, *p3, *p4, *p5, *p6;
 {
-  o_verbose = 1;
+  opt_verbose = 1;
   holler(str, p1, p2, p3, p4, p5, p6);
   close(netfd);
   sleep(1);
@@ -146,7 +145,7 @@ void bail(str, p1, p2, p3, p4, p5, p6)
 void catch()
 {
   errno = 0;
-  if (o_verbose > 1)		/* normally we don't care */
+  if (opt_verbose > 1)		/* normally we don't care */
     bail(wrote_txt, wrote_net, wrote_out);
   bail(" punt!");
 }
@@ -224,7 +223,7 @@ unsigned int findline(char *buf, unsigned int siz)
    in global port_poop, but return the actual port *number*.  Pass ONE of:
 	pstring to resolve stuff like "23" or "exec";
 	pnum to reverse-resolve something that's already a number.
-   If o_nflag is on, fill in what we can but skip the getservby??? stuff.
+   If opt_numeric is on, fill in what we can but skip the getservby??? stuff.
    Might as well have consistent behavior here, and it *is* faster. */
 USHORT getportpoop(char *pstring, unsigned int pnum)
 {
@@ -233,7 +232,7 @@ USHORT getportpoop(char *pstring, unsigned int pnum)
   register int y;
   char *whichp = p_tcp;
 
-  if (o_udpmode)
+  if (opt_udpmode)
     whichp = p_udp;
   portpoop->name[0] = '?';	/* fast preload */
   portpoop->name[1] = '\0';
@@ -244,7 +243,7 @@ USHORT getportpoop(char *pstring, unsigned int pnum)
     if (pstring)		/* one or the other, pleeze */
       return 0;
     x = pnum;
-    if (o_nflag)		/* go faster, skip getservbyblah */
+    if (opt_numeric)		/* go faster, skip getservbyblah */
       goto gp_finish;
     y = htons(x);		/* gotta do this -- see Fig.1 below */
     servent = getservbyport(y, whichp);
@@ -267,7 +266,7 @@ USHORT getportpoop(char *pstring, unsigned int pnum)
     x = atoi(pstring);
     if (x)
       return getportpoop(NULL, x);	/* recurse for numeric-string-arg */
-    if (o_nflag)		/* can't use names! */
+    if (opt_numeric)		/* can't use names! */
       return 0;
     servent = getservbyname(pstring, whichp);
     if (servent) {
@@ -398,7 +397,7 @@ int doconnect(IA *rad, USHORT rp, IA *lad, USHORT lp)
 
 /* grab a socket; set opts */
 newskt:
-  if (o_udpmode)
+  if (opt_udpmode)
     nnetfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   else
     nnetfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -456,7 +455,7 @@ newskt:
   if (rr)
     bail("Can't grab %s:%d with bind", inet_ntoa(lclend->sin_addr), lp);
 
-  if (o_listen)
+  if (opt_listen)
     return nnetfd;		/* thanks, that's all for today */
 
   memcpy(&remend->sin_addr.s_addr, rad, sizeof(IA));
@@ -563,11 +562,11 @@ int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
 
   errno = 0;
 
-/* Pass everything off to doconnect, who in o_listen mode just gets a socket */
+/* Pass everything off to doconnect, who in opt_listen mode just gets a socket */
   nnetfd = doconnect(rad, rp, lad, lp);
   if (nnetfd <= 0)
     return -1;
-  if (o_udpmode) {		/* apparently UDP can listen ON */
+  if (opt_udpmode) {		/* apparently UDP can listen ON */
     if (!lp)			/* "port 0",  but that's not useful */
       bail("UDP listen needs -p arg");
   }
@@ -586,7 +585,7 @@ int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
    said -p we *know* what port we're listening on.  At any rate we won't bother
    with it all unless we wanted to see it, although listening quietly on a
    random unknown port is probably not very useful without "netstat". */
-  if (o_verbose) {
+  if (opt_verbose) {
     x = sizeof(SA);		/* how 'bout getsockNUM instead, pinheads?! */
     rr = getsockname(nnetfd, (SA *) lclend, &x);
     if (rr < 0)
@@ -606,7 +605,7 @@ int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
    At least in the BSD universe, however, recvfrom/PEEK is enough to tell
    us something came in, and we can set things up so straight read/write
    actually does work after all.  Yow.  YMMV on strange platforms!  */
-  if (o_udpmode) {
+  if (opt_udpmode) {
     x = sizeof(SA);		/* retval for recvfrom */
     arm(2, o_wait);		/* might as well timeout this, too */
     if (setjmp(jbuf) == 0) {	/* do timeout for initial connect */
@@ -629,7 +628,7 @@ int dolisten(IA *rad, USHORT rp, IA *lad, USHORT lp)
    Let's try to remember what the "U" is *really* for, eh? */
     rr = connect(nnetfd, (SA *) remend, sizeof(SA));
     goto whoisit;
-  }				/* o_udpmode */
+  }				/* opt_udpmode */
 
 /* fall here for TCP */
   x = sizeof(SA);		/* retval for accept */
@@ -653,7 +652,7 @@ whoisit:
    thing to emerge after all the intervening crud.  Doesn't work for UDP on
    any machines I've tested, but feel free to surprise me. */
 #ifdef IP_OPTIONS
-  if (!o_verbose)		/* if we wont see it, we dont care */
+  if (!opt_verbose)		/* if we wont see it, we dont care */
     goto dol_noop;
   optbuf = Hmalloc(40);
   x = 40;
@@ -701,7 +700,7 @@ dol_noop:
    other words, we need a TCP MSG_PEEK. */
   z = ntohs(remend->sin_port);
   strcpy(bigbuf_net, inet_ntoa(remend->sin_addr));
-  whozis = netcat_resolvehost(bigbuf_net, o_nflag);
+  whozis = netcat_resolvehost(bigbuf_net);
   errno = 0;
   x = 0;			/* use as a flag... */
   if (rad)			/* xxx: fix to go down the *list* if we have one? */
@@ -747,7 +746,7 @@ int udptest(int fd, IA *where)
 /* use the tcp-ping trick: try connecting to a normally refused port, which
    causes us to block for the time that SYN gets there and RST gets back.
    Not completely reliable, but it *does* mostly work. */
-    o_udpmode = 0;		/* so doconnect does TCP this time */
+    opt_udpmode = FALSE;		/* so doconnect does TCP this time */
 /* Set a temporary connect timeout, so packet filtration doesnt cause
    us to hang forever, and hit it */
     o_wait = 5;			/* enough that we'll notice?? */
@@ -755,7 +754,7 @@ int udptest(int fd, IA *where)
     if (rr > 0)
       close(rr);		/* in case it *did* open */
     o_wait = 0;			/* reset it */
-    o_udpmode++;		/* we *are* still doing UDP, right? */
+    opt_udpmode = TRUE;		/* we *are* still doing UDP, right? */
   }				/* if o_wait */
   errno = 0;			/* clear from sleep */
   rr = write(fd, bigbuf_in, 1);
@@ -854,8 +853,7 @@ void oprint(int which, char *buf, int n)
   }				/* while bc */
 }				/* oprint */
 
-#ifdef TELNET
-USHORT o_tn = 0;		/* global -t option */
+
 
 /* atelnet :
    Answer anything that looks like telnet negotiation with don't/won't.
@@ -897,7 +895,6 @@ void atelnet(unsigned char *buf, unsigned int size)
     x--;
   }				/* while x */
 }				/* atelnet */
-#endif /* TELNET */
 
 /* readwrite :
    handle stdin/stdout/network I/O.  Bwahaha!! -- the select loop from hell.
@@ -964,7 +961,7 @@ int readwrite(int fd)
       if (!FD_ISSET(0, ding1))
 	netretry--;		/* we actually try a coupla times. */
       if (!netretry) {
-	if (o_verbose > 1)	/* normally we don't care */
+	if (opt_verbose > 1)	/* normally we don't care */
 	  holler("net timeout");
 	close(fd);
 	return 0;		/* not an error! */
@@ -983,10 +980,8 @@ int readwrite(int fd)
       else {
 	rnleft = rr;
 	np = bigbuf_net;
-#ifdef TELNET
-	if (o_tn)
+	if (opt_telnet)
 	  atelnet(np, rr);	/* fake out telnet stuff */
-#endif /* TELNET */
       }				/* if rr */
     Debug(("got %d from the net, errno %d", rr, errno))}	/* net:ding */
 
@@ -1035,7 +1030,7 @@ int readwrite(int fd)
     if (rnleft) {
       rr = write(1, np, rnleft);
       if (rr > 0) {
-	if (o_wfile)
+	if (opt_wfile)
 	  oprint(1, np, rr);	/* log the stdout */
 	np += rr;		/* fix up ptrs and whatnot */
 	rnleft -= rr;		/* will get sanity-checked above */
@@ -1049,7 +1044,7 @@ int readwrite(int fd)
 	rr = rzleft;
       rr = write(fd, zp, rr);	/* one line, or the whole buffer */
       if (rr > 0) {
-	if (o_wfile)
+	if (opt_wfile)
 	  oprint(0, zp, rr);	/* log what got sent */
 	zp += rr;
 	rzleft -= rr;
@@ -1133,22 +1128,23 @@ int main(int argc, char *argv[])
   while (TRUE) {
     int option_index = 0;
     static const struct option long_options[] = {
-	{ "help", no_argument, NULL, 'h' },
-	{ "gateway", required_argument, NULL, 'g' },
-	{ "pointer", required_argument, NULL, 'G' },
-	{ "interval", required_argument, NULL, 'i' },
-	{ "listen", no_argument, NULL, 'l' },
-	{ "udp", no_argument, NULL, 'u' },
-	{ "verbose", no_argument, NULL, 'v' },
-	{ "zero", no_argument, NULL, 'z' },
-	{ "dont-resolve", no_argument, NULL, 'n' },
-	{ "output", required_argument, NULL, 'o' },
-	{ "local-port", required_argument, NULL, 'p' },
-	{ "randomize", no_argument, NULL, 'r' },
+	{ "gateway",	required_argument,	NULL, 'g' },
+	{ "pointer",	required_argument,	NULL, 'G' },
+	{ "help",	no_argument,		NULL, 'h' },
+	{ "interval",	required_argument,	NULL, 'i' },
+	{ "listen",	no_argument,		NULL, 'l' },
+	{ "dont-resolve", no_argument,		NULL, 'n' },
+	{ "output",	required_argument,	NULL, 'o' },
+	{ "local-port",	required_argument,	NULL, 'p' },
+	{ "randomize",	no_argument,		NULL, 'r' },
+	{ "telnet",	no_argument,		NULL, 't' },
+	{ "udp",		no_argument,		NULL, 'u' },
+	{ "verbose",	no_argument,		NULL, 'v' },
+	{ "zero",	no_argument,		NULL, 'z' },
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "hg:G:i:luvzno:p:r", long_options, &option_index);
+    c = getopt_long(argc, argv, "g:G:hi:lno:p:rtuvz", long_options, &option_index);
     if (c == -1)
       break;
 
@@ -1170,7 +1166,7 @@ int main(int argc, char *argv[])
 	bail("too many -g hops");
       if (gates == NULL)	/* eat this, Billy-boy */
 	gates = (netcat_host **) Hmalloc(sizeof(netcat_host *) * 10);
-      gp = netcat_resolvehost(optarg, o_nflag);
+      gp = netcat_resolvehost(optarg);
       if (gp)
 	gates[gatesidx] = gp;
       gatesidx++;
@@ -1184,14 +1180,14 @@ int main(int argc, char *argv[])
 	bail("invalid interval time %s", optarg);
       break;
     case 'l':			/* listen mode */
-      o_listen++;
+      opt_listen = TRUE;
       break;
     case 'n':			/* numeric-only, no DNS lookups */
-      o_nflag++;
+      opt_numeric++;
       break;
     case 'o':			/* hexdump log */
       stage = (unsigned char *) optarg;
-      o_wfile++;
+      opt_wfile = TRUE;
       break;
     case 'p':			/* local source port */
       o_lport = getportpoop(optarg, 0);
@@ -1199,25 +1195,23 @@ int main(int argc, char *argv[])
 	bail("invalid local port %s", optarg);
       break;
     case 'r':			/* randomize various things */
-      o_random++;
+      opt_random = TRUE;
       break;
     case 's':			/* local source address */
 /* do a full lookup [since everything else goes through the same mill],
    unless -n was previously specified.  In fact, careful placement of -n can
-   be useful, so we'll still pass o_nflag here instead of forcing numeric.  */
-      wherefrom = netcat_resolvehost(optarg, o_nflag);
+   be useful, so we'll still pass opt_numeric here instead of forcing numeric.  */
+      wherefrom = netcat_resolvehost(optarg);
       ouraddr = &wherefrom->iaddrs[0];
       break;
-#ifdef TELNET
     case 't':			/* do telnet fakeout */
-      o_tn++;
+      opt_telnet++;
       break;
-#endif /* TELNET */
     case 'u':			/* use UDP */
-      o_udpmode++;
+      opt_udpmode = TRUE;
       break;
     case 'v':			/* verbose */
-      o_verbose++;
+      opt_verbose++;
       break;
     case 'w':			/* wait time */
       o_wait = atoi(optarg);
@@ -1228,7 +1222,7 @@ int main(int argc, char *argv[])
       timer1->tv_sec = o_wait;	/* we need two.  see readwrite()... */
       break;
     case 'z':			/* little or no data xfer */
-      o_zero++;
+      opt_zero++;
       break;
     default:
       errno = 0;
@@ -1239,18 +1233,18 @@ int main(int argc, char *argv[])
 /* other misc initialization */
   Debug(("fd_set size %d", sizeof(*ding1)))	/* how big *is* it? */
     FD_SET(0, ding1);		/* stdin *is* initially open */
-  if (o_random) {
+  if (opt_random) {
     SRAND(time(0));
     randports = Hmalloc(65536);	/* big flag array for ports */
   }
 #ifdef GAPING_SECURITY_HOLE
   if (pr00gie) {
     close(0);			/* won't need stdin */
-    o_wfile = 0;		/* -o with -e is meaningless! */
+    opt_wfile = FALSE;		/* -o with -e is meaningless! */
     ofd = 0;
   }
 #endif /* G_S_H */
-  if (o_wfile) {
+  if (opt_wfile) {
     ofd = open(stage, O_WRONLY | O_CREAT | O_TRUNC, 0664);
     if (ofd <= 0)		/* must be > extant 0/1/2 */
       bail("can't open %s", stage);
@@ -1264,7 +1258,7 @@ int main(int argc, char *argv[])
    get fancy with addresses, look up the list yourself and plug 'em in for now.
    unless we finally implement -a, that is. */
     if (argv[optind])
-    whereto = netcat_resolvehost(argv[optind], o_nflag);
+    whereto = netcat_resolvehost(argv[optind]);
   if (whereto && whereto->iaddrs)
     themaddr = &whereto->iaddrs[0];
   if (themaddr)
@@ -1276,7 +1270,7 @@ int main(int argc, char *argv[])
    this is arguably the right thing to do.  A "persistent listen-and-fork"
    mode a la inetd has been thought about, but not implemented.  A tiny
    wrapper script can handle such things... */
-  if (o_listen) {
+  if (opt_listen) {
     curport = 0;		/* rem port *can* be zero here... */
     if (argv[optind]) {		/* any rem-port-arg? */
       curport = getportpoop(argv[optind], 0);
@@ -1291,13 +1285,13 @@ int main(int argc, char *argv[])
 	doexec(netfd);
 #endif /* GAPING_SECURITY_HOLE */
       x = readwrite(netfd);	/* it even works with UDP! */
-      if (o_verbose > 1)	/* normally we don't care */
+      if (opt_verbose > 1)	/* normally we don't care */
 	holler(wrote_txt, wrote_net, wrote_out);
       exit(x);			/* "pack out yer trash" */
     }
     else			/* if no netfd */
       bail("no connection");
-  }				/* o_listen */
+  }				/* opt_listen */
 
 /* fall thru to outbound connects.  Now we're more picky about args... */
   if (!themaddr)
@@ -1328,7 +1322,7 @@ int main(int argc, char *argv[])
     if (hiport > loport) {	/* was it genuinely a range? */
       Single = 0;		/* multi-mode, case B */
       curport = hiport;		/* start high by default */
-      if (o_random) {		/* maybe populate the random array */
+      if (opt_random) {		/* maybe populate the random array */
 	loadports(randports, loport, hiport);
 	curport = nextport(randports);
       }
@@ -1338,7 +1332,7 @@ int main(int argc, char *argv[])
     Debug(("Single %d, curport %d", Single, curport))
 /* Now start connecting to these things.  curport is already preloaded. */
       while (loport <= curport) {
-      if ((!o_lport) && (o_random)) {	/* -p overrides random local-port */
+      if ((!o_lport) && (opt_random)) {	/* -p overrides random local-port */
 	ourport = (RAND() & 0xffff);	/* random local-bind -- well above */
 	if (ourport < 8192)	/* resv and any likely listeners??? */
 	  ourport += 8192;	/* if it *still* conflicts, use -s. */
@@ -1347,7 +1341,7 @@ int main(int argc, char *argv[])
       netfd = doconnect(themaddr, curport, ouraddr, ourport);
       Debug(("netfd %d from port %d to port %d", netfd, ourport,
 	     curport)) if (netfd > 0)
-	if (o_zero && o_udpmode)	/* if UDP scanning... */
+	if (opt_zero && opt_udpmode)	/* if UDP scanning... */
 	  netfd = udptest(netfd, themaddr);
       if (netfd > 0) {		/* Yow, are we OPEN YET?! */
 	x = 0;			/* pre-exit status */
@@ -1357,21 +1351,21 @@ int main(int argc, char *argv[])
 	if (pr00gie)		/* exec is valid for outbound, too */
 	  doexec(netfd);
 #endif /* GAPING_SECURITY_HOLE */
-	if (!o_zero)
+	if (!opt_zero)
 	  x = readwrite(netfd);	/* go shovel shit */
       }
       else {			/* no netfd... */
 	x = 1;			/* preload exit status for later */
 /* if we're scanning at a "one -v" verbosity level, don't print refusals.
    Give it another -v if you want to see everything. */
-	if ((Single || (o_verbose > 1)) || (errno != ECONNREFUSED))
+	if ((Single || (opt_verbose > 1)) || (errno != ECONNREFUSED))
 	  holler("%s [%s] %d (%s)",
 		 whereto->name, whereto->addrs[0], curport, portpoop->name);
       }				/* if netfd */
       close(netfd);		/* just in case we didn't already */
       if (o_interval)
 	sleep(o_interval);	/* if -i, delay between ports too */
-      if (o_random)
+      if (opt_random)
 	curport = nextport(randports);
       else
 	curport--;		/* just decrement... */
@@ -1380,7 +1374,7 @@ int main(int argc, char *argv[])
   }				/* while remaining port-args -- end of big argv-ports loop */
 
   errno = 0;
-  if (o_verbose > 1)		/* normally we don't care */
+  if (opt_verbose > 1)		/* normally we don't care */
     holler(wrote_txt, wrote_net, wrote_out);
   if (Single)
     exit(x);			/* give us status on one connection */

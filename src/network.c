@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.1 2002-04-28 17:17:01 themnemonic Exp $
+ * $Id: network.c,v 1.2 2002-04-29 10:32:28 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -38,9 +38,9 @@ int netcat_connect_tcp() {
 /* netcat_resolvehost :
    resolve a host 8 ways from sunday; return a new host_poop struct with its
    info.  The argument can be a name or [ascii] IP address; it will try its
-   damndest to deal with it.  "numeric" governs whether we do any DNS at all,
-   and we also check o_verbose for what's appropriate work to do. */
-netcat_host *netcat_resolvehost(char *name, bool numeric)
+   damndest to deal with it.  "opt_numeric" governs whether we do any DNS at all,
+   and we also check opt_verbose for what's appropriate work to do. */
+netcat_host *netcat_resolvehost(char *name)
 {
   struct hostent *hostent;
   struct in_addr res_addr;
@@ -68,14 +68,14 @@ netcat_host *netcat_resolvehost(char *name, bool numeric)
    things down a bit for a first run, but once it's cached, who cares? */
 
   assert(name);
-  debug_v("netcat_resolvehost(name=\"%s\", numeric=%d)", name, numeric);
+  debug_v("netcat_resolvehost(name=\"%s\")", name);
 
   poop = malloc(sizeof(netcat_host));
   strcpy(poop->name, unknown);	/* preload it */
 
   ret = inet_pton(AF_INET, name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
-    if (numeric) { /* FIXME: it doesn't have much sense this */
+    if (opt_numeric) { /* FIXME: it doesn't have much sense this */
       fprintf(stderr, "Can't parse %s as an IP address", name);
       exit(EXIT_FAILURE);
     }
@@ -91,7 +91,7 @@ netcat_host *netcat_resolvehost(char *name, bool numeric)
       memcpy(&poop->iaddrs[x], hostent->h_addr_list[x], sizeof(IA));
       strncpy(poop->addrs[x], inet_ntoa(poop->iaddrs[x]), sizeof(poop->addrs[0]));
     }				/* for x -> addrs, part A */
-    if (!o_verbose)		/* if we didn't want to see the */
+    if (!opt_verbose)		/* if we didn't want to see the */
       return poop;		/* inverse stuff, we're done. */
 
     /* do inverse lookups in separate loop based on our collected forward addrs,
@@ -112,9 +112,9 @@ netcat_host *netcat_resolvehost(char *name, bool numeric)
   else {			/* `name' is a numeric address */
     memcpy(poop->iaddrs, &res_addr, sizeof(IA));
     strncpy(poop->addrs[0], inet_ntoa(res_addr), sizeof(poop->addrs));
-    if (numeric)		/* if numeric-only, we're done */
+    if (opt_numeric)		/* if numeric-only, we're done */
       return poop;
-    if (!o_verbose)		/* likewise if we don't want */
+    if (!opt_verbose)		/* likewise if we don't want */
       return poop;		/* the full DNS hair */
     hostent = gethostbyaddr((char *) &res_addr, sizeof(IA), AF_INET);
     /* numeric or not, failure to look up a PTR is *not* considered fatal */

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.4 2002-04-28 17:17:01 themnemonic Exp $
+ * $Id: misc.c,v 1.5 2002-04-29 10:32:28 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -103,18 +103,19 @@ void netcat_printhelp(char *argv0)
   printf("listen for inbound:    %s -l -p port [options] [hostname] [port]\n", argv0);
   printf("\nMandatory arguments to long options are mandatory for short options too.\n");
   printf("Options:\n"
-"  -h, --help                 display this help and exit\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
+"  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
-"  -u, --udp                  UDP mode\n"
-"  -v, --verbose              verbose (use twice to be more verbose)\n"
-"  -z, --zero                 zero-I/O mode (used for scanning)\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          hex dump traffic on FILE\n"
 "  -p, --local-port=NUM       local port number\n"
-"  -r, --randomize            randomize local and remote ports\n\n");
+"  -r, --randomize            randomize local and remote ports\n"
+"  -t, --telnet               answer using TELNET negotiation\n"
+"  -u, --udp                  UDP mode\n"
+"  -v, --verbose              verbose (use twice to be more verbose)\n"
+"  -z, --zero                 zero-I/O mode (used for scanning)\n\n");
 }
 
  /* "	-e prog			program to exec after connect [dangerous!!]\n"

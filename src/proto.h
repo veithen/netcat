@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.1 2002-04-28 17:33:30 themnemonic Exp $
+ * $Id: proto.h,v 1.2 2002-04-29 10:32:28 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -29,8 +29,10 @@ void netcat_commandline(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
 
 /* netcat.c */
-extern int o_verbose;
+extern bool opt_listen, opt_numeric, opt_random, opt_wfile, opt_udpmode,
+		opt_telnet, opt_zero;
+extern int opt_verbose;
 extern char unknown[];
 
 /* network.c */
-netcat_host *netcat_resolvehost(char *name, bool numeric);
+netcat_host *netcat_resolvehost(char *name);
