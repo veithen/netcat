@@ -1,5 +1,5 @@
 
-[*] Sat May 11 2002 - netcat (cvs)
+[*] Tue May 14 2002 - netcat (cvs)
 
   o Now netcat_socket_accept() recognizes a negative timeout parameter.
   o Splitted core functions like readwrite() to core.c, this allows a
@@ -22,6 +22,7 @@
     other backword compatibility switches.
   o Now it is possible to specify port ranges both in the form min-max and
     in the form min:max.
+  o Cleanup of the main header file and to the global environment.
 
 
 [*] Thu May  9 2002 - netcat v0.3.1

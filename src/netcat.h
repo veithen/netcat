@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.16 2002-05-06 15:05:54 themnemonic Exp $
+ * $Id: netcat.h,v 1.17 2002-05-15 14:38:24 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -48,18 +48,14 @@
 #ifndef STDIN_FILENO
 # define STDIN_FILENO 0
 #endif
-
 #ifndef STDOUT_FILENO
 # define STDOUT_FILENO 1
 #endif
-
 #ifndef STDERR_FILENO
 # define STDERR_FILENO 2
 #endif
 
-/* #undef _POSIX_SOURCE	*/	/* might need this for something? */
-
-
+/* find a random routine */
 #ifdef HAVE_RANDOM		/* try with most modern random routines */
 # define SRAND srandom
 # define RAND random
@@ -70,12 +66,8 @@
 # error "Couldn't find any random() library function"
 #endif
 
-/* handy stuff: */
-#define SA struct sockaddr	/* FIXME: this needs to be removed ASAP */
-#define SLEAZE_PORT 31337	/* for UDP-scan RTT trick, change if ya want */
-#define USHORT unsigned short	/* use these for options an' stuff */
-#define BIGSIZ 8192		/* big buffers */
-
+/* This must be defined to the longest possible internet address length in
+   string notation. */
 #define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
 
 /* MAXINETADDR defines the maximum number of host aliases that are saved after
@@ -96,7 +88,6 @@
 #ifndef TRUE
 # define TRUE 1
 #endif
-
 #ifndef FALSE
 # define FALSE 0
 #endif
@@ -119,6 +110,8 @@ typedef struct netcat_port_struct {
   char ascnum[8];
   unsigned short num;
 } netcat_port;
+
+/* Netcat includes */
 
 #include "proto.h"
 #include "intl.h"

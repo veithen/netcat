@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.33 2002-05-12 21:20:09 themnemonic Exp $
+ * $Id: netcat.c,v 1.34 2002-05-15 14:38:24 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -32,17 +32,13 @@
 #include <signal.h>
 #include <getopt.h>
 
-int gatesidx = 0;		/* LSRR hop count */
-int gatesptr = 4;		/* initial LSRR pointer, settable */
-USHORT Single = 1;		/* zero if scanning */
-unsigned int insaved = 0;	/* stdin-buffer size for multi-mode */
+/* int gatesidx = 0; */		/* LSRR hop count */
+/* int gatesptr = 4; */		/* initial LSRR pointer, settable */
+/* netcat_host **gates = NULL; */	/* LSRR hop hostpoop */
 unsigned long bytes_sent = 0;	/* total bytes received (statistics) */
 unsigned long bytes_recv = 0;	/* total bytes sent (statistics) */
-
-/* will malloc up the following globals: */
-netcat_host **gates = NULL;		/* LSRR hop hostpoop */
 char *optbuf = NULL;		/* LSRR or sockopts */
-FILE *output_fd = NULL;	/* output fd (FIXME: i don't like this) */
+FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
 
 /* global options flags */
 bool opt_listen = FALSE;		/* listen mode */
@@ -64,7 +60,7 @@ netcat_port local_port;		/* local port specified with -p option */
 netcat_host remote_host;
 netcat_port remote_port;
 
-/* common functions */
+/* prints statistics to stderr with the right verbosity level */
 
 static void printstats(void)
 {
@@ -73,10 +69,14 @@ static void printstats(void)
 	  bytes_recv, bytes_sent);
 }
 
+/* returns a pointer to a static buffer containing a description of the remote
+   host in the best form available (using hostnames and portnames) */
+
 static char *netcat_strid(netcat_host *host, unsigned short port)
 {
   static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
 
+  /* FIXME: this should use the portnames also */
   if (host->name[0])
     snprintf(buf, sizeof(buf), "%s [%s] %d", host->name, host->addrs[0], port);
   else
@@ -100,7 +100,6 @@ static void got_int(int z)
 }
 
 #if 0
-
 /* ... */
 
 static void ncexec(int fd)
@@ -120,7 +119,6 @@ static void ncexec(int fd)
   fprintf(stderr, "exec %s failed", opt_exec);
 }				/* end of ncexec */
 #endif
-
 
 /* main: handle command line arguments and listening status */
 
