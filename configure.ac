@@ -16,27 +16,25 @@
 #  GNU General Public License for more details.
 #
 
-dnl without this order in this file, autoconf will not work!
-dnl the argument is a source file out of your sources.
+dnl initialize with some random file to ensure the source is here.
 AC_INIT(ChangeLog)
 
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.6.0)
+AM_INIT_AUTOMAKE(netcat, 0.6.1+cvs)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
 AM_CONFIG_HEADER(config.h)
 
-dnl checks for programs.
-dnl first check for c compiler
+dnl check for programs.  first the c compiler.
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_RANLIB
 
-dnl check for pod2man since we need it for building documentation
-dnl although it's not mandatory
+dnl check for pod2man since we'll need it for building documentation
+dnl this is really needed only by packagers
 dnl AC_CHECK_PROG(netcat_pod2man, pod2man, yes, no)
 
 AC_PATH_PROGS(PERL, perl5 perl, no)
@@ -48,8 +46,6 @@ all_libraries="$all_libraries $USER_LDFLAGS"
 all_includes="$all_includes $USER_INCLUDES"
 AC_SUBST(all_includes)
 AC_SUBST(all_libraries)
-
-AC_SUBST(AUTODIRS)
 
 dnl I18n support
 ALL_LINGUAS="it"
