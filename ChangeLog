@@ -1,5 +1,5 @@
 
-[*] Mon Sep 16 2002 - netcat (cvs)
+[*] Tue Oct 15 2002 - netcat v0.6.1
 
   o Fixed a compilation error in the "doc/" subdirectory when using virtual
     paths.
@@ -11,6 +11,7 @@
   o Added type "in_port_t" to indicate port numbers in network byte order.
     Also the "nc_port_t" object now contains the port number both in host byte
     order and network byte order notation, which needs less conversions.
+  o Added slovak translation, thanks to Lubomir Sedlacik.
 
 
 [*] Thu Aug 22 2002 - netcat v0.6.0
