@@ -55,6 +55,9 @@ AM_INTL_SUBDIR
 dnl find the socket library on some broken OS
 AC_LBL_LIBRARY_NET
 
+dnl Fortunately we have Solaris...
+AC_CHECK_HEADERS(sys/sockio.h)
+
 dnl check for the resolver function
 AC_CHECK_FUNC(res_init, ,
     AC_CHECK_LIB(resolv, res_init, LIBS="-lresolv $LIBS"))
@@ -72,14 +75,15 @@ dnl Support BSD4.4 "sa_len" extension when calculating sockaddrs arrays
 AC_CHECK_MEMBERS(struct sockaddr.sa_len, , , [#include <sys/types.h>
 #include <sys/socket.h>])
 
-dnl Check if it is available the RFC2292 IPv4 extension
-AC_CHECK_TYPES(struct in_pktinfo, , , [#include <netinet/in.h>])
+dnl Check if it is available the RFC2292 IPv4 extension and in_port_t.
+AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <netinet/in.h>])
 
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
 
 dnl the non-debug CFLAGS should include -DNDEBUG in a more stable context
+dnl in order to remove the assert() calls
 
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 	[enable use of Memory Debug (default: no)]),
