@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.18 2002-05-11 20:07:59 themnemonic Exp $
+ * $Id: network.c,v 1.19 2002-05-12 21:16:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -93,8 +93,7 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
   }
   else {			/* `name' is a numeric address, try reverse lookup */
     memcpy(&dst->iaddrs[0], &res_addr, sizeof(dst->iaddrs[0]));
-    /* FIXME: the following is broken cause of dst->addrs */
-    strncpy(dst->addrs[0], netcat_inet_ntop(&res_addr), sizeof(dst->addrs));
+    strncpy(dst->addrs[0], netcat_inet_ntop(&res_addr), sizeof(dst->addrs[0]));
 
     /* if opt_numeric is set or we don't require verbosity, we are done */
     if (opt_numeric || !opt_verbose)
