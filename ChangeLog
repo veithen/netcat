@@ -1,5 +1,5 @@
 
-[*] Sun Apr 28 2002 - netcat (cvs)
+[*] Mon Apr 29 2002 - netcat (cvs)
 
   o Changed the define HINF to typedef netcat_host.
   o Removed comparehosts() function.
@@ -10,6 +10,10 @@
   o Added debug() and debug_v() routines, to improve debugging output.
     Debug() is now obsolete and will be removed soon.
   o Added file proto.h, containing all externs and function declarations.
+  o Changed some global variable names and types
+  o Added function netcat_fhexdump() which substitutes the old oprint()
+    function.  Removed some unused global variables.
+  o Added command line switch `-x' (hexdump). Switch `-o' implies `-x'.
 
 
 [*] Sun Apr 28 2002 - netcat v0.1.0
