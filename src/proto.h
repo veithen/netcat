@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.6 2002-04-29 23:41:00 themnemonic Exp $
+ * $Id: proto.h,v 1.7 2002-04-30 17:52:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -35,11 +35,10 @@ extern bool opt_listen, opt_numeric, opt_random, opt_hexdump, opt_udpmode,
 		opt_telnet, opt_zero;
 extern int opt_verbose, opt_wait;
 extern char *opt_outputfile;
-extern char unknown[];
 extern int netfd;
 
 /* network.c */
-netcat_host *netcat_resolvehost(char *name);
+bool netcat_resolvehost(netcat_host *dst, char *name);
 bool netcat_getport(netcat_port *dst, const char *port_string,
 		    unsigned short port_num);
 

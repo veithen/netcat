@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.16 2002-04-29 23:52:15 themnemonic Exp $
+ * $Id: netcat.c,v 1.17 2002-04-30 17:52:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -38,7 +38,6 @@
 jmp_buf jbuf;			/* timer crud */
 int jval = 0;			/* timer crud */
 int netfd = -1;
-char unknown[] = "(UNKNOWN)";
 
 #ifdef HAVE_BIND
 extern int h_errno;
@@ -620,7 +619,8 @@ dol_noop:
    other words, we need a TCP MSG_PEEK. */
   z = ntohs(remend->sin_port);
   strcpy(bigbuf_net, inet_ntoa(remend->sin_addr));
-  whozis = netcat_resolvehost(bigbuf_net);
+  whozis = malloc(sizeof(*whozis)); /* FIXME: temporary hack */
+  netcat_resolvehost(whozis, bigbuf_net);
   errno = 0;
   x = 0;			/* use as a flag... */
   if (rad)			/* xxx: fix to go down the *list* if we have one? */
@@ -959,8 +959,8 @@ int main(int argc, char *argv[])
 	bail("too many -g hops");
       if (gates == NULL)	/* eat this, Billy-boy */
 	gates = (netcat_host **) Hmalloc(sizeof(netcat_host *) * 10);
-      gp = netcat_resolvehost(optarg);
-      if (gp)
+      gp = malloc(sizeof(*gp)); /* FIXME: temporary hack */
+      if (netcat_resolvehost(gp, optarg))
 	gates[gatesidx] = gp;
       gatesidx++;
       break;
@@ -995,7 +995,8 @@ int main(int argc, char *argv[])
 /* do a full lookup [since everything else goes through the same mill],
    unless -n was previously specified.  In fact, careful placement of -n can
    be useful, so we'll still pass opt_numeric here instead of forcing numeric.  */
-      wherefrom = netcat_resolvehost(optarg);
+      wherefrom = malloc(sizeof(*wherefrom)); /* FIXME: temporary hack */
+      netcat_resolvehost(wherefrom, optarg);
       ouraddr = &wherefrom->iaddrs[0];
       break;
     case 't':			/* do telnet fakeout */
@@ -1064,8 +1065,11 @@ int main(int argc, char *argv[])
 /* gonna only use first addr of host-list, like our IQ was normal; if you wanna
    get fancy with addresses, look up the list yourself and plug 'em in for now.
    unless we finally implement -a, that is. */
-    if (argv[optind])
-    whereto = netcat_resolvehost(argv[optind]);
+    whereto = NULL;
+    if (argv[optind]) {
+      whereto = malloc(sizeof(*whereto)); /* FIXME: temporary hack */
+      netcat_resolvehost(whereto, argv[optind]);
+    }
   if (whereto && whereto->iaddrs)
     themaddr = &whereto->iaddrs[0];
   if (themaddr)

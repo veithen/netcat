@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.4 2002-04-29 23:41:00 themnemonic Exp $
+ * $Id: network.c,v 1.5 2002-04-30 17:52:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -29,122 +29,99 @@
 #include "netcat.h"
 #include <netdb.h>		/* hostent, gethostby*, getservby* */
 
-/* netcat_resolvehost :
-   resolve a host 8 ways from sunday; return a new host_poop struct with its
-   info.  The argument can be a name or [ascii] IP address; it will try its
-   damndest to deal with it.  "opt_numeric" governs whether we do any DNS at all,
-   and we also check opt_verbose for what's appropriate work to do. */
-netcat_host *netcat_resolvehost(char *name)
+/* ========================== netcat_resolvehost =========================== */
+/* Fills the structure pointed to by `dst' with the resolved host `name'.
+ * `name' can be either a valid IP string in dotted notation or a FQDN.
+ * ... */
+bool netcat_resolvehost(netcat_host *dst, char *name)
 {
   struct hostent *hostent;
   struct in_addr res_addr;
-  register netcat_host *poop = NULL;
-  register int x;
-  int ret;
-
-/* I really want to strangle the twit who dreamed up all these sockaddr and
-   hostent abstractions, and then forced them all to be incompatible with
-   each other so you *HAVE* to do all this ridiculous casting back and forth.
-   If that wasn't bad enough, all the doc insists on referring to local ports
-   and addresses as "names", which makes NO sense down at the bare metal.
-
-   What an absolutely horrid paradigm, and to think of all the people who
-   have been wasting significant amounts of time fighting with this stupid
-   deliberate obfuscation over the last 10 years... then again, I like
-   languages wherein a pointer is a pointer, what you put there is your own
-   business, the compiler stays out of your face, and sheep are nervous.
-   Maybe that's why my C code reads like assembler half the time... */
-
-/* If we want to see all the DNS stuff, do the following hair --
-   if inet_addr, do reverse and forward with any warnings; otherwise try
-   to do forward and reverse with any warnings.  In other words, as long
-   as we're here, do a complete DNS check on these clowns.  Yes, it slows
-   things down a bit for a first run, but once it's cached, who cares? */
+  int i, ret;
 
   assert(name);
-  debug_v("netcat_resolvehost(name=\"%s\")", name);
+  debug_v("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name);
 
-  poop = malloc(sizeof(netcat_host));
-  strcpy(poop->name, unknown);	/* preload it */
+  /* reset the dst struct for debugging cleanup purposes */
+  memset(dst, 0, sizeof(*dst));
+  strcpy(dst->name, "(unknown)");
 
   ret = inet_pton(AF_INET, name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
-    if (opt_numeric) { /* FIXME: it doesn't have much sense this */
+    if (opt_numeric) {
       fprintf(stderr, "Can't parse %s as an IP address", name);
-      exit(EXIT_FAILURE);
+      exit(EXIT_FAILURE); /* FIXME: i should return FALSE here */
     }
     hostent = gethostbyname(name);
     /* failure to look up a name is fatal, since we can't do anything with it */
     if (!hostent) {
-      fprintf(stderr, "%s: forward host lookup failed: ", name);
+      fprintf(stderr, "Error: Host lookup failed for `%s'\n", name);
       exit(EXIT_FAILURE);
     }
-    strncpy(poop->name, hostent->h_name, MAXHOSTNAMELEN - 2);
+    strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
     /* FIXME: what do I do with other hosts? */
-    for (x = 0; hostent->h_addr_list[x] && (x < 8); x++) {
-      memcpy(&poop->iaddrs[x], hostent->h_addr_list[x], sizeof(struct in_addr));
-      strncpy(poop->addrs[x], inet_ntoa(poop->iaddrs[x]), sizeof(poop->addrs[0]));
+    for (i = 0; hostent->h_addr_list[i] && (i < 8); i++) {
+      memcpy(&dst->iaddrs[i], hostent->h_addr_list[i], sizeof(struct in_addr));
+      strncpy(dst->addrs[i], inet_ntoa(dst->iaddrs[i]), sizeof(dst->addrs[0]));
     }				/* for x -> addrs, part A */
     if (!opt_verbose)		/* if we didn't want to see the */
-      return poop;		/* inverse stuff, we're done. */
+      return TRUE;		/* inverse stuff, we're done. */
 
     /* do inverse lookups in separate loop based on our collected forward addrs,
        since gethostby* tends to crap into the same buffer over and over */
-    for (x = 0; poop->iaddrs[x].s_addr && (x < 8); x++) {
-      hostent = gethostbyaddr((char *) &poop->iaddrs[x], sizeof(struct in_addr), AF_INET);
+    for (i = 0; dst->iaddrs[i].s_addr && (i < 8); i++) {
+      hostent = gethostbyaddr((char *) &dst->iaddrs[i], sizeof(struct in_addr), AF_INET);
 
       if (!hostent || !hostent->h_name) {
-	fprintf(stderr, "Warning: inverse host lookup failed for %s: ", poop->addrs[x]);
+	fprintf(stderr, "Warning: inverse host lookup failed for %s: ", dst->addrs[i]);
 	continue;
       }
-      if (strcasecmp(poop->name, hostent->h_name)) {
-	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", poop->name, hostent->h_name);
+      if (strcasecmp(dst->name, hostent->h_name)) {
+	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", dst->name, hostent->h_name);
       }
     }				/* for x -> addrs, part B */
-
   }
   else {			/* `name' is a numeric address */
-    memcpy(poop->iaddrs, &res_addr, sizeof(struct in_addr));
-    strncpy(poop->addrs[0], inet_ntoa(res_addr), sizeof(poop->addrs));
+    memcpy(dst->iaddrs, &res_addr, sizeof(struct in_addr));
+    strncpy(dst->addrs[0], inet_ntoa(res_addr), sizeof(dst->addrs));
     if (opt_numeric)		/* if numeric-only, we're done */
-      return poop;
+      return TRUE;
     if (!opt_verbose)		/* likewise if we don't want */
-      return poop;		/* the full DNS hair */
+      return TRUE;		/* the full DNS hair (FIXME?) */
     hostent = gethostbyaddr((char *) &res_addr, sizeof(struct in_addr), AF_INET);
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
     if (!hostent)
-      fprintf(stderr, "%s: inverse host lookup failed: ", name);
+      fprintf(stderr, "Error: Inverse name lookup failed for `%s'\n", name);
     else {
-      strncpy(poop->name, hostent->h_name, MAXHOSTNAMELEN - 2);
-      hostent = gethostbyname(poop->name);
+      strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
+      /* now do the direct lookup to see if the IP was auth */
+      hostent = gethostbyname(dst->name);
       if (!hostent || !hostent->h_addr_list[0]) {
-	fprintf(stderr, "Warning: forward host lookup failed for %s: ", poop->name);
-      } else
-      if (strcasecmp(poop->name, hostent->h_name)) {
-	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", poop->name, hostent->h_name);
+	fprintf(stderr, "Warning: forward host lookup failed for %s: ", dst->name);
       }
+      else if (strcasecmp(dst->name, hostent->h_name)) {
+	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", dst->name, hostent->h_name);
+      }
+      /* FIXME: I should erase the dst->name field, since the answer wasn't auth */
     }				/* if hostent */
   }				/* INADDR_NONE Great Split */
 
-  /* whatever-all went down previously, we should now have a host_poop struct
-     with at least one IP address in it. */
-  return poop;
-}				/* gethostpoop */
+  return TRUE;
+}
 
+/* =========================== netcat_getport ============================== */
+/* Identifies a port and fills in the netcat_port structure pointed to by
+ * `dst'.  If `port_string' is not NULL, it is used to identify the port
+ * (either by port name, listed in /etc/services, or by a string number).
+ * In this case `port_num' is discarded.
+ * If `port_string' is NULL then `port_num' is used to identify the port
+ * and the port name is looked up reversely. */
 
-/* getportpoop :
-   Same general idea as netcat_resolvehost -- look up a port in /etc/services, fill
-   in global port_poop, but return the actual port *number*.  Pass ONE of:
-	pstring to resolve stuff like "23" or "exec";
-	pnum to reverse-resolve something that's already a number.
-   If opt_numeric is on, fill in what we can but skip the getservby??? stuff.
-   Might as well have consistent behavior here, and it *is* faster. */
-
-/* Obligatory netdb.h-inspired rant: servent.s_port is supposed to  be an int.
+/* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
    Despite this, we still have to treat it as a short when copying it around.
    Not only that, but we have to convert it *back* into net order for
    getservbyport to work.  Manpages generally aren't clear on all this, but
-   there are plenty of examples in which it is just quietly done. -Avian */
+   there are plenty of examples in which it is just quietly done. -hobbit */
 
 bool netcat_getport(netcat_port *dst, const char *port_string,
 		    unsigned short port_num)
@@ -155,7 +132,8 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
   debug_v("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
 		(void *) dst, port_string, port_num);
 
-  /* preload some label */
+  /* reset the dst struct for debugging cleanup purposes */
+  memset(dst, 0, sizeof(*dst));
   strcpy(dst->name, "(unknown)");
 
   /* case 1: reverse-lookup of a number; placed first since this case is
@@ -178,7 +156,7 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
        instead of trying to resolve conflicts.  None of the entries in
        *my* extensive /etc/services begins with a digit, so this should
        "always work" unless you're at 3com and have some company-internal
-       services defined... -Avian */
+       services defined... -hobbit */
     x = atoi(port_string);
     if ((x = atoi(port_string)))
       return netcat_getport(dst, NULL, x);	/* recurse for numeric-string-arg */
