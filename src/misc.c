@@ -1,11 +1,11 @@
 /*
- * misc.c -- description
+ * misc.c -- contains generic needed routines
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.16 2002-05-05 09:05:58 themnemonic Exp $
+ * $Id: misc.c,v 1.17 2002-05-05 18:15:39 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -197,6 +197,7 @@ void netcat_printhelp(char *argv0)
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
+"  -L, --tunnel               forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"

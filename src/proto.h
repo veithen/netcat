@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.12 2002-05-05 09:05:59 themnemonic Exp $
+ * $Id: proto.h,v 1.13 2002-05-05 18:15:39 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -40,8 +40,8 @@ void netcat_printhelp(char *argv0);
 void netcat_printversion(void);
 
 /* netcat.c */
-extern bool opt_listen, opt_numeric, opt_random, opt_hexdump, opt_udpmode,
-		opt_telnet, opt_zero;
+extern bool opt_listen, opt_tunnel, opt_numeric, opt_random, opt_hexdump,
+		opt_udpmode, opt_telnet, opt_zero;
 extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern int netfd;

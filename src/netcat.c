@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.21 2002-05-05 09:05:58 themnemonic Exp $
+ * $Id: netcat.c,v 1.22 2002-05-05 18:15:39 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -47,6 +47,7 @@ char *optbuf = NULL;		/* LSRR or sockopts */
 
 /* global options flags */
 bool opt_listen = FALSE;		/* listen mode */
+bool opt_tunnel = FALSE;		/* tunnel mode */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;		/* use random ports */
 bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
@@ -100,8 +101,9 @@ static void got_int(int z)
 
 /* handle stdin/stdout/network I/O. */
 
-int readwrite(int sock)
+int readwrite(int sock, int sock2)
 {
+  int fd_stdin, fd_stdout, fd_max;
   int read_ret, write_ret, pbuf_len;
   char buf[1024], *pbuf = NULL, *ptmp = NULL;
   fd_set ins;
@@ -113,25 +115,34 @@ int readwrite(int sock)
 
   debug_v("readwrite(sock=%d)", sock);
 
+  if (sock2 < 0) {
+    fd_stdin = STDIN_FILENO;
+    fd_stdout = STDOUT_FILENO;
+  }
+  else {
+    fd_stdin = fd_stdout = sock2;
+  }
+  fd_max = 1 + (fd_stdin > sock ? fd_stdin : sock);
+
   while (inloop) {
     FD_ZERO(&ins);
     FD_SET(sock, &ins);
 
     if (ptmp == NULL)
-      FD_SET(0, &ins);
+      FD_SET(fd_stdin, &ins);
     else if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0))
       delayer.tv_sec = opt_interval;
 
     debug_v("entering select()...");
-    select(sock + 1, &ins, NULL, NULL,
+    select(fd_max, &ins, NULL, NULL,
 	   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
 
     /* reading from stdin.  We support the buffered output by lines, which is
        controlled by the global variable opt_interval.  If it is set, we fetch
        the buffer in the usual way, but we park it in a temporary buffer.  Once
        finished, the buffer is flushed and everything returns normal. */
-    if (FD_ISSET(0, &ins)) {
-      read_ret = read(0, buf, sizeof(buf));
+    if (FD_ISSET(fd_stdin, &ins)) {
+      read_ret = read(fd_stdin, buf, sizeof(buf));
       debug_dv("read(stdin) = %d", read_ret);
 
       if (read_ret < 0) {
@@ -199,7 +210,7 @@ int readwrite(int sock)
 	inloop = FALSE;
       }
       else {
-	write_ret = write(1, buf, read_ret);
+	write_ret = write(fd_stdout, buf, read_ret);
 	bytes_recv += write_ret;
 	debug_dv("write(stdout) = %d", write_ret);
 
@@ -234,10 +245,10 @@ int readwrite(int sock)
 
       write_ret = write(sock, pbuf, i);
       bytes_sent += write_ret;
-      debug_dv("write(stdout) = %d", write_ret);
+      debug_dv("write(stdout)[buf] = %d", write_ret);
 
       if (write_ret < 0) {
-	perror("write(stdout)");
+	perror("write(stdout)[buf]");
 	exit(EXIT_FAILURE);
       }
 
@@ -261,7 +272,7 @@ int readwrite(int sock)
 
 int main(int argc, char *argv[])
 {
-  int c, my_fd;
+  int c, sock_accept = -1, sock_connect = -1;
   netcat_host local_host, remote_host;
   netcat_port local_port, remote_port;
   struct in_addr *ouraddr;
@@ -306,6 +317,7 @@ int main(int argc, char *argv[])
 	{ "help",	no_argument,		NULL, 'h' },
 	{ "interval",	required_argument,	NULL, 'i' },
 	{ "listen",	no_argument,		NULL, 'l' },
+	{ "tunnel",	no_argument,		NULL, 'L' },
 	{ "dont-resolve", no_argument,		NULL, 'n' },
 	{ "output",	required_argument,	NULL, 'o' },
 	{ "local-port",	required_argument,	NULL, 'p' },
@@ -321,7 +333,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "e:g:G:hi:lno:p:rs:tuvxw:z", long_options,
+    c = getopt_long(argc, argv, "e:g:G:hi:lLno:p:rs:tuvxw:z", long_options,
 		    &option_index);
     if (c == -1)
       break;
@@ -344,7 +356,18 @@ int main(int argc, char *argv[])
       }
       break;
     case 'l':			/* listen mode */
+      if (opt_tunnel) {
+	fprintf(stderr, _("Error: `-L' and `-l' options are incompatible\n"));
+	exit(EXIT_FAILURE);
+      }
       opt_listen = TRUE;
+      break;
+    case 'L':			/* tunnel mode */
+      if (opt_listen) {
+	fprintf(stderr, _("Error: `-L' and `-l' options are incompatible\n"));
+	exit(EXIT_FAILURE);
+      }
+      opt_tunnel = TRUE;
       break;
     case 'n':			/* numeric-only, no DNS lookups */
       opt_numeric++;
@@ -471,15 +494,23 @@ int main(int argc, char *argv[])
 
   debug_dv("Arguments parsing complete! Total ports=%d", netcat_flag_count());
 
-#if 1
+#ifdef DEBUG
   c = 0;
   while ((c = netcat_flag_next(c))) {
     printf("Got port=%d\n", c);
   }
 #endif
 
-  /* Handle listen mode */
-  if (opt_listen) {
+  /* since ports are the second argument, checking ports might be enough */
+  /* FIXME: i don't like this check here but we must do that in order to make
+     sure it doesn't fail after we accepted a connection for the tunnel mode */
+  if ((netcat_flag_count() == 0) && !opt_listen) {
+    fprintf(stderr, _("Error: No ports specified for connection\n"));
+    exit(EXIT_FAILURE);
+  }
+
+  /* Handle listen mode and tunnel mode */
+  if (opt_listen || opt_tunnel) {
     int sock_listen;
 
     sock_listen = netcat_socket_new_listen(&local_host.iaddrs[0], local_port.num);
@@ -493,9 +524,9 @@ int main(int argc, char *argv[])
     debug_dv("Entering SELECT loop");
 
     do {
-      my_fd = netcat_socket_accept(sock_listen, opt_wait);
+      sock_accept = netcat_socket_accept(sock_listen, opt_wait);
 
-      if (my_fd < 0) {
+      if (sock_accept < 0) {
         dprintf(2, (_("Listen mode failed: %s\n"), strerror(errno)));
         exit(EXIT_FAILURE);
       }
@@ -503,17 +534,19 @@ int main(int argc, char *argv[])
 	struct sockaddr_in my_addr;
 	socklen_t my_len = sizeof(my_addr);
 
-	getpeername(my_fd, (struct sockaddr *)&my_addr, &my_len);
+	getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
 
-	/* if a remote address have been specified test it */
-	if (remote_host.iaddrs[0].s_addr) {
+	/* if a remote address have been specified AND we are not in tunnnel
+	   mode, we assume it as the only ip that is allowed to connect to
+	   this socket */
+	if (remote_host.iaddrs[0].s_addr && !opt_tunnel) {
 	  /* FIXME: ALL addresses should be tried */
 	  if (memcmp(&remote_host.iaddrs[0], &my_addr.sin_addr,
 		     sizeof(local_host.iaddrs[0]))) {
 	    dprintf(2, (_("Unwanted connection from %s:%d\n"),
 		    netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port));
-	    shutdown(my_fd, 2);
-	    close(my_fd);
+	    shutdown(sock_accept, 2);
+	    close(sock_accept);
 	    continue;
 	  }
 	}
@@ -526,20 +559,18 @@ int main(int argc, char *argv[])
       break;
     } while (TRUE);
 
-    /* entering the core loop */
-    readwrite(my_fd);
+    /* if we are in listen mode, run the core loop and exit when it returns.
+       otherwise now it's the time to connect to the target host and tunnel
+       them together. */
+    if (opt_listen) {
+      readwrite(sock_accept, -1);
 
-    debug_dv("Listen: EXIT");
-    exit(0);
+      debug_dv("Listen: EXIT");
+      exit(0);
+    }
   }				/* end of listen mode handling */
 
   /* we need to connect outside */
-
-  /* since ports are the second argument, checking ports might be enough */
-  if (netcat_flag_count() == 0) {
-    fprintf(stderr, _("Error: No ports specified for connection\n"));
-    exit(EXIT_FAILURE);
-  }
 
   c = 0;
   while ((c = netcat_flag_next(c))) {
@@ -555,33 +586,38 @@ int main(int argc, char *argv[])
 
     /* since we are nonblocking now, we can start as many connections as we want
        but it's not a great idea connecting more than one host at time */
-    my_fd = netcat_socket_new_connect(&remote_host.iaddrs[0], c, NULL, 0);
-    assert(my_fd > 0);
+    sock_connect = netcat_socket_new_connect(&remote_host.iaddrs[0], c, NULL, 0);
+    assert(sock_connect > 0);
 
-    FD_SET(my_fd, &ins);
-    FD_SET(my_fd, &outs);
+    FD_SET(sock_connect, &ins);
+    FD_SET(sock_connect, &outs);
 
     /* FIXME: what happens if: Connection Refused, or calling select on an already
        connected host */
-    debug_dv("Entering SELECT sock=%d", my_fd);
-    select(my_fd + 1, &ins, &outs, NULL, NULL);
+    debug_dv("Entering SELECT sock=%d", sock_connect);
+    select(sock_connect + 1, &ins, &outs, NULL, NULL);
 
     /* FIXME: why do i get both these? */
-    if (FD_ISSET(my_fd, &ins)) {
+    if (FD_ISSET(sock_connect, &ins)) {
       char tmp;
-      ret = read(my_fd, &tmp, 1);
+      ret = read(sock_connect, &tmp, 1);
       dprintf(2, ("%s [%s] %s : %s\n", "xx", "xx", "xx", strerror(errno)));
-      ret = shutdown(my_fd, 2);
+      ret = shutdown(sock_connect, 2);
       debug_v("shutdown() = %d", ret);
-      ret = close(my_fd);
+      ret = close(sock_connect);
       debug_v("close() = %d", ret);
       continue;
     }
 
-    if (FD_ISSET(my_fd, &outs)) {
+    if (FD_ISSET(sock_connect, &outs)) {
       debug_v("IS SET outs");
 
-      readwrite(my_fd);
+      if (opt_tunnel)
+	readwrite(sock_connect, sock_accept);
+      else {
+	assert(sock_accept == -1);
+	readwrite(sock_connect, -1);
+      }
 
     }
 
@@ -589,6 +625,7 @@ int main(int argc, char *argv[])
 
   }
 
-  exit(0);
+  debug_v("EXIT");
+  return 0;
 
 }				/* main */

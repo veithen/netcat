@@ -37,5 +37,3 @@ to mail me if you need any further information.
  o The configure script must properly check res_init() by including
    the <resolv.h> file.
 
- o Add a -L command line switch that makes netcat to tunnel from
-   a listening port to the remost host/port
