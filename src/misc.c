@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.34 2003-02-28 22:06:23 themnemonic Exp $
+ * $Id: misc.c,v 1.35 2003-08-17 21:51:48 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -365,9 +365,16 @@ const char *debug_fmt(const char *fmt, ...)
   static char buf[512];
   va_list args;
 
-  va_start(args, fmt);
-  vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
+  /* resolve the format strings only if it is really needed */
+  if (opt_debug) {
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+  }
+  else {
+    strncpy(buf, fmt, sizeof(buf));
+    buf[sizeof(buf) - 1] = 0;
+  }
 
   return buf;
 }
