@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.22 2002-05-31 13:42:15 themnemonic Exp $
+ * $Id: proto.h,v 1.23 2002-06-04 22:09:36 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -23,9 +23,10 @@
  ***************************************************************************/
 
 /* core.c */
+extern unsigned long bytes_sent, bytes_recv;
 int core_connect(nc_sock_t *ncsock);
 int core_listen(nc_sock_t *ncsock);
-int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_tunnel);
+int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave);
 
 /* flagset.c */
 bool netcat_flag_init(unsigned int len);
@@ -50,7 +51,6 @@ extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern nc_proto_t opt_proto;
 extern FILE *output_fd;
-extern unsigned long bytes_sent, bytes_recv;
 extern bool use_stdin;
 
 /* network.c */

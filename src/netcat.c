@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.41 2002-05-28 20:58:05 themnemonic Exp $
+ * $Id: netcat.c,v 1.42 2002-06-04 22:09:36 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -35,8 +35,6 @@
 /* int gatesidx = 0; */		/* LSRR hop count */
 /* int gatesptr = 4; */		/* initial LSRR pointer, settable */
 /* nc_host_t **gates = NULL; */	/* LSRR hop hostpoop */
-unsigned long bytes_sent = 0;	/* total bytes received (statistics) */
-unsigned long bytes_recv = 0;	/* total bytes sent (statistics) */
 char *optbuf = NULL;		/* LSRR or sockopts */
 FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
 bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
@@ -129,11 +127,14 @@ int main(int argc, char *argv[])
   nc_host_t remote_host;
   nc_sock_t listen_sock;
   nc_sock_t connect_sock;
+  nc_sock_t stdio_sock;
 
+  memset(&local_port, 0, sizeof(local_port));
   memset(&local_host, 0, sizeof(local_host));
   memset(&remote_host, 0, sizeof(remote_host));
   memset(&listen_sock, 0, sizeof(listen_sock));
   memset(&connect_sock, 0, sizeof(listen_sock));
+  memset(&stdio_sock, 0, sizeof(stdio_sock));
   listen_sock.domain = PF_INET;
   connect_sock.domain = PF_INET;
 
@@ -449,7 +450,7 @@ int main(int argc, char *argv[])
        otherwise now it's the time to connect to the target host and tunnel
        them together (which means passing to the next section. */
     if (opt_listen) {
-      core_readwrite(&listen_sock, NULL);
+      core_readwrite(&listen_sock, &stdio_sock);
 
       debug_dv("Listen: EXIT");
       exit(EXIT_SUCCESS);
@@ -524,7 +525,7 @@ int main(int argc, char *argv[])
     else {
       /* if we are not in tunnel mode, sock_accept must be untouched */
       assert(sock_accept == -1);
-      core_readwrite(&connect_sock, NULL);
+      core_readwrite(&connect_sock, &stdio_sock);
     }
   }			/* end of while (total_ports > 0) */
 
