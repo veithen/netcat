@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.15 2002-05-06 18:25:21 themnemonic Exp $
+ * $Id: network.c,v 1.16 2002-05-08 20:29:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -205,7 +205,7 @@ int netcat_inet_pton(const char *src, void *dst)
 #ifdef HAVE_INET_PTON
   ret = inet_pton(AF_INET, src, dst);
 #else
-# warning Using broken network address conversion function
+# warning Using broken network address conversion function for pton
   ret = inet_aton(src, (struct in_addr *)dst);
 #endif
 
@@ -228,7 +228,7 @@ const char *netcat_inet_ntop(const void *src)
    * sort it out by myself. */
   ret = inet_ntop(AF_INET, src, my_buf, sizeof(my_buf));
 #else
-# warning Using broken network address conversion function
+# warning Using broken network address conversion function for ntop
   ret = inet_ntoa(*(struct in_addr *)src);
 #endif
 
@@ -261,8 +261,8 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
   int sock, ret;
   struct sockaddr_in rem_addr;
 
-  debug_dv("netcat_create_server(addr=%p, port=%hu, local_addr=%p, local_port=%hu)",
-	(void *)addr, port, (void *)local_addr, local_port);
+  debug_dv("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local"
+	   "_port=%hu)", (void *)addr, port, (void *)local_addr, local_port);
 
   rem_addr.sin_family = AF_INET;
   rem_addr.sin_port = htons(port);
@@ -279,7 +279,12 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
 
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = htons(local_port);
-    memcpy(&my_addr.sin_addr, local_addr, sizeof(my_addr.sin_addr));
+    /* local_addr may not be specified because the user may want to only enforce
+       the local source port */
+    if (local_addr)
+      memcpy(&my_addr.sin_addr, local_addr, sizeof(my_addr.sin_addr));
+    else
+      memset(&my_addr.sin_addr, 0, sizeof(my_addr.sin_addr));
     ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
     if (ret < 0)
       return -3;
@@ -307,7 +312,7 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
   int sock, ret;
   struct sockaddr_in my_addr;
 
-  debug_dv("netcat_create_server(addr=%p, port=%hu)", (void *)addr, port);
+  debug_dv("netcat_socket_new_listen(addr=%p, port=%hu)", (void *)addr, port);
 
   /* Reset the sockaddr structure */
   my_addr.sin_family = AF_INET;
@@ -344,7 +349,7 @@ int netcat_socket_accept(int s, int timeout)
   fd_set in;
   struct timeval timest;
 
-  debug_v("netcat_accept(s=%d, timeout=%d)", s, timeout);
+  debug_v("netcat_socket_accept(s=%d, timeout=%d)", s, timeout);
 
   /* initialize the select() variables */
   FD_ZERO(&in);
