@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.17 2002-06-09 08:56:50 themnemonic Exp $
+ * $Id: core.c,v 1.18 2002-06-12 23:09:27 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -94,12 +94,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = htons(ncsock->local_port.num);
   memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0], sizeof(myaddr.sin_addr));
-  /* only call bind if it really needed -- most of the cases in this function */
-  if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
-    ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
-    if (ret < 0)
-      goto err;
-  }
+  /* bind() MUST be called in this function, since it's the final call for this
+     type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
+  ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+  if (ret < 0)
+    goto err;
 
 #ifdef USE_PKTINFO
   /* set the right flag in order to obtain the ancillary data */
@@ -323,6 +322,9 @@ static int core_tcp_connect(nc_sock_t *ncsock)
       errno = get_ret;		/* value returned by getsockopt(SO_ERROR) */
       return -1;
     }
+
+    /* everything went fine, we have the socket */
+    ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&ncsock->host, ncsock->port.num));
     return sock;
   }
   else if (ret)			/* Argh, select() returned error! */
@@ -356,6 +358,19 @@ static int core_tcp_listen(nc_sock_t *ncsock)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't setup listen socket (err=%d)",
 	    sock_listen);
 
+  /* if the port was set to 0 this means that it is assigned randomly by the
+     OS.  Find out which port they assigned to us. */
+  if (ncsock->local_port.num == 0) {
+    struct sockaddr_in myaddr;
+    unsigned int myaddr_len = sizeof(myaddr);
+
+    getsockname(sock_listen, (struct sockaddr *)&myaddr, &myaddr_len);
+    netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
+  }
+
+  ncprint(NCPRINT_VERB2, _("Listening on %s %d"),
+	(ncsock->local_host.iaddrs[0].s_addr ? ncsock->local_host.addrs[0] : "any"),
+	ncsock->local_port.num);
   while (TRUE) {
     struct sockaddr_in my_addr;
     unsigned int my_len = sizeof(my_addr);	/* this *IS* socklen_t */
