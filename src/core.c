@@ -1,11 +1,11 @@
 /*
- * core.c -- description
+ * core.c -- core loops and most critical routines
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.5 2002-05-15 20:18:47 themnemonic Exp $
+ * $Id: core.c,v 1.6 2002-05-17 21:49:02 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,6 +27,9 @@
 #endif
 
 #include "netcat.h"
+
+/* used for UDP only, find out whether the remote host is initialized or not */
+static bool core_initialized = FALSE;
 
 int core_udp_connect(struct in_addr *host, unsigned short port)
 {
@@ -230,23 +233,29 @@ int core_readwrite(int sock, int sock2)
 
   debug_v("readwrite(sock=%d)", sock);
 
+  /* set the actual "local" input and output and find out the max fd + 1 */
   if (sock2 < 0) {
     fd_stdin = STDIN_FILENO;
     fd_stdout = STDOUT_FILENO;
   }
-  else {
+  else
     fd_stdin = fd_stdout = sock2;
-  }
   fd_max = 1 + (fd_stdin > sock ? fd_stdin : sock);
 
   while (inloop) {
+    /* reset the ins events watch because some changes could happen */
     FD_ZERO(&ins);
     FD_SET(sock, &ins);
 
-    if (ptmp == NULL)
-      FD_SET(fd_stdin, &ins);
-    else if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0))
-      delayer.tv_sec = opt_interval;
+    /* if we have a send buffer being sent OR we are in udp mode AND the
+       remote address have not been initialized yet (for example because
+       no packets have been received so far, THEN don't watch stdin */
+    if (ptmp) {
+      if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0))
+	delayer.tv_sec = opt_interval;
+    }
+    else if (!opt_udpmode || core_initialized)
+      FD_SET(fd_stdin, &ins);	/* if (opt_udpmode -> core_initialized) */
 
     debug_v("entering select()...");
     select(fd_max, &ins, NULL, NULL,
@@ -313,8 +322,24 @@ int core_readwrite(int sock, int sock2)
 
     /* reading from the socket (net). */
     if (FD_ISSET(sock, &ins)) {
+      /* hold on! before reading, make sure we don't really need to know the
+         sender's address */
+      if (opt_udpmode && !core_initialized) {
+	struct sockaddr_in myad;
+	unsigned int myadlen = sizeof(myad);
+
+	/* FIXME: this is broken badly! we NEED some type of local socket
+	   buffering record, so we can have such options localized */
+	read_ret = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&myad,
+			    &myadlen);
+	debug_dv("recvfrom(net) = %d (address=%s)", read_ret,
+		netcat_inet_ntop(&myad.sin_addr));
+	goto skipread;
+      }
       read_ret = read(sock, buf, sizeof(buf));
       debug_dv("read(net) = %d", read_ret);
+
+ skipread:
 
       if (read_ret < 0) {
 	perror("read(net)");

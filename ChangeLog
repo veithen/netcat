@@ -1,4 +1,10 @@
 
+[*] Fri May 17 2002 - netcat (cvs)
+
+  o Fixed the udp mode listen, which didn't allow any kind of safe read from
+    stdin.
+
+
 [*] Wed May 15 2002 - netcat v0.4.0
 
   o Now netcat_socket_accept() recognizes a negative timeout parameter.
