@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.6 2002-06-10 11:32:17 themnemonic Exp $
+# $Id: Makefile.am,v 1.7 2002-08-22 21:10:42 themnemonic Exp $
 
 info_TEXINFOS = netcat.texi
 
@@ -22,4 +22,4 @@ EXTRA_DIST = netcat.1 netcat.pod migration
 
 ## Proceed to subdirs
 
-## there isn't any
+SUBDIRS = drafts
