@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.28 2002-05-08 20:34:11 themnemonic Exp $
+ * $Id: netcat.c,v 1.29 2002-05-09 21:23:25 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -603,7 +603,7 @@ int main(int argc, char *argv[])
     /* since we are nonblocking now, we can start as many connections as we want
        but it's not a great idea connecting more than one host at time */
     sock_connect = netcat_socket_new_connect(&remote_host.iaddrs[0], c, NULL,
-					     local_port.num);
+					(opt_tunnel ? 0 : local_port.num));
     /* FIXME: missing some vital checks about the creation of that socket */
     assert(sock_connect > 0);
 
