@@ -1,4 +1,17 @@
 
+[*] Sat May 11 2002 - netcat (cvs)
+
+  o Now netcat_socket_accept() recognizes a negative timeout parameter.
+  o Splitted core functions like readwrite() to core.c, this allows a
+    more modular programming and allows a better features-implementation.
+  o Moved some low level code from main.c to core.c
+  o Added UDP protocol support, but it is a little buggy still, because
+    I have some logistic problems to resolve before fixing the
+    implementation.
+  o Fixed various socket leaks.
+  o Reimplemented command line switch `-z'.
+
+
 [*] Thu May  9 2002 - netcat v0.3.1
 
   o Now "make install" also symlinks "nc" to the program file "netcat".
