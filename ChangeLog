@@ -1,10 +1,10 @@
 
-[*] Mon May 27 2002 - netcat (cvs)
+[*] Fri May 31 2002 - netcat v0.5.0
 
   o Fixed the udp mode listen, which didn't allow any kind of safe read from
     stdin.
-  o Generalized flagset.c to be more a library file.  Fixed some minor bugs
-    in the interface.
+  o Generalized flagset.c to be more a library file.  Fixed some minor bugs in
+    the interface.
   o Fixed a bug in ncprint() which didn't respect the EXIT flag if the
     verbosity flag was also specified and not satisfied.
   o Rewritten the core routines and arguments handling to allow a better
@@ -19,8 +19,11 @@
   o The udp listening mode now recognizes the `-z' command line switch.
   o Changed telnet command line switch from `-t' to `-T', added the change
     notify to doc/migration.
-  o Fixed a design bug in the UDP protocol in listen mode.  The connection should
-    be created with the exact interface as identified by the incoming packet.
+  o Fixed a design bug in the UDP protocol in listen mode.  The connection
+    should be created with the exact interface as identified by the incoming
+    packet.  Unfortunately this fix applies only on Linux because it's the
+    only OS that supports RFC 2292 extensions to IPv4.
+  o Updated the man and info documentation files.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0
