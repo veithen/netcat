@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2003-08-21 17:29+0200\n"
+"POT-Creation-Date: 2004-01-03 17:17+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:151 src/core.c:436
+#: src/core.c:151 src/core.c:438
 #, c-format
 msgid "Listening on %s"
 msgstr ""
@@ -35,22 +35,22 @@ msgstr ""
 msgid "Received packet from %s:%d"
 msgstr ""
 
-#: src/core.c:381
+#: src/core.c:383
 #, c-format
 msgid "%s open"
 msgstr ""
 
-#: src/core.c:419
+#: src/core.c:421
 #, c-format
 msgid "Couldn't setup listening socket (err=%d)"
 msgstr ""
 
-#: src/core.c:463
+#: src/core.c:465
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr ""
 
-#: src/core.c:467
+#: src/core.c:469
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr ""
@@ -290,36 +290,36 @@ msgstr ""
 msgid "No ports specified for connection"
 msgstr ""
 
-#: src/network.c:96 src/network.c:161
+#: src/network.c:95 src/network.c:159
 #, c-format
 msgid "Inverse name lookup failed for `%s'"
 msgstr ""
 
-#: src/network.c:133
+#: src/network.c:131
 #, c-format
 msgid "This host's reverse DNS doesn't match! %s -- %s"
 msgstr ""
 
-#: src/network.c:139
+#: src/network.c:137
 #, c-format
 msgid "Real hostname for %s [%s] is %s"
 msgstr ""
 
-#: src/network.c:172
+#: src/network.c:170
 #, c-format
 msgid "Host %s isn't authoritative! (direct lookup failed)"
 msgstr ""
 
-#: src/network.c:182
+#: src/network.c:180
 #, c-format
 msgid "Host %s isn't authoritative! (direct lookup mismatch)"
 msgstr ""
 
-#: src/network.c:184
+#: src/network.c:182
 #, c-format
 msgid "  %s -> %s  BUT  %s -> %s"
 msgstr ""
 
-#: src/network.c:291
+#: src/network.c:289
 msgid "any address"
 msgstr ""

@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: netcat 0.6.2\n"
-"POT-Creation-Date: 2003-08-21 17:29+0200\n"
+"POT-Creation-Date: 2004-01-03 17:17+0100\n"
 "PO-Revision-Date: 2003-08-19 14:16+0200\n"
 "Last-Translator: Giovanni Giacobbi <giovanni@giacobbi.net>\n"
 "Language-Team: Italian <tp@lists.linux.it>\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/core.c:151 src/core.c:436
+#: src/core.c:151 src/core.c:438
 #, c-format
 msgid "Listening on %s"
 msgstr "In attesa su %s"
@@ -35,22 +35,22 @@ msgstr "Pacchetto ricevuto da %s:%d -> %s:%d (locale)"
 msgid "Received packet from %s:%d"
 msgstr "Pacchetto ricevuto da %s:%d"
 
-#: src/core.c:381
+#: src/core.c:383
 #, c-format
 msgid "%s open"
 msgstr "%s è aperto"
 
-#: src/core.c:419
+#: src/core.c:421
 #, c-format
 msgid "Couldn't setup listening socket (err=%d)"
 msgstr "Impossibile creare il socket in ascolto (err=%d)"
 
-#: src/core.c:463
+#: src/core.c:465
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr "Connessione non voluta da %s:%hu (rifiutata)"
 
-#: src/core.c:467
+#: src/core.c:469
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr "Connessione da %s:%hu"
@@ -340,36 +340,36 @@ msgstr "%s: manca il parametro hostname"
 msgid "No ports specified for connection"
 msgstr "Nessuna porta specificata per la connessione"
 
-#: src/network.c:96 src/network.c:161
+#: src/network.c:95 src/network.c:159
 #, c-format
 msgid "Inverse name lookup failed for `%s'"
 msgstr "Risoluzione inversa per `%s' fallita"
 
-#: src/network.c:133
+#: src/network.c:131
 #, c-format
 msgid "This host's reverse DNS doesn't match! %s -- %s"
 msgstr "Il reverse DNS di questo host non corrisponde! %s -- %s"
 
-#: src/network.c:139
+#: src/network.c:137
 #, c-format
 msgid "Real hostname for %s [%s] is %s"
 msgstr "Il vero hostname di %s [%s] è %s"
 
-#: src/network.c:172
+#: src/network.c:170
 #, c-format
 msgid "Host %s isn't authoritative! (direct lookup failed)"
 msgstr "L'host %s non è autoritativo! (lookup diretto fallito)"
 
-#: src/network.c:182
+#: src/network.c:180
 #, c-format
 msgid "Host %s isn't authoritative! (direct lookup mismatch)"
 msgstr "L'host %s non è autoritativo! (lookup diretto errato)"
 
-#: src/network.c:184
+#: src/network.c:182
 #, c-format
 msgid "  %s -> %s  BUT  %s -> %s"
 msgstr "  %s -> %s  MA  %s -> %s"
 
-#: src/network.c:291
+#: src/network.c:289
 msgid "any address"
 msgstr "tutti gli indirizzi"

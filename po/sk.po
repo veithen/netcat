@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: netcat 0.6.1\n"
-"POT-Creation-Date: 2003-08-21 17:29+0200\n"
+"POT-Creation-Date: 2004-01-03 17:17+0100\n"
 "PO-Revision-Date: 2002-09-19 21:17+0200\n"
 "Last-Translator: Lubomir Sedlacik <salo@Xtrmntr.org>\n"
 "Language-Team: sk <sk@li.org>\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-2\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:151 src/core.c:436
+#: src/core.c:151 src/core.c:438
 #, c-format
 msgid "Listening on %s"
 msgstr "Poèúvam na %s"
@@ -34,22 +34,22 @@ msgstr "Prijatý paket z %s:%d -> %s:%d (lokálne)"
 msgid "Received packet from %s:%d"
 msgstr "Prijatý paket z %s:%d"
 
-#: src/core.c:381
+#: src/core.c:383
 #, c-format
 msgid "%s open"
 msgstr "%s otvorené"
 
-#: src/core.c:419
+#: src/core.c:421
 #, c-format
 msgid "Couldn't setup listening socket (err=%d)"
 msgstr ""
 
-#: src/core.c:463
+#: src/core.c:465
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr "Ne¾iadúce spojenie z %s:%hu (odmietnuté)"
 
-#: src/core.c:467
+#: src/core.c:469
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr "Spojenie z %s:%hu"
@@ -332,37 +332,37 @@ msgstr "%s: chýbajúci parameter `hostname'"
 msgid "No ports specified for connection"
 msgstr "Pre spojenie neboli ¹pecifikované ¾iadne porty"
 
-#: src/network.c:96 src/network.c:161
+#: src/network.c:95 src/network.c:159
 #, fuzzy, c-format
 msgid "Inverse name lookup failed for `%s'"
 msgstr "inverzné vyhµadanie mena pre `%s' zlyhalo"
 
-#: src/network.c:133
+#: src/network.c:131
 #, c-format
 msgid "This host's reverse DNS doesn't match! %s -- %s"
 msgstr "Reverzný DNS záznam pre host sa nezhoduje! %s -- %s"
 
-#: src/network.c:139
+#: src/network.c:137
 #, c-format
 msgid "Real hostname for %s [%s] is %s"
 msgstr ""
 
-#: src/network.c:172
+#: src/network.c:170
 #, c-format
 msgid "Host %s isn't authoritative! (direct lookup failed)"
 msgstr "Host %s nie je autoritatívny! (priame vyhµadanie zlyhalo)"
 
-#: src/network.c:182
+#: src/network.c:180
 #, c-format
 msgid "Host %s isn't authoritative! (direct lookup mismatch)"
 msgstr "Host %s nie je autoritatívny! (priame vyhµadanie sa nezhoduje)"
 
-#: src/network.c:184
+#: src/network.c:182
 #, c-format
 msgid "  %s -> %s  BUT  %s -> %s"
 msgstr "  %s -> %s  ALE  %s -> %s"
 
-#: src/network.c:291
+#: src/network.c:289
 msgid "any address"
 msgstr "akejkoµvek adrese"
 
