@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.26 2002-05-07 18:48:33 themnemonic Exp $
+ * $Id: netcat.c,v 1.27 2002-05-08 14:35:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -66,6 +66,19 @@ static void printstats()
   ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
 	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
 	  bytes_recv, bytes_sent);
+}
+
+/* ... */
+static char *netcat_strid(netcat_host *host, unsigned short port)
+{
+  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
+
+  if (host->name[0])
+    snprintf(buf, sizeof(buf), "%s [%s] %d", host->name, host->addrs[0], port);
+  else
+    snprintf(buf, sizeof(buf), "%s %d", host->addrs[0], port);
+
+  return buf;
 }
 
 /* signal handling */
@@ -347,6 +360,8 @@ int main(int argc, char *argv[])
 
     switch (c) {
     case 'e':			/* prog to exec */
+      if (opt_exec)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Cannot specify `-e' option double"));
       opt_exec = strdup(optarg);
       break;
     case 'G':			/* srcrt gateways pointer val */
@@ -363,17 +378,15 @@ int main(int argc, char *argv[])
 		_("Invalid interval time \"%s\""), optarg);
       break;
     case 'l':			/* listen mode */
-      if (opt_tunnel) {
-	fprintf(stderr, _("Error: `-L' and `-l' options are incompatible\n"));
-	exit(EXIT_FAILURE);
-      }
+      if (opt_tunnel)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("`-L' and '-l' options are incompatible"));
       opt_listen = TRUE;
       break;
     case 'L':			/* tunnel mode */
-      if (opt_listen) {
-	fprintf(stderr, _("Error: `-L' and `-l' options are incompatible\n"));
-	exit(EXIT_FAILURE);
-      }
+      if (opt_listen)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("`-L' and '-l' options are incompatible"));
       opt_tunnel = TRUE;
       break;
     case 'n':			/* numeric-only, no DNS lookups */
@@ -510,10 +523,8 @@ int main(int argc, char *argv[])
   /* since ports are the second argument, checking ports might be enough */
   /* FIXME: i don't like this check here but we must do that in order to make
      sure it doesn't fail after we accepted a connection for the tunnel mode */
-  if ((netcat_flag_count() == 0) && !opt_listen) {
-    fprintf(stderr, _("Error: No ports specified for connection\n"));
-    exit(EXIT_FAILURE);
-  }
+  if ((netcat_flag_count() == 0) && !opt_listen)
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "No ports specified for connection");
 
   /* Handle listen mode and tunnel mode */
   if (opt_listen || opt_tunnel) {
@@ -521,11 +532,9 @@ int main(int argc, char *argv[])
 
     sock_listen = netcat_socket_new_listen(&local_host.iaddrs[0], local_port.num);
 
-    if (sock_listen < 0) {
-      fprintf(stderr, _("Error: Couldn't setup listen socket (err=%d)\n"),
+    if (sock_listen < 0)
+      ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't setup listen socket (err=%d)",
 	      sock_listen);
-      exit(EXIT_FAILURE);
-    }
 
     debug_dv("Entering SELECT loop");
 
@@ -627,12 +636,8 @@ int main(int argc, char *argv[])
       assert(ret < 0);
 
       /* output the hostname in the message only if it's authoritative */
-      if (remote_host.name[0])
-	ncprint(NCPRINT_VERB1, "%s [%s] %d: %s", remote_host.name,
-		remote_host.addrs[0], c, strerror(errno));
-      else
-	ncprint(NCPRINT_VERB1, "%s %d: %s", remote_host.addrs[0], c,
-		strerror(errno));
+      ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
+	      strerror(errno));
 
       close(sock_connect);
       continue;			/* go on with next port */
@@ -641,6 +646,8 @@ int main(int argc, char *argv[])
     /* connection was successful, enter the core loop */
     if (FD_ISSET(sock_connect, &outs)) {
       debug_v("Connect-flag: outs");
+
+      ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&remote_host, c));
 
       if (opt_tunnel)
 	readwrite(sock_connect, sock_accept);
@@ -653,13 +660,8 @@ int main(int argc, char *argv[])
 
     if (!FD_ISSET(sock_connect, &ins) && !FD_ISSET(sock_connect, &outs)) {
       errno = ETIMEDOUT;
-      if (remote_host.name[0])
-	ncprint(NCPRINT_VERB1, "%s [%s] %d: %s", remote_host.name,
-		remote_host.addrs[0], c, strerror(errno));
-      else
-	ncprint(NCPRINT_VERB1, "%s %d: %s", remote_host.addrs[0], c,
-		strerror(errno));
-
+      ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
+	      strerror(errno));
     }
 
     debug_dv("Connect-loop for port %d finished", c);
