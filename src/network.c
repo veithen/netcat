@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002 - 2003  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.37 2003-12-10 16:18:07 themnemonic Exp $
+ * $Id: network.c,v 1.38 2004-01-03 16:42:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -44,7 +44,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
   struct hostent *hostent;
   struct in_addr res_addr;
 
-  assert(name[0]);
+  assert(name && name[0]);
   debug_v(("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name));
 
   /* reset all fields of the dst struct */
@@ -68,7 +68,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
        for the output purpose (the user doesn't want to see something he didn't
        type.  So assume the lookup name as the "official" name and fetch the
        ips for the reverse lookup. */
-    debug(("(lookup) lookup=\"%s\" official=\"%s\" (should match)", name,
+    debug(("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
 	  hostent->h_name));
     strncpy(dst->name, name, MAXHOSTNAMELEN - 1);
 
@@ -205,7 +205,7 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
   struct servent *servent;
 
   debug_v(("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
-	  (void *)dst, port_string, port_num));
+	  (void *)dst, NULL_STR(port_string), port_num));
 
 /* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
    Despite this, we still have to treat it as a short when copying it around.

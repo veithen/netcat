@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002 - 2003  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.36 2003-08-21 15:27:18 themnemonic Exp $
+ * $Id: misc.c,v 1.37 2004-01-03 16:42:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -383,5 +383,39 @@ const char *debug_fmt(const char *fmt, ...)
   }
 
   return buf;
+}
+#endif
+
+#ifndef USE_LINUX_SELECT
+#define TIMEVAL_DIFF(__t1, __t2) {			\
+    (__t1)->tv_usec -= (__t2)->tv_usec;			\
+    if ((__t1)->tv_usec < 0) {				\
+      (__t1)->tv_usec += 1000000L;			\
+      (__t1)->tv_sec -= 1;				\
+    }							\
+    (__t1)->tv_sec -= (__t2)->tv_sec;			\
+    if ((__t1)->tv_sec < 0) {				\
+      (__t1)->tv_sec = 0;				\
+      (__t1)->tv_usec = 0;				\
+    }							\
+  }
+
+void update_timeval(struct timeval *target)
+{
+  static struct timeval dd_start;
+  struct timeval dd_end;
+  struct timezone dd_zone;
+
+  if (target == NULL) {			/* just initialize the seed */
+    if (gettimeofday(&dd_start, &dd_zone))
+      return;				/* can't handle this type of error */
+  }
+  else {
+    if (gettimeofday(&dd_end, &dd_zone))
+      return;				/* can't handle this type of error */
+
+    TIMEVAL_DIFF(&dd_end, &dd_start);	/* get the spent time */
+    TIMEVAL_DIFF(target, &dd_end);	/* and update the target struct */
+  }
 }
 #endif

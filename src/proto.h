@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002 - 2003  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.40 2003-08-21 15:27:18 themnemonic Exp $
+ * $Id: proto.h,v 1.41 2004-01-03 16:42:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -47,6 +47,9 @@ void netcat_printhelp(char *argv0);
 void netcat_printversion(void);
 #ifdef DEBUG
 const char *debug_fmt(const char *fmt, ...);
+#endif
+#ifndef USE_LINUX_SELECT
+void update_timeval(struct timeval *target);
 #endif
 
 /* netcat.c */

@@ -1,11 +1,15 @@
 
-[*] Wed Dec 10 2003 - netcat (cvs)
+[*] Sat Jan  3 2004 - netcat v0.7.1
 
   o Fixed bug in UDP connection code, using pktinfo support. [BUG #796765]
   o Fixed a segfault in the DNS lookup routines, caused by invalid DNS
     configurations.
   o Fixed two compilation issues on SCO Unix 3.2 v 5.0.4. [BUG #857650],
     [BUG #857657]
+  o Fixed bug in command line switch `-i' on non-linux OS such as Solaris.
+    [BUG #864780]
+  o The debugging support now works on libc's that don't allow NULL pointers
+    passed for string (`%s') modifiers.
 
 
 [*] Thu Aug 21 2003 - netcat v0.7.0
