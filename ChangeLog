@@ -1,17 +1,19 @@
 
-[*] Tue May 14 2002 - netcat (cvs)
+[*] Wed May 15 2002 - netcat v0.4.0
 
   o Now netcat_socket_accept() recognizes a negative timeout parameter.
   o Splitted core functions like readwrite() to core.c, this allows a
     more modular programming and allows a better features-implementation.
   o Moved some low level code from main.c to core.c
   o Added UDP protocol support, but it is a little buggy still, because
-    I have some logistic problems to resolve before fixing the
+    I have got some logistic problems to solve before fixing the
     implementation.
   o Fixed various socket leaks.
   o Reimplemented command line switch `-z' for TCP protocol.
   o Handled the listen mode-zero I/O case situation.
   o Port ranges now are recognized even in the form min:max
+  o Fixed a bug in core_tcp_connect(), which didn't handle properly
+    socket connection failures on very fast hosts (such as localhost).
   o Rewritten telnet support.  Now we have a more reliable implementation
     of the RFC0854.  Netcat will also rewrite the incoming buffer with
     the telnet codes stripped.
@@ -20,9 +22,8 @@
     nc110 telnet codes parsing policy.
   o Added configure option `--enable-compat', which turnes on ALL the
     other backword compatibility switches.
-  o Now it is possible to specify port ranges both in the form min-max and
-    in the form min:max.
   o Cleanup of the main header file and to the global environment.
+  o First beta release!
 
 
 [*] Thu May  9 2002 - netcat v0.3.1
