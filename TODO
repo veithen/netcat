@@ -20,9 +20,6 @@ to mail me if you need any further information.
    stdin some valid hexdump-style data, and accepts it in some
    standard forms (more than one)
 
- o Add doc/migrating (or something else) describing everything you
-   always wanted to know for changing from nc to GNU netcat.
-
  o I need to fetch information about the history of this tool,
    so I can give credits to the right people for the design and
    the original code.
@@ -37,3 +34,4 @@ to mail me if you need any further information.
  o The configure script must properly check res_init() by including
    the <resolv.h> file.
 
+ o Make it compiling on SunOS. It requires -lsocket -lnsl -lresolv.
