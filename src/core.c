@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.26 2002-08-16 11:59:12 themnemonic Exp $
+ * $Id: core.c,v 1.27 2002-08-21 00:47:42 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -355,12 +355,18 @@ static int core_tcp_connect(nc_sock_t *ncsock)
     }
 
     /* everything went fine, we have the socket */
-    ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&ncsock->host, &ncsock->port));
+    ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&ncsock->host,
+						      &ncsock->port));
     return sock;
   }
-  else if (ret)			/* Argh, select() returned error! */
+  else if (ret) {
+    /* Terminated by a signal. Silently exit */
+    if (errno == EINTR)
+      exit(EXIT_FAILURE);
+    /* The error seems to be a little worse */
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Critical system request failed: %s",
 	    strerror(errno));
+  }
 
   /* select returned 0, this means connection timed out for our timing
      directives (in fact the socket has a longer timeout usually, so we need
@@ -507,7 +513,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   fd_sock = nc_main->fd;
   assert(fd_sock >= 0);
 
-  /* if the domain is unspecified, it means that this is the standard i/o */
+  /* if the domain is unspecified, it means that this is the standard I/O */
   if (nc_slave->domain == PF_UNSPEC) {
     fd_stdin = STDIN_FILENO;
     fd_stdout = STDOUT_FILENO;
@@ -520,10 +526,19 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   delayer.tv_sec = 0;
   delayer.tv_usec = 0;
 
+  /* use the internal signal handler */
+  signal_handler = FALSE;
+
   while (inloop) {
     bool call_select = TRUE;
     struct sockaddr_in recv_addr;	/* only used by UDP proto */
     unsigned int recv_len = sizeof(recv_addr);
+
+#ifdef BETA_SIGHANDLER
+    /* if we received a terminating signal exit now */
+    if (got_sigterm)
+      break;
+#endif
 
     /* reset the ins events watch because some changes could happen */
     FD_ZERO(&ins);
@@ -798,6 +813,9 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     close(fd_stdin);
     nc_slave->fd = -1;
   }
+
+  /* restore the extarnal signal handler */
+  signal_handler = TRUE;
 
   return 0;
 }				/* end of core_readwrite() */

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.54 2002-08-16 11:58:43 themnemonic Exp $
+ * $Id: netcat.c,v 1.55 2002-08-21 00:47:42 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -39,6 +39,7 @@
 FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
 bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
 bool got_sigterm = FALSE;	/* when this TRUE the application must exit */
+bool signal_handler = TRUE;	/* handle the signals externally */
 
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
@@ -84,16 +85,27 @@ static void printstats(void)
 
 static void got_term(int z)
 {
-  fprintf(stderr, "Terminated\n");
+  if (!got_sigterm)
+    ncprint(NCPRINT_VERB1, _("Terminated."));
+#ifdef BETA_SIGHANDLER
+  got_sigterm = TRUE;
+  debug_dv("_____ RECEIVED SIGTERM _____");
+  if (signal_handler)
+    exit(EXIT_FAILURE);
+#else
   exit(EXIT_FAILURE);
+#endif
 }
 static void got_int(int z)
 {
-  ncprint(NCPRINT_VERB1, _("Exiting."));
+  if (!got_sigterm)
+    ncprint(NCPRINT_VERB1, _("Exiting."));
 #ifdef BETA_SIGHANDLER
 #warning "Using beta code for signal handling functions"
   got_sigterm = TRUE;
   debug_dv("_____ RECEIVED SIGINT _____");
+  if (signal_handler)
+    exit(EXIT_FAILURE);
 #else
   printstats();
   exit(EXIT_FAILURE);
@@ -111,20 +123,25 @@ static void ncexec(nc_sock_t *ncsock)
   assert(ncsock && (ncsock->fd >= 0));
 
   /* save the stderr fd because we may need it later */
-  saved_stderr = dup(2);
-  dup2(ncsock->fd, 0);		/* the precise order of fiddlage */
-  close(ncsock->fd);		/* is apparently crucial; this is */
-  dup2(0, 1);			/* swiped directly out of "inetd". */
+  saved_stderr = dup(STDERR_FILENO);
+
+  /* duplicate the socket for the child program */
+  dup2(ncsock->fd, STDIN_FILENO);	/* the precise order of fiddlage */
+  close(ncsock->fd);			/* is apparently crucial; this is */
+  dup2(STDIN_FILENO, STDOUT_FILENO);	/* swiped directly out of "inetd". */
 #ifdef USE_OLD_COMPAT
-  dup2(0, 2);			/* also duplicate the stderr channel */
+  dup2(STDIN_FILENO, STDERR_FILENO);	/* also duplicate the stderr channel */
 #endif
+
+  /* change the label for the executed program */
   if ((p = strrchr(opt_exec, '/')))
     p++;			/* shorter argv[0] */
   else
     p = opt_exec;
 
+  /* replace this process with the new one */
   execl(opt_exec, p, NULL);
-  dup2(saved_stderr, 2);
+  dup2(saved_stderr, STDERR_FILENO);
   ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't execute %s: %s"),
 	  opt_exec, strerror(errno));
 }				/* end of ncexec() */
@@ -213,8 +230,8 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "de:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z", long_options,
-		    &option_index);
+    c = getopt_long(argc, argv, "de:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
+		    long_options, &option_index);
     if (c == -1)
       break;
 
@@ -520,6 +537,9 @@ int main(int argc, char *argv[])
 
   /* first check that a host parameter was given */
   if (!remote_host.iaddrs[0].s_addr) {
+    /* FIXME: The Networking specifications state that host address "0" is a
+       valid host to connect to but this broken check will assume as not
+       specified. */
     ncprint(NCPRINT_NORMAL, _("%s: missing hostname argument"), argv[0]);
     ncprint(NCPRINT_EXIT, _("Try `%s --help' for more information."), argv[0]);
   }
@@ -545,8 +565,10 @@ int main(int argc, char *argv[])
        but it's not a great idea connecting more than one host at time */
     connect_sock.proto = opt_proto;
     connect_sock.timeout = opt_wait;
-    memcpy(&connect_sock.local_host, &local_host, sizeof(connect_sock.local_host));
-    memcpy(&connect_sock.local_port, &local_port, sizeof(connect_sock.local_port));
+    memcpy(&connect_sock.local_host, &local_host,
+	   sizeof(connect_sock.local_host));
+    memcpy(&connect_sock.local_port, &local_port,
+	   sizeof(connect_sock.local_port));
     memcpy(&connect_sock.host, &remote_host, sizeof(connect_sock.host));
     netcat_getport(&connect_sock.port, NULL, c);
 

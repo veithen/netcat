@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.32 2002-08-15 22:26:37 themnemonic Exp $
+ * $Id: proto.h,v 1.33 2002-08-21 00:47:42 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -53,7 +53,7 @@ extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern nc_proto_t opt_proto;
 extern FILE *output_fd;
-extern bool use_stdin;
+extern bool use_stdin, got_sigterm, signal_handler;
 
 /* network.c */
 bool netcat_resolvehost(nc_host_t *dst, const char *name);
