@@ -1,4 +1,9 @@
 
+[*] Mon Apr 29 2002 - netcat (cvs)
+
+  o Various fixes to the Makefiles for the clean targets
+
+
 [*] Mon Apr 29 2002 - netcat v0.2.0
 
   o Changed the define HINF to typedef netcat_host.
