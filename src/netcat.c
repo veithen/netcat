@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.23 2002-05-06 15:07:15 themnemonic Exp $
+ * $Id: netcat.c,v 1.24 2002-05-06 19:10:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -59,30 +59,6 @@ int opt_wait = 0;		/* wait time (FIXME) */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
 
-
-
-/* fiddle all the file descriptors around, and hand off to another prog.  Sort
-   of like a one-off "poor man's inetd". */
-#if 0
-void doexec(int fd)
-{
-  register char *p;
-
-  dup2(fd, 0);			/* the precise order of fiddlage */
-  close(fd);			/* is apparently crucial; this is */
-  dup2(0, 1);			/* swiped directly out of "inetd". */
-  dup2(0, 2);
-  p = strrchr(pr00gie, '/');	/* shorter argv[0] */
-  if (p)
-    p++;
-  else
-    p = pr00gie;
-  debug_d("gonna exec %s as %s...\n", pr00gie, p);
-  execl(pr00gie, p, NULL);
-  bail("exec %s failed", pr00gie);	/* this gets sent out.  Hmm... */
-}				/* doexec */
-#endif
-
 /* signal handling */
 
 static void got_term(int z)
@@ -93,15 +69,39 @@ static void got_term(int z)
 
 static void got_int(int z)
 {
-  dprintf(1, (_("Exiting.\nTotal received bytes: %ld\nTotal sent bytes: %ld\n"),
-	  bytes_recv, bytes_sent));
+  ncprint(NCPRINT_VERB1, _("Exiting."));
+  ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
+	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
+	  bytes_recv, bytes_sent);
 
   exit(EXIT_FAILURE);
 }
 
+#if 0
+
+/* ... */
+
+static void ncexec(int fd)
+{
+  register char *p;
+
+  dup2(fd, 0);			/* the precise order of fiddlage */
+  close(fd);			/* is apparently crucial; this is */
+  dup2(0, 1);			/* swiped directly out of "inetd". */
+  dup2(0, 2);
+  if ((p = strrchr(opt_exec, '/')))
+    p++;			/* shorter argv[0] */
+  else
+    p = opt_exec;
+
+  execl(opt_exec, p, NULL);
+  fprintf(stderr, "exec %s failed", opt_exec);
+}				/* end of ncexec */
+#endif
+
 /* handle stdin/stdout/network I/O. */
 
-int readwrite(int sock, int sock2)
+static int readwrite(int sock, int sock2)
 {
   int fd_stdin, fd_stdout, fd_max;
   int read_ret, write_ret, pbuf_len = 0;
@@ -194,7 +194,7 @@ int readwrite(int sock, int sock2)
 	}
 
       }
-    }
+    }				/* end of reading from stdin section */
 
     /* reading from the socket (net). */
     if (FD_ISSET(sock, &ins)) {
@@ -221,7 +221,7 @@ int readwrite(int sock, int sock2)
 
 	/* FIXME: handle write_ret != read_ret */
 
-	/* If option is set, hexdump the received data */
+	/* if option is set, hexdump the received data */
 	if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
 	  fprintf(output_fd, "Received %u bytes from the socket\n", write_ret);
@@ -230,7 +230,7 @@ int readwrite(int sock, int sock2)
 	}
 
       }
-    }
+    }			/* end of reading from the socket section */
 
     /* now handle the buffered data (if any) */
     if (ptmp && (delayer.tv_sec == 0) && (delayer.tv_usec == 0)) {
@@ -254,15 +254,16 @@ int readwrite(int sock, int sock2)
 
       bytes_sent += write_ret;
 
+      /* check if the buffer is over.  If so, clean it and start back reading
+         the stdin (or the other socket in case of tunnel mode) */
       if (pbuf_len == 0) {
 	free(ptmp);
 	ptmp = NULL;
 	pbuf = NULL;
       }
-      else {
+      else
 	pbuf += i;
-      }
-    }
+    }				/* end of buffered data section */
   }				/* end of while (inloop) */
 
   return 0;
@@ -407,10 +408,9 @@ int main(int argc, char *argv[])
       exit(EXIT_SUCCESS);
     case 'w':			/* wait time (in seconds) */
       opt_wait = atoi(optarg);
-      if (opt_wait <= 0) {
-	fprintf(stderr, _("Error: invalid wait-time: %s\n"), optarg);
-	exit(EXIT_FAILURE);
-      }
+      if (opt_wait <= 0)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Invalid wait-time: %s"),
+		optarg);
       break;
     case 'x':			/* hexdump traffic */
       opt_hexdump = TRUE;
@@ -524,35 +524,33 @@ int main(int argc, char *argv[])
     debug_dv("Entering SELECT loop");
 
     do {
+      struct sockaddr_in my_addr;
+      socklen_t my_len = sizeof(my_addr);
+
       sock_accept = netcat_socket_accept(sock_listen, opt_wait);
 
-      if (sock_accept < 0) {
-        dprintf(2, (_("Listen mode failed: %s\n"), strerror(errno)));
-        exit(EXIT_FAILURE);
-      }
-      else {
-	struct sockaddr_in my_addr;
-	socklen_t my_len = sizeof(my_addr);
+      if (sock_accept < 0)
+	ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),
+		strerror(errno));
 
-	getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
+      getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
 
-	/* if a remote address have been specified AND we are not in tunnnel
-	   mode, we assume it as the only ip that is allowed to connect to
-	   this socket */
-	if (remote_host.iaddrs[0].s_addr && !opt_tunnel) {
-	  /* FIXME: ALL addresses should be tried */
-	  if (memcmp(&remote_host.iaddrs[0], &my_addr.sin_addr,
-		     sizeof(local_host.iaddrs[0]))) {
-	    ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%d (refused)"),
-		    netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port);
-	    shutdown(sock_accept, 2);
-	    close(sock_accept);
-	    continue;
-	  }
+      /* if a remote address have been specified AND we are not in tunnnel
+         mode, we assume it as the only ip that is allowed to connect to
+         this socket */
+      if (remote_host.iaddrs[0].s_addr && !opt_tunnel) {
+	/* FIXME: ALL addresses should be tried */
+	if (memcmp(&remote_host.iaddrs[0], &my_addr.sin_addr,
+		   sizeof(local_host.iaddrs[0]))) {
+	  ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%d (refused)"),
+		  netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port);
+	  shutdown(sock_accept, 2);
+	  close(sock_accept);
+	  continue;
 	}
-	ncprint(NCPRINT_VERB1, _("Connection from %s:%d"),
-		netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port);
       }
+      ncprint(NCPRINT_VERB1, _("Connection from %s:%d"),
+	      netcat_inet_ntop(&my_addr.sin_addr), my_addr.sin_port);
 
       /* we don't need a listening socket anymore */
       close(sock_listen);
@@ -576,6 +574,7 @@ int main(int argc, char *argv[])
   c = 0;
   while (total_ports > 0) {
     int ret;
+    struct timeval timeout;
     fd_set ins;
     fd_set outs;
 
@@ -588,9 +587,6 @@ int main(int argc, char *argv[])
       c = netcat_flag_next(c);
     total_ports--;		/* decrease the total ports number to try */
 
-    FD_ZERO(&ins);
-    FD_ZERO(&outs);
-
     debug_dv("Trying connection to %s[:%d]",
 	     netcat_inet_ntop(&remote_host.iaddrs[0]), c);
 
@@ -599,28 +595,46 @@ int main(int argc, char *argv[])
     sock_connect = netcat_socket_new_connect(&remote_host.iaddrs[0], c, NULL, 0);
     assert(sock_connect > 0);
 
+    /* initialize select()'s variables */
+    FD_ZERO(&ins);
+    FD_ZERO(&outs);
     FD_SET(sock_connect, &ins);
     FD_SET(sock_connect, &outs);
+    timeout.tv_sec = opt_wait;
+    timeout.tv_usec = 0;
 
     /* FIXME: what happens if: Connection Refused, or calling select on an already
        connected host */
-    debug_dv("Entering SELECT sock=%d", sock_connect);
-    select(sock_connect + 1, &ins, &outs, NULL, NULL);
+    debug_dv("Entering SELECT sock=%d, timeout=%d", sock_connect, opt_wait);
+    select(sock_connect + 1, &ins, &outs, NULL,
+	   (opt_wait > 0 ? &timeout : NULL));
 
     /* FIXME: why do i get both these? */
     if (FD_ISSET(sock_connect, &ins)) {
       char tmp;
+      debug_v("Connect-flag: ins");
+
+      /* since the select() returned flag set for reading, this means that EOF
+         arrived on a closed socket, which means that the connection failed.
+         Because of this, a read() on that socket MUST fail. */
       ret = read(sock_connect, &tmp, 1);
-      dprintf(2, ("%s [%s] %s : %s\n", "xx", "xx", "xx", strerror(errno)));
-      ret = shutdown(sock_connect, 2);
-      debug_v("shutdown() = %d", ret);
-      ret = close(sock_connect);
-      debug_v("close() = %d", ret);
-      continue;
+      assert(ret < 0);
+
+      /* output the hostname in the message only if it's authoritative */
+      if (remote_host.name[0])
+	ncprint(NCPRINT_VERB1, "%s [%s] %s: %s", remote_host.name,
+		remote_host.addrs[0], remote_port.ascnum, strerror(errno));
+      else
+	ncprint(NCPRINT_VERB1, "%s %s: %s", remote_host.addrs[0],
+		remote_port.ascnum, strerror(errno));
+
+      close(sock_connect);
+      continue;			/* go on with next port */
     }
 
+    /* connection was successful, enter the core loop */
     if (FD_ISSET(sock_connect, &outs)) {
-      debug_v("IS SET outs");
+      debug_v("Connect-flag: outs");
 
       if (opt_tunnel)
 	readwrite(sock_connect, sock_accept);
@@ -631,11 +645,11 @@ int main(int argc, char *argv[])
 
     }
 
-    debug_dv("FINISH");
+    debug_dv("Connect-loop for port %d finished", c);
 
   }
 
   debug_v("EXIT");
   return 0;
 
-}				/* main */
+}				/* end of main */
