@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.30 2002-05-11 19:20:34 themnemonic Exp $
+ * $Id: netcat.c,v 1.31 2002-05-11 20:13:25 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -218,6 +218,9 @@ int main(int argc, char *argv[])
       if (opt_listen)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-L' and '-l' options are incompatible"));
+      if (opt_zero)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("`-L' and '-z' options are incompatible"));
       opt_tunnel = TRUE;
       break;
     case 'n':			/* numeric-only, no DNS lookups */
@@ -264,6 +267,9 @@ int main(int argc, char *argv[])
       opt_hexdump = TRUE;
       break;
     case 'z':			/* little or no data xfer */
+      if (opt_tunnel)
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("`-L' and '-z' options are incompatible"));
       opt_zero = TRUE;
       break;
     default:
@@ -412,15 +418,18 @@ int main(int argc, char *argv[])
 
     if (opt_tunnel)
       core_readwrite(sock_connect, sock_accept);
+    else if (opt_zero) {
+      /* if we are not in tunnel mode, sock_accept must be untouched */
+      assert(sock_accept == -1);
+      shutdown(sock_connect, 2);
+      close(sock_connect);
+    }
     else {
       /* if we are not in tunnel mode, sock_accept must be untouched */
       assert(sock_accept == -1);
       core_readwrite(sock_connect, -1);
     }
-
-    debug_dv("Connect-loop for port %d finished", c);
-
-  }
+  }			/* end of while (total_ports > 0) */
 
   debug_v("EXIT");
 
