@@ -54,6 +54,7 @@ AC_SUBST(AUTODIRS)
 dnl I18n support
 ALL_LINGUAS="it"
 AM_GNU_GETTEXT([external], need-ngettext)
+AM_INTL_SUBDIR
 
 dnl check for the resolver function
 AC_CHECK_FUNC(res_init, , AC_CHECK_LIB(resolv, res_init, [LIBRESOLV="-lresolv"], , $LIBSOCKET))
