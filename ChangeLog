@@ -10,6 +10,9 @@
   o Rewritten the core routines and arguments handling to allow a better
     features support.
   o Fixed several mis-behaviours for UDP protocol.
+  o Cleaned up the global namespace
+  o Now the -x option hexdumps also the source ip address in the introducing
+    message.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0

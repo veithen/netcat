@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.37 2002-05-23 18:30:15 themnemonic Exp $
+ * $Id: netcat.c,v 1.38 2002-05-23 20:59:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -57,11 +57,6 @@ char *opt_exec = NULL;		/* program to exec after connecting */
 
 netcat_sock listen_sock;
 netcat_sock connect_sock;
-
-netcat_host local_host;		/* local host for bind()ing operations */
-netcat_port local_port;		/* local port specified with -p option */
-netcat_host remote_host;
-netcat_port remote_port;
 
 /* prints statistics to stderr with the right verbosity level */
 
@@ -131,6 +126,9 @@ int main(int argc, char *argv[])
   int c, total_ports, sock_accept = -1, sock_connect = -1;
   struct in_addr *ouraddr;
   struct sigaction sv;
+  netcat_port local_port;		/* local port specified with -p option */
+  netcat_host local_host;		/* local host for bind()ing operations */
+  netcat_host remote_host;
 
   memset(&local_host, 0, sizeof(local_host));
   memset(&remote_host, 0, sizeof(remote_host));
@@ -188,7 +186,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "e:g:G:hi:lLno:p:P:rs:S:tuvxw:z", long_options,
+    c = getopt_long(argc, argv, "e:g:G:hi:lL:no:p:P:rs:S:tuvxw:z", long_options,
 		    &option_index);
     if (c == -1)
       break;
@@ -225,6 +223,7 @@ int main(int argc, char *argv[])
       if (opt_zero)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-L' and '-z' options are incompatible"));
+      /* FIXME! add the optarg parsing address:port (or address/port?) */
       opt_tunnel = TRUE;
       break;
     case 'n':			/* numeric-only, no DNS lookups */
@@ -296,6 +295,7 @@ int main(int argc, char *argv[])
   if (opt_random)
     SRAND(time(0));
 
+  /* handle the -o option. exit on failure */
   if (opt_outputfile) {
     output_fd = fopen(opt_outputfile, "w");
     if (!output_fd) {
@@ -321,27 +321,28 @@ int main(int argc, char *argv[])
     const char *get_argv = argv[optind++];
     char *q, *parse = strdup(get_argv);
     int port_lo = 0, port_hi = 65535;
+    netcat_port port_tmp;
 
     if (!(q = strchr(parse, '-')))		/* simple number? */
       q = strchr(parse, ':');			/* try with the other separator */
 
     if (!q) {
-      if (netcat_getport(&remote_port, parse, 0))
-	netcat_flag_set(remote_port.num, TRUE);
+      if (netcat_getport(&port_tmp, parse, 0))
+	netcat_flag_set(port_tmp.num, TRUE);
       else
 	goto got_err;
     }
     else {		/* could be in the forms: N1-N2, -N2, N1- */
       *q++ = 0;
       if (*parse) {
-	if (netcat_getport(&remote_port, parse, 0))
-	  port_lo = remote_port.num;
+	if (netcat_getport(&port_tmp, parse, 0))
+	  port_lo = port_tmp.num;
 	else
 	  goto got_err;
       }
       if (*q) {
-	if (netcat_getport(&remote_port, q, 0))
-	  port_hi = remote_port.num;
+	if (netcat_getport(&port_tmp, q, 0))
+	  port_hi = port_tmp.num;
 	else
 	  goto got_err;
       }

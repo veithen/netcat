@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.8 2002-05-23 18:30:15 themnemonic Exp $
+ * $Id: core.c,v 1.9 2002-05-23 20:59:46 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -397,15 +397,15 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
 
     /* reading from the socket (net). */
     if (FD_ISSET(fd_sock, &ins)) {
-      if (nc_main->proto == SOCK_DGRAM) {
-	struct sockaddr_in recv_addr;
-	unsigned int recv_len = sizeof(recv_addr);
+      struct sockaddr_in recv_addr;	/* only used by UDP proto */
+      unsigned int recv_len = sizeof(recv_addr);
 
+      if (nc_main->proto == SOCK_DGRAM) {
 	/* this allows us to fetch packets from different addresses */
 	read_ret = recvfrom(fd_sock, buf, sizeof(buf), 0,
 			    (struct sockaddr *)&recv_addr, &recv_len);
-	debug_dv("recvfrom(net) = %d (address=%s:%p)", read_ret,
-		netcat_inet_ntop(&recv_addr.sin_addr));
+	debug_dv("recvfrom(net) = %d (address=%s:%d)", read_ret,
+		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
       }
       else {
 	/* common file read fallback */
@@ -443,7 +443,11 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
 	  /* if option is set, hexdump the received data */
 	  if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
-	    fprintf(output_fd, "Received %u bytes from the socket\n", write_ret);
+	    if (nc_main->proto == SOCK_DGRAM)
+	      fprintf(output_fd, "Received %d bytes from %s:%d\n", write_ret,
+		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
+	    else
+	      fprintf(output_fd, "Received %d bytes from the socket\n", write_ret);
 #endif
 	    netcat_fhexdump(output_fd, '<', buf, write_ret);
 	  }
