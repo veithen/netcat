@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.14 2002-05-06 15:02:55 themnemonic Exp $
+ * $Id: network.c,v 1.15 2002-05-06 18:25:21 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -81,12 +81,12 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
 			      AF_INET);
 
       if (!hostent || !hostent->h_name) {
-	fprintf(stderr, "Warning: inverse host lookup failed for %s\n",
+	ncprint(NCPRINT_WARNING, _("inverse host lookup failed for %s"),
 		dst->addrs[i]);
 	continue;
       }
       if (strcasecmp(dst->name, hostent->h_name)) {
-	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", dst->name,
+	ncprint(NCPRINT_WARNING, _("this host mismatch! %s - %s"), dst->name,
 		hostent->h_name);
       }
     }
@@ -103,18 +103,17 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
     hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
     if (!hostent)
-      fprintf(stderr, _("Error: Inverse name lookup failed for `%s'\n"), name);
+      ncprint(NCPRINT_ERROR, _("Inverse name lookup failed for `%s'"), name);
     else {
       strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
       /* now do the direct lookup to see if the IP was auth */
       hostent = gethostbyname(dst->name);
       if (!hostent || !hostent->h_addr_list[0]) {
-	fprintf(stderr, _("Warning: direct host lookup failed for %s: \n"),
-		dst->name);
+	ncprint(NCPRINT_WARNING, _("direct host lookup failed for %s"), dst->name);
       }
       else if (strcasecmp(dst->name, hostent->h_name)) {
-	fprintf(stderr, _("Warning, this host mismatch! %s - %s\n"),
-		dst->name, hostent->h_name);
+	ncprint(NCPRINT_WARNING, _("this host mismatch! %s - %s"), dst->name,
+		hostent->h_name);
       }
       /* FIXME: I should erase the dst->name field, since the answer wasn't auth */
     }				/* if hostent */
