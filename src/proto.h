@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.30 2002-06-27 00:18:47 themnemonic Exp $
+ * $Id: proto.h,v 1.31 2002-07-03 13:10:17 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -76,6 +76,6 @@ void netcat_telnet_parse(nc_sock_t *ncsock);
 int udphelper_ancillary_read(struct msghdr *my_hdr,
 			     struct sockaddr_in *get_addr);
 #else
-bool udphelper_sockets_open(int **sockbuf, unsigned short nport);
+int udphelper_sockets_open(int **sockbuf, in_port_t nport);
 #endif
 void udphelper_sockets_close(int *sockbuf);

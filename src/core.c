@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.23 2002-06-30 01:34:11 themnemonic Exp $
+ * $Id: core.c,v 1.24 2002-07-03 13:10:17 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -93,12 +93,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
   sockbuf = calloc(2, sizeof(int));
   sockbuf[0] = 1;
   sockbuf[1] = sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
-  if (sock < 0)
-    return -1;
 #else
-  if (udphelper_sockets_open(&sockbuf, htons(ncsock->local_port.num)) == FALSE)
-    return -1;
+  sock = udphelper_sockets_open(&sockbuf, htons(ncsock->local_port.num));
 #endif
+  if (sock < 0)
+    goto err;
 
 #ifdef USE_PKTINFO
   /* prepare myaddr for the bind() call */

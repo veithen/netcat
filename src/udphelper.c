@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.1 2002-06-27 00:18:47 themnemonic Exp $
+ * $Id: udphelper.c,v 1.2 2002-07-03 13:10:17 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -35,7 +35,9 @@
 
 #ifdef USE_PKTINFO
 
-/* ... */
+/* Reads the ancillary data buffer for the given msghdr and extracts the packet
+   destination address which is copied to the `get_addr' struct.
+   Returns 0 on success, a negative value otherwise. */
 
 int udphelper_ancillary_read(struct msghdr *my_hdr,
 			     struct sockaddr_in *get_addr)
@@ -67,16 +69,30 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
 
 #else	/* USE_PKTINFO */
 
-/* ... */
+/* This function opens an array of sockets (stored in `sockbuf'), one for each
+   different interface in the current machine.  The purpose of this is to allow
+   the application to determine which interface received the packet that
+   otherwise would be unknown.
+   Return -1 if an error occurred; otherwise the return value is a file
+   descriptor referencing the first socket in the array.
+   On success, at least one socket is returned. */
 
-bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
+int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 {
-  int ret, i, alloc_size, *my_sockbuf;
-  int if_total = 0, sock_total = 0;
+  int ret, i, alloc_size, *my_sockbuf, if_total = 0, sock_total = 0;
+  unsigned int if_pos = 0;
   struct ifconf nc_ifconf;
   struct ifreq *nc_ifreq = NULL;
 
+  /* initialize the sockbuf (assuming the function will be positive */
   my_sockbuf = malloc(sizeof(int));
+  if (!my_sockbuf) {
+    errno = ENOMEM;
+    return -1;
+  }
+
+  /* this is a dummy socket needed for the ioctl(2) call (this just tells the
+     kernel where to look for the needed API */
   my_sockbuf[0] = socket(PF_INET, SOCK_DGRAM, 0);
   if (my_sockbuf[0] < 0)
     goto err;
@@ -91,27 +107,37 @@ bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
     /* like many other syscalls, ioctl() will adjust ifc_len to the REAL
        ifc_len, so try to allocate a larger buffer in order to determine
        the total interfaces number. */
-    nc_ifreq = realloc(nc_ifreq, alloc_size);
+    free(nc_ifreq);	/* don't use realloc here, this way it is faster. */
+    nc_ifreq = malloc(alloc_size);
     nc_ifconf.ifc_len = alloc_size;
     nc_ifconf.ifc_req = nc_ifreq;
 
     ret = ioctl(my_sockbuf[0], SIOCGIFCONF, (char *)&nc_ifconf);
-    if (ret)
+    if (ret < 0)
       goto err;
 
   } while (nc_ifconf.ifc_len >= (if_total * sizeof(*nc_ifreq)));
 
-  if_total = nc_ifconf.ifc_len / sizeof(*nc_ifreq);
-
-  debug("(udphelper) found %d total interfaces -- checking validity\n",
-	if_total);
-
-  /* now loop inside all the found interfaces */
-  for (i = 0; i < if_total; i++) {
+  /* Now loop */
+  if_total = 0;
+  while (if_pos < nc_ifconf.ifc_len) {
     int newsock;
     struct sockaddr_in *if_addr;
 
-    nc_ifreq = &nc_ifconf.ifc_req[i];
+    nc_ifreq = (struct ifreq *)((char *)nc_ifconf.ifc_req + if_pos);
+#ifdef HAVE_STRUCT_SOCKADDR_SA_LEN
+    if (nc_ifreq->ifr_addr.sa_len > sizeof(struct sockaddr))
+      if_pos += sizeof(nc_ifreq->ifr_name) + nc_ifreq->ifr_addr.sa_len;
+    else
+      if_pos += sizeof(*nc_ifreq);
+#else
+    if_pos += sizeof(*nc_ifreq);
+#endif
+
+    /* truncated? */
+    assert(if_pos <= nc_ifconf.ifc_len);
+
+    if_total++;
 
     /* discard any interface not devoted to IP */
     if (nc_ifreq->ifr_addr.sa_family != AF_INET)
@@ -128,11 +154,8 @@ bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
     if (!(nc_ifreq->ifr_flags & IFF_UP))
       continue;
 
-    /* nice one heh? */
-    /* &((struct sockaddr_in *)&nc_ifreq->ifr_addr)->sin_addr) */
-
-    debug_v("found IP addres: %s",
-	    netcat_inet_ntop(&if_addr->sin_addr));
+    debug("(udphelper) Found interface %s (IP address: %s)\n",
+	  nc_ifreq->ifr_name, netcat_inet_ntop(&if_addr->sin_addr));
 
     newsock = socket(PF_INET, SOCK_DGRAM, 0);
     if (newsock < 0)
@@ -146,12 +169,17 @@ bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
     /* FIXME: WHY does SIOCGIFFLAGS mess with sin_family?? */
     if_addr->sin_family = AF_INET;
     if_addr->sin_port = nport;
+    /* FIXME: nport could be INPORT_ANY, we need to use ONE random value */
 
     ret = bind(newsock, (struct sockaddr *)if_addr, sizeof(*if_addr));
     if (ret < 0)
       goto err;
 
   }
+
+  /* ok we don't need anymore the interfaces list */
+  free(nc_ifconf.ifc_req);
+  nc_ifconf.ifc_req = NULL;
 
   /* close the "ioctl" socket and replace its value with the total sock num */
   close(my_sockbuf[0]);
@@ -160,11 +188,18 @@ bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
 
   debug("(udphelper) Successfully created %d socket(s)\n", sock_total);
 
-  return TRUE;
+  /* On success, return the first socket for the application use, while if no
+     valid interefaces were found step forward to the error handling */
+  if (my_sockbuf[0] > 0)
+    return my_sockbuf[1];
+
+  errno = EAFNOSUPPORT;
 
  err:
   /* destroy the ifconf struct and buffers */
   free(nc_ifconf.ifc_req);
+
+  /* FIXME: save the errno! */
 
   /* close all the sockets and free the sockets buffer */
   for (i = 0; i < sock_total; i++)
@@ -172,7 +207,7 @@ bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
   free(my_sockbuf);
   *sockbuf = NULL;
 
-  return FALSE;
+  return -1;
 }
 
 #endif	/* USE_PKTINFO */
@@ -182,6 +217,9 @@ bool udphelper_sockets_open(int **sockbuf, unsigned short nport)
 void udphelper_sockets_close(int *sockbuf)
 {
   int i;
+
+  if (!sockbuf)
+    return;
 
   for (i = 1; i <= sockbuf[0]; i++)
     if (sockbuf[i] >= 0)
