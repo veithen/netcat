@@ -1,5 +1,5 @@
 
-[*] Sat Jun  8 2002 - netcat v0.5.1
+[*] Mon Jun 10 2002 - netcat v0.5.1
 
   o Completely rewritten the function core_readwrite() in order to allow more
     possibilities of features adding.
@@ -13,6 +13,7 @@
   o More updates to the man and info documentation files.
   o Now compiles correctly on Solaris (there was some configure checks
     missing).
+  o Fixed a make error in the doc/ subdirectory.
 
 
 [*] Fri May 31 2002 - netcat v0.5.0
