@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.8 2002-05-03 23:25:13 themnemonic Exp $
+ * $Id: proto.h,v 1.9 2002-05-04 10:38:05 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -22,18 +22,26 @@
  *                                                                         *
  ***************************************************************************/
 
+/* flagset.c */
+bool netcat_flag_init();
+void netcat_flag_set(unsigned short port, bool flag);
+bool netcat_flag_get(unsigned short port);
+unsigned short netcat_flag_next(unsigned short port);
+int netcat_flag_count();
+unsigned short netcat_flag_rand();
+
 /* misc.c */
 char *netcat_string_split(char **buf);
 int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen);
 void debug_output(bool wrap, const char *fmt, ...);
-void netcat_commandline(int *argc, char ***argv);
+void netcat_commandline_read(int *argc, char ***argv);
 void netcat_printhelp(char *argv0);
 void netcat_printversion(void);
 
 /* netcat.c */
 extern bool opt_listen, opt_numeric, opt_random, opt_hexdump, opt_udpmode,
 		opt_telnet, opt_zero;
-extern int opt_verbose, opt_wait;
+extern int opt_interval, opt_verbose, opt_wait;
 extern char *opt_outputfile;
 extern int netfd;
 
@@ -43,6 +51,8 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
 		    unsigned short port_num);
 int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
 int netcat_socket_accept(int fd, int timeout);
+int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
+		const struct in_addr *local_addr, unsigned short local_port);
 
 /* telnet.c */
 void atelnet(unsigned char *buf, unsigned int size);
