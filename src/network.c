@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.32 2002-12-08 18:59:36 themnemonic Exp $
+ * $Id: network.c,v 1.33 2003-01-03 22:48:10 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -54,7 +54,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 
   ret = netcat_inet_pton(name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
-    bool host_auth = FALSE;
+    bool host_auth_taken = FALSE;
 
     /* if the opt_numeric option is set, we must not use DNS in any way */
     if (opt_numeric)
@@ -83,11 +83,10 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 
     /* since the invalid dns warning is only shown with verbose level 1,
        we may skip them (which would speed up the thing) */
-    if (opt_verbose < 1)
+    if (!opt_debug && (opt_verbose < 1))
       return TRUE;
 
-    /* do inverse lookups in separate loop based on our collected forward
-       addresses. */
+    /* do inverse lookups in separate loop based on our collected addresses */
     for (i = 0; dst->iaddrs[i].s_addr && (i < MAXINETADDRS); i++) {
       hostent = gethostbyaddr((char *)&dst->iaddrs[i], sizeof(dst->iaddrs[0]),
 			      AF_INET);
@@ -103,13 +102,47 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
          previous reason we may want to keep the user typed case, but this time
          we are going to override it because this tool is a "network exploration
          tool", thus it's good to see the case they chose for this host. */
-      if (strcasecmp(dst->name, hostent->h_name))
-	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+      if (strcasecmp(dst->name, hostent->h_name)) {
+	int xcmp;
+	char savedhost[MAXHOSTNAMELEN];
+
+	/* refering to the flowchart (see the drafts directory contained in
+	   this package), try to guess the real hostname */
+	strncpy(savedhost, hostent->h_name, sizeof(savedhost));
+	savedhost[sizeof(savedhost) - 1] = 0;
+
+	/* ok actually the given host and the reverse-resolved address doesn't
+	   match, so try to see if we find the real machine name.  In order to
+	   this to happen the originally found address must match with the newly
+	   found hostname directly resolved.  If this doesn't, or if this resolve
+	   fails, then fall back to the original warning message: they have a DNS
+	   misconfigured! */
+	hostent = gethostbyname(savedhost);
+	if (!hostent)
+	  goto failed_real_host;
+
+	for (xcmp = 0; hostent->h_addr_list[xcmp] &&
+		(xcmp < MAXINETADDRS); xcmp++) {
+	  if (!memcmp(&dst->iaddrs[i], hostent->h_addr_list[xcmp],
+		     sizeof(dst->iaddrs[0])))
+	    goto found_real_host;
+	}
+
+ failed_real_host:
+	ncprint(NCPRINT_WARNING | NCPRINT_VERB1,
 		_("This host's reverse DNS doesn't match! %s -- %s"),
 		hostent->h_name, dst->name);
-      else if (!host_auth) {	/* take only the first one as auth */
+	continue;
+
+ found_real_host:
+	ncprint(NCPRINT_NOTICE | NCPRINT_VERB2,
+		_("Real hostname for %s [%s] is %s"),
+		dst->name, dst->addrs[i], savedhost);
+	continue;
+      }
+      else if (!host_auth_taken) {	/* case: take only the first one as auth */
 	strncpy(dst->name, hostent->h_name, sizeof(dst->name));
-	host_auth = TRUE;
+	host_auth_taken = TRUE;
       }
     }				/* end of foreach addr, part B */
   }

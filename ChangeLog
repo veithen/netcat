@@ -1,5 +1,5 @@
 
-[*] Sun Dec  8 2002 - netcat (cvs)
+[*] Fri Jan  3 2003 - netcat (cvs)
 
   o Added command line switch `-c' (close), which shuts down the connection
     on EOF from stdin without waiting for any answer from remote host.
@@ -9,6 +9,8 @@
     development, in the doc/drafts directory.
   o Fixed a bug in UDP listening mode without pktinfo support and specifying
     the listening interface with `-s'.
+  o Now when connecting to an host by an alias of its, it won't write a warning
+    anymore but instead it will show the real name of the host.
 
 
 [*] Tue Oct 15 2002 - netcat v0.6.1
