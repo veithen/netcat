@@ -11,6 +11,17 @@
   o Fixed various socket leaks.
   o Reimplemented command line switch `-z' for TCP protocol.
   o Handled the listen mode-zero I/O case situation.
+  o Port ranges now are recognized even in the form min:max
+  o Rewritten telnet support.  Now we have a more reliable implementation
+    of the RFC0854.  Netcat will also rewrite the incoming buffer with
+    the telnet codes stripped.
+  o Updated doc/migration with new uncompatibilities found.
+  o Added configure option `--enable-oldtelnet', which restores the old
+    nc110 telnet codes parsing policy.
+  o Added configure option `--enable-compat', which turnes on ALL the
+    other backword compatibility switches.
+  o Now it is possible to specify port ranges both in the form min-max and
+    in the form min:max.
 
 
 [*] Thu May  9 2002 - netcat v0.3.1
