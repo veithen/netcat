@@ -1,4 +1,4 @@
-# $Id: Makefile.cvs,v 1.1.1.1 2002-04-26 14:58:12 themnemonic Exp $
+# $Id: Makefile.cvs,v 1.2 2002-04-28 12:37:58 themnemonic Exp $
 
 default: all
 
@@ -31,3 +31,10 @@ all:
 	@if [ -f config.cache ]; then \
 		rm -f config.cache; \
 	fi
+
+clean:
+	make distclean
+	rm -rf configure config.* depcomp install-sh ltmain.sh missing
+	rm -rf autom4te-2.53.cache mkinstalldirs stamp-h.in aclocal.m4
+	rm -rf doc/texinfo.tex doc/mdate-sh
+	find . -name Makefile.in -exec rm -f '{}' \;
