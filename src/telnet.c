@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: telnet.c,v 1.10 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: telnet.c,v 1.11 2003-02-28 21:49:29 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -77,7 +77,7 @@ void netcat_telnet_parse(nc_sock_t *ncsock)
   static int l = 0;
   unsigned char putrq[4], *buf = ncsock->recvq.pos;
   int i, *size = &ncsock->recvq.len, eat_chars = 0, ref_size = *size;
-  debug_v("netcat_telnet_parse(ncsock=%p)", (void *)ncsock);
+  debug_v(("netcat_telnet_parse(ncsock=%p)", (void *)ncsock));
 
   /* if the socket object is NULL, assume a reset command */
   if (ncsock == NULL) {
@@ -167,7 +167,7 @@ void netcat_telnet_parse(nc_sock_t *ncsock)
     if (eat_chars > 0) {
       unsigned char *from, *to;
 
-      debug("(telnet) ate %d chars\n", eat_chars);
+      debug(("(telnet) ate %d chars\n", eat_chars));
 
       /* move the index to the overlapper character */
       i++;
