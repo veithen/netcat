@@ -1,4 +1,9 @@
 
+[*] Thu Jan 15 2004 - netcat (cvs)
+
+  o Updated gettext support to 0.13.1
+
+
 [*] Sun Jan 11 2004 - netcat v0.7.1
 
   o Fixed bug in UDP connection code, using pktinfo support. [BUG #796765]
