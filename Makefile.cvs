@@ -1,10 +1,10 @@
-# $Id: Makefile.cvs,v 1.6 2002-05-01 08:54:46 themnemonic Exp $
+# $Id: Makefile.cvs,v 1.7 2002-06-08 17:34:51 themnemonic Exp $
 
 default: all
 
 dist:
 	@echo "Preparing release package..."
-	@aclocal
+	@aclocal -I m4
 	@autoheader
 	@automake --ignore-deps --add-missing --copy
 	@autoconf
@@ -20,7 +20,7 @@ dist:
 	@echo "Reminder: Update release dates and tag cvs"
 
 all:
-	@aclocal
+	@aclocal -I m4
 	@autoheader
 	@automake --add-missing --copy
 	@autoconf
