@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.35 2003-02-28 22:13:07 themnemonic Exp $
+ * $Id: network.c,v 1.36 2003-08-21 14:42:46 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -70,7 +70,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
        for the output purpose (the user doesn't want to see something he didn't
        type.  So assume the lookup name as the "official" name and fetch the
        ips for the reverse lookup. */
-    debug(("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
+    debug(("(lookup) lookup=\"%s\" official=\"%s\" (should match)", name,
 	  hostent->h_name));
     strncpy(dst->name, name, MAXHOSTNAMELEN - 1);
 
