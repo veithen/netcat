@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-08-22 23:20+0000\n"
+"POT-Creation-Date: 2002-10-02 21:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,37 +15,37 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:138 src/core.c:413
+#: src/core.c:140 src/core.c:416
 #, c-format
 msgid "Listening on %s"
 msgstr ""
 
-#: src/core.c:141
+#: src/core.c:143
 #, c-format
 msgid "Listening on %s (using %d sockets)"
 msgstr ""
 
-#: src/core.c:224
+#: src/core.c:227
 #, c-format
 msgid "Received packet from %s:%d -> %s:%d (local)"
 msgstr ""
 
-#: src/core.c:229
+#: src/core.c:232
 #, c-format
 msgid "Received packet from %s:%d"
 msgstr ""
 
-#: src/core.c:358
+#: src/core.c:361
 #, c-format
 msgid "%s open"
 msgstr ""
 
-#: src/core.c:441
+#: src/core.c:444
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr ""
 
-#: src/core.c:445
+#: src/core.c:448
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr ""
@@ -167,110 +167,110 @@ msgstr ""
 msgid "Exiting."
 msgstr ""
 
-#: src/netcat.c:145
+#: src/netcat.c:143
 #, c-format
 msgid "Couldn't execute %s: %s"
 msgstr ""
 
-#: src/netcat.c:245
+#: src/netcat.c:242
 msgid "Cannot specify `-e' option double"
 msgstr ""
 
-#: src/netcat.c:259
+#: src/netcat.c:256
 #, c-format
 msgid "Invalid interval time \"%s\""
 msgstr ""
 
-#: src/netcat.c:264 src/netcat.c:270
+#: src/netcat.c:261 src/netcat.c:267
 msgid "`-L' and `-l' options are incompatible"
 msgstr ""
 
-#: src/netcat.c:273 src/netcat.c:360
+#: src/netcat.c:270 src/netcat.c:357
 msgid "`-L' and `-z' options are incompatible"
 msgstr ""
 
-#: src/netcat.c:281
+#: src/netcat.c:278
 msgid "Invalid target string for `-L' option"
 msgstr ""
 
-#: src/netcat.c:286
+#: src/netcat.c:283
 #, c-format
 msgid "Couldn't resolve tunnel target host: %s"
 msgstr ""
 
-#: src/netcat.c:289
+#: src/netcat.c:286
 #, c-format
 msgid "Invalid tunnel target port: %s"
 msgstr ""
 
-#: src/netcat.c:305
+#: src/netcat.c:302
 #, c-format
 msgid "Invalid local port: %s"
 msgstr ""
 
-#: src/netcat.c:311
+#: src/netcat.c:308
 #, c-format
 msgid "Invalid tunnel connect port: %s"
 msgstr ""
 
-#: src/netcat.c:320
+#: src/netcat.c:317
 #, c-format
 msgid "Couldn't resolve local host: %s"
 msgstr ""
 
-#: src/netcat.c:325
+#: src/netcat.c:322
 #, c-format
 msgid "Couldn't resolve tunnel local host: %s"
 msgstr ""
 
-#: src/netcat.c:351
+#: src/netcat.c:348
 #, c-format
 msgid "Invalid wait-time: %s"
 msgstr ""
 
-#: src/netcat.c:364 src/netcat.c:544
+#: src/netcat.c:361 src/netcat.c:539
 #, c-format
 msgid "Try `%s --help' for more information."
 msgstr ""
 
-#: src/netcat.c:375
+#: src/netcat.c:372
 msgid "Debugging support not compiled, option `-d' discarded."
 msgstr ""
 
-#: src/netcat.c:384
-msgid "Random support not compiled, option `-r' discarded."
+#: src/netcat.c:381
+msgid "Randomization support not compiled, option `-r' discarded."
 msgstr ""
 
-#: src/netcat.c:391
+#: src/netcat.c:388
 #, c-format
 msgid "Failed to open output file: %s"
 msgstr ""
 
-#: src/netcat.c:404
+#: src/netcat.c:401
 #, c-format
 msgid "Couldn't resolve host \"%s\""
 msgstr ""
 
-#: src/netcat.c:451
+#: src/netcat.c:448
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr ""
 
-#: src/netcat.c:493
+#: src/netcat.c:490
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr ""
 
-#: src/netcat.c:503 src/netcat.c:597
+#: src/netcat.c:499 src/netcat.c:592
 msgid "Passing control to the specified program"
 msgstr ""
 
-#: src/netcat.c:543
+#: src/netcat.c:538
 #, c-format
 msgid "%s: missing hostname argument"
 msgstr ""
 
-#: src/netcat.c:551
+#: src/netcat.c:546
 msgid "No ports specified for connection"
 msgstr ""
 
@@ -304,6 +304,6 @@ msgstr ""
 msgid "  %s -> %s  BUT  %s -> %s"
 msgstr ""
 
-#: src/network.c:256
+#: src/network.c:258
 msgid "any address"
 msgstr ""
