@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: udphelper.c,v 1.7 2002-10-13 17:28:46 themnemonic Exp $
+ * $Id: udphelper.c,v 1.8 2002-12-06 17:32:38 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -99,14 +99,14 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
    different interface in the current machine.  The purpose of this is to allow
    the application to determine which interface received the packet that
    otherwise would be unknown.
-   Return -1 if an error occurred; otherwise the return value is a file
-   descriptor referencing the first socket in the array.
+   Returns -1 if an error occurred; otherwise the return value is a file
+   descriptor referencing the socket in the array with the highest number.
    On success, at least one socket is returned. */
 
 int udphelper_sockets_open(int **sockbuf, in_port_t nport)
 {
   int ret, i, alloc_size, dummy_sock, if_total = 1;
-  int *my_sockbuf = NULL, sock_total = 0;
+  int *my_sockbuf = NULL, my_sockbuf_max = 0, sock_total = 0;
   unsigned int if_pos = 0;
   struct lifconf nc_ifconf;
   struct lifreq *nc_ifreq = NULL;
@@ -210,6 +210,8 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
       goto err;
     }
     my_sockbuf[sock_total] = newsock;
+    if (newsock > my_sockbuf_max)
+      my_sockbuf_max = newsock;
 
     /* bind this address to his address and to the common port */
     if_addr.sin_port = nport;
@@ -229,6 +231,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
         goto err;
 
       nport = if_addr.sin_port;
+      assert(nport != 0);
     }
   }				/* end of while (all_interfaces) */
 
@@ -247,7 +250,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
   /* On success, return the first socket for the application use, while if no
      valid interefaces were found step forward to the error handling */
   if (my_sockbuf[0] > 0)
-    return my_sockbuf[1];
+    return my_sockbuf_max;
 
   errno = EAFNOSUPPORT;
   my_sockbuf[0] = -1;
