@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.9 2002-04-29 14:46:33 themnemonic Exp $
+ * $Id: netcat.h,v 1.10 2002-04-29 16:30:44 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <unistd.h>
 #include <assert.h>
 
 /* conditional includes -- a very messy section which you may have to dink
@@ -63,12 +64,11 @@
 #include <netinet/ip.h>		/* IPOPT_LSRR, header stuff */
 #include <netdb.h>		/* hostent, gethostby*, getservby* */
 #include <arpa/inet.h>		/* inet_ntoa */
-#include <stdio.h>
 #include <string.h>		/* strcpy, strchr, yadda yadda */
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include <fcntl.h>		/* O_WRONLY et al */
-#include <unistd.h>
 
 /* handy stuff: */
 #define SA struct sockaddr	/* socket overgeneralization braindeath */
@@ -93,16 +93,12 @@ typedef struct netcat_host_struct {
   struct in_addr iaddrs[8];	/* real addresses: in_addr.s_addr: ulong */
 } netcat_host;
 
-#define HINF struct host_poop
+typedef struct netcat_port_struct {
+  char name[64];
+  char ascnum[8];
+  unsigned short num;
+} netcat_port;
 
-struct port_poop
-{
-  char name[64];		/* name in /etc/services */
-  char anum[8];			/* ascii-format number */
-  USHORT num;			/* real host-order number */
-};
-
-#define PINF struct port_poop
 
 /* Debug macro: squirt whatever message and sleep a bit so we can see it go
    by.  need to call like Debug ((stuff)) [with no ; ] so macro args match!

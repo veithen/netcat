@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.2 2002-04-29 10:32:28 themnemonic Exp $
+ * $Id: network.c,v 1.3 2002-04-29 16:30:44 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -136,3 +136,71 @@ netcat_host *netcat_resolvehost(char *name)
      with at least one IP address in it. */
   return poop;
 }				/* gethostpoop */
+
+
+/* getportpoop :
+   Same general idea as netcat_resolvehost -- look up a port in /etc/services, fill
+   in global port_poop, but return the actual port *number*.  Pass ONE of:
+	pstring to resolve stuff like "23" or "exec";
+	pnum to reverse-resolve something that's already a number.
+   If opt_numeric is on, fill in what we can but skip the getservby??? stuff.
+   Might as well have consistent behavior here, and it *is* faster. */
+
+/* Obligatory netdb.h-inspired rant: servent.s_port is supposed to  be an int.
+   Despite this, we still have to treat it as a short when copying it around.
+   Not only that, but we have to convert it *back* into net order for
+   getservbyport to work.  Manpages generally aren't clear on all this, but
+   there are plenty of examples in which it is just quietly done. -Avian */
+
+bool netcat_getport(netcat_port *dst, const char *port_string,
+		    unsigned short port_num)
+{
+  const char *get_proto = (opt_udpmode ? "udp" : "tcp");
+  struct servent *servent;
+
+  debug_v("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",
+		(void *) dst, port_string, port_num);
+
+  /* preload some label */
+  strcpy(dst->name, "(unknown)");
+
+  /* case 1: reverse-lookup of a number; placed first since this case is
+     much more frequent if we're scanning */
+  if (!port_string) {
+    if (port_num == 0)
+      return FALSE;
+    servent = getservbyport((int) htons(port_num), get_proto);
+    if (servent) {
+      assert(port_num == ntohs(servent->s_port));
+      strncpy(dst->name, servent->s_name, sizeof(dst->name));
+    }
+    /* always load any numeric specs! (what?) */
+    dst->num = port_num;
+    goto end;
+  }
+  else {
+    int x;
+    /* case 2: resolve a string, but we still give preference to numbers
+       instead of trying to resolve conflicts.  None of the entries in
+       *my* extensive /etc/services begins with a digit, so this should
+       "always work" unless you're at 3com and have some company-internal
+       services defined... -Avian */
+    x = atoi(port_string);
+    if ((x = atoi(port_string)))
+      return netcat_getport(dst, NULL, x);	/* recurse for numeric-string-arg */
+
+    servent = getservbyname(port_string, get_proto);
+    if (servent) {
+      strncpy(dst->name, servent->s_name, sizeof(dst->name));
+      dst->num = ntohs(servent->s_port);
+      goto end;
+    }
+    dst->num = 0;
+    dst->ascnum[0] = 0;
+    return FALSE;
+  }
+
+ end:
+  snprintf(dst->ascnum, sizeof(dst->ascnum), "%hu", dst->num);
+  return TRUE;
+}

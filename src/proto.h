@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.4 2002-04-29 15:09:33 themnemonic Exp $
+ * $Id: proto.h,v 1.5 2002-04-29 16:30:44 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -40,6 +40,8 @@ extern int netfd;
 
 /* network.c */
 netcat_host *netcat_resolvehost(char *name);
+bool netcat_getport(netcat_port *dst, const char *port_string,
+		    unsigned short port_num);
 
 /* telnet.c */
 void atelnet(unsigned char *buf, unsigned int size);

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.13 2002-04-29 15:09:32 themnemonic Exp $
+ * $Id: netcat.c,v 1.14 2002-04-29 16:30:43 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -40,8 +40,6 @@ jmp_buf jbuf;			/* timer crud */
 int jval = 0;			/* timer crud */
 int netfd = -1;
 char unknown[] = "(UNKNOWN)";
-static char p_tcp[] = "tcp";	/* for getservby* */
-static char p_udp[] = "udp";
 
 #ifdef HAVE_BIND
 extern int h_errno;
@@ -77,7 +75,8 @@ char *bigbuf_in;		/* data buffers */
 char *bigbuf_net;
 fd_set *ding1;			/* for select loop */
 fd_set *ding2;
-PINF *portpoop = NULL;		/* for getportpoop / getservby* */
+/* FIXME: i don't want this thing global, everyone must use his own */
+static netcat_port portpoop;		/* for netcat_getport */
 
 /* global options flags */
 unsigned int o_interval = 0;
@@ -213,87 +212,6 @@ unsigned int findline(char *buf, unsigned int siz)
   }				/* for */
   Debug(("findline returning whole thing: %d", siz)) return siz;
 }				/* findline */
-
-
-
-/* getportpoop :
-   Same general idea as netcat_resolvehost -- look up a port in /etc/services, fill
-   in global port_poop, but return the actual port *number*.  Pass ONE of:
-	pstring to resolve stuff like "23" or "exec";
-	pnum to reverse-resolve something that's already a number.
-   If opt_numeric is on, fill in what we can but skip the getservby??? stuff.
-   Might as well have consistent behavior here, and it *is* faster. */
-USHORT getportpoop(char *pstring, unsigned int pnum)
-{
-  struct servent *servent;
-  register int x;
-  register int y;
-  char *whichp = p_tcp;
-
-  if (opt_udpmode)
-    whichp = p_udp;
-  portpoop->name[0] = '?';	/* fast preload */
-  portpoop->name[1] = '\0';
-
-/* case 1: reverse-lookup of a number; placed first since this case is much
-   more frequent if we're scanning */
-  if (pnum) {
-    if (pstring)		/* one or the other, pleeze */
-      return 0;
-    x = pnum;
-    if (opt_numeric)		/* go faster, skip getservbyblah */
-      goto gp_finish;
-    y = htons(x);		/* gotta do this -- see Fig.1 below */
-    servent = getservbyport(y, whichp);
-    if (servent) {
-      y = ntohs(servent->s_port);
-      if (x != y)		/* "never happen" */
-	holler("Warning: port-bynum mismatch, %d != %d", x, y);
-      strncpy(portpoop->name, servent->s_name, sizeof(portpoop->name));
-    }				/* if servent */
-    goto gp_finish;
-  }				/* if pnum */
-
-/* case 2: resolve a string, but we still give preference to numbers instead
-   of trying to resolve conflicts.  None of the entries in *my* extensive
-   /etc/services begins with a digit, so this should "always work" unless
-   you're at 3com and have some company-internal services defined... */
-  if (pstring) {
-    if (pnum)			/* one or the other, pleeze */
-      return 0;
-    x = atoi(pstring);
-    if (x)
-      return getportpoop(NULL, x);	/* recurse for numeric-string-arg */
-    if (opt_numeric)		/* can't use names! */
-      return 0;
-    servent = getservbyname(pstring, whichp);
-    if (servent) {
-      strncpy(portpoop->name, servent->s_name, sizeof(portpoop->name));
-      x = ntohs(servent->s_port);
-      goto gp_finish;
-    }				/* if servent */
-  }				/* if pstring */
-
-  return 0;			/* catches any problems so far */
-
-/* Obligatory netdb.h-inspired rant: servent.s_port is supposed to be an int.
-   Despite this, we still have to treat it as a short when copying it around.
-   Not only that, but we have to convert it *back* into net order for
-   getservbyport to work.  Manpages generally aren't clear on all this, but
-   there are plenty of examples in which it is just quietly done.  More BSD
-   lossage... since everything getserv* ever deals with is local to our own
-   host, why bother with all this network-order/host-order crap at all?!
-   That should be saved for when we want to actually plug the port[s] into
-   some real network calls -- and guess what, we have to *re*-convert at that
-   point as well.  Fuckheads. */
-
-gp_finish:
-/* Fall here whether or not we have a valid servent at this point, with
-   x containing our [host-order and therefore useful, dammit] port number */
-  sprintf(portpoop->anum, "%d", x);	/* always load any numeric specs! */
-  portpoop->num = (x & 0xffff);	/* ushort, remember... */
-  return portpoop->num;
-}				/* getportpoop */
 
 /* nextport :
    Come up with the next port to try, be it random or whatever.  "block" is
@@ -969,7 +887,6 @@ int main(int argc, char *argv[])
   bigbuf_net = Hmalloc(BIGSIZ);
   ding1 = (fd_set *) Hmalloc(sizeof(fd_set));
   ding2 = (fd_set *) Hmalloc(sizeof(fd_set));
-  portpoop = (PINF *) Hmalloc(sizeof(PINF));
 
   errno = 0;
   gatesptr = 4;
@@ -1058,7 +975,8 @@ int main(int argc, char *argv[])
       opt_hexdump = TRUE;	/* implied */
       break;
     case 'p':			/* local source port */
-      o_lport = getportpoop(optarg, 0);
+      netcat_getport(&portpoop, optarg, 0);
+      o_lport = portpoop.num;
       if (o_lport == 0)
 	bail("invalid local port %s", optarg);
       break;
@@ -1152,7 +1070,8 @@ int main(int argc, char *argv[])
   if (opt_listen) {
     curport = 0;		/* rem port *can* be zero here... */
     if (argv[optind]) {		/* any rem-port-arg? */
-      curport = getportpoop(argv[optind], 0);
+      netcat_getport(&portpoop, argv[optind], 0);
+      curport = portpoop.num;
       if (curport == 0)		/* if given, demand correctness */
 	bail("invalid port %s", argv[optind]);
     }				/* if port-arg */
@@ -1191,11 +1110,13 @@ int main(int argc, char *argv[])
     if (cp) {
       *cp = '\0';
       cp++;
-      hiport = getportpoop(cp, 0);
+      netcat_getport(&portpoop, cp, 0);
+      hiport = portpoop.num;
       if (hiport == 0)
 	bail("invalid port %s", cp);
     }				/* if found a dash */
-    loport = getportpoop(argv[optind], 0);
+    netcat_getport(&portpoop, argv[optind], 0);
+    loport = portpoop.num;
     if (loport == 0)
       bail("invalid port %s", argv[optind]);
     if (hiport > loport) {	/* was it genuinely a range? */
@@ -1216,7 +1137,8 @@ int main(int argc, char *argv[])
 	if (ourport < 8192)	/* resv and any likely listeners??? */
 	  ourport += 8192;	/* if it *still* conflicts, use -s. */
       }
-      curport = getportpoop(NULL, curport);
+      netcat_getport(&portpoop, NULL, curport);
+      curport = portpoop.num;
       netfd = doconnect(themaddr, curport, ouraddr, ourport);
       Debug(("netfd %d from port %d to port %d", netfd, ourport,
 	     curport)) if (netfd > 0)
@@ -1225,7 +1147,7 @@ int main(int argc, char *argv[])
       if (netfd > 0) {		/* Yow, are we OPEN YET?! */
 	x = 0;			/* pre-exit status */
 	holler("%s [%s] %d (%s) open",
-	       whereto->name, whereto->addrs[0], curport, portpoop->name);
+	       whereto->name, whereto->addrs[0], curport, portpoop.name);
 #ifdef GAPING_SECURITY_HOLE
 	if (pr00gie)		/* exec is valid for outbound, too */
 	  doexec(netfd);
@@ -1239,7 +1161,7 @@ int main(int argc, char *argv[])
    Give it another -v if you want to see everything. */
 	if ((Single || (opt_verbose > 1)) || (errno != ECONNREFUSED))
 	  holler("%s [%s] %d (%s)",
-		 whereto->name, whereto->addrs[0], curport, portpoop->name);
+		 whereto->name, whereto->addrs[0], curport, portpoop.name);
       }				/* if netfd */
       close(netfd);		/* just in case we didn't already */
       if (o_interval)
