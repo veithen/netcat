@@ -27,6 +27,10 @@ to mail me if you need any further information.
  o Netcat should be ported on Win32 too, but I haven't Win32 coding
    experience unfortunately.  Anyone is willing to help?
 
+ o I think that two netcats with the `-T' (telnet) option enabled
+   may enter an infinite loop because of the weak telnet protocol
+   implementation. Check this and fix.
+
 
 
     Future features/Planning
