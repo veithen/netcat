@@ -7,6 +7,9 @@
     in the interface.
   o Fixed a bug in ncprint() which didn't respect the EXIT flag if the
     verbosity flag was also specified and not satisfied.
+  o Rewritten the core routines and arguments handling to allow a better
+    features support.
+  o Fixed several mis-behaviours for UDP protocol.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.7 2002-05-20 16:33:06 themnemonic Exp $
+ * $Id: core.c,v 1.8 2002-05-23 18:30:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -28,100 +28,108 @@
 
 #include "netcat.h"
 
-/* used for UDP only, find out whether the remote host is initialized or not */
-static bool core_initialized = FALSE;
-
-int core_udp_connect(struct in_addr *host, unsigned short port)
-{
-  int sock;
-  struct sockaddr_in myaddr;
-  debug_v("core_udp_connect(host=%p, port=%hu)", (void *)host, port);
-
-  sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
-
-  myaddr.sin_family = AF_INET;
-  myaddr.sin_port = htons(port);
-  memcpy(&myaddr.sin_addr, host, sizeof(myaddr.sin_addr));
-
-  connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
-
-  return sock;
-}				/* end of core_udp_connect() */
-
-/* Returns a new socket */
-
-int core_udp_listen(struct in_addr *local_host, unsigned short local_port, int timeout)
+static int core_udp_connect(netcat_sock *ncsock)
 {
   int ret, sock;
   struct sockaddr_in myaddr;
-  debug_v("core_udp_listen(local_host=%p, local_port=%hu)",
-	  (void *)local_host, local_port);
+  debug_v("core_udp_connect(ncsock=%p)", (void *)ncsock);
 
   sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
   if (sock < 0)
-    return sock;
-
-  myaddr.sin_family = AF_INET;
-  myaddr.sin_port = htons(local_port);
-  if (local_host)
-    memcpy(&myaddr.sin_addr, local_host, sizeof(myaddr.sin_addr));
-  else
-    memset(&myaddr.sin_addr, 0, sizeof(myaddr.sin_addr));
-
-  ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
-  if (ret < 0)
     return -1;
-  else {
-    fd_set ins;
-    struct timeval tt;
 
-    tt.tv_usec = 0;
-    tt.tv_sec = timeout;
-    FD_ZERO(&ins);
-    FD_SET(sock, &ins);
-
-    select(sock + 1, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
-    if (FD_ISSET(sock, &ins)) {
-      char buf[1];
-      struct sockaddr_in ix;
-      int slen = sizeof(ix);
-
-      ret = recvfrom(sock, buf, sizeof(buf), MSG_PEEK, (struct sockaddr *)&ix, &slen);
-      debug_v("received packet from %s:%d, using as default dest",
-	netcat_inet_ntop(&ix.sin_addr), ntohs(ix.sin_port));
-      connect(sock, (struct sockaddr *)&ix, slen);
-
-      /* connect and all */
-      return sock;
-    }
+  /* prepare myaddr for the bind() call */
+  myaddr.sin_family = AF_INET;
+  myaddr.sin_port = htons(ncsock->local_port.num);
+  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0], sizeof(myaddr.sin_addr));
+  /* only call bind if it really needed */
+  if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
+    ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+    if (ret < 0)
+      goto err;
   }
 
-  /* no packets until timeout */
-  return -1;
+  /* now prepare myaddr for the connect() call */
+  myaddr.sin_family = AF_INET;
+  myaddr.sin_port = htons(ncsock->port.num);
+  memcpy(&myaddr.sin_addr, &ncsock->host.iaddrs[0], sizeof(myaddr.sin_addr));
+  ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+  if (ret < 0)
+    goto err;
 
-
-  /* FIXME: this function is supposed to return a working I/O socket, which
-     this one is NOT. This means that we may want to recv() with MSG_PEEK
-     and then connect() it and then return, but this would require calling
-     select() although it's not a problem. */
   return sock;
+
+ err:
+  close(sock);
+  return -1;
+}				/* end of core_udp_connect() */
+
+static int core_udp_listen(netcat_sock *ncsock)
+{
+  int ret, sock, timeout = ncsock->timeout;
+  struct sockaddr_in myaddr;
+  fd_set ins;			/* needed by the select() call */
+  struct timeval tt;
+  debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
+
+  sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
+  if (sock < 0)
+    return -1;
+
+  /* prepare myaddr for the bind() call */
+  myaddr.sin_family = AF_INET;
+  myaddr.sin_port = htons(ncsock->local_port.num);
+  memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0], sizeof(myaddr.sin_addr));
+  /* only call bind if it really needed -- most of the cases in this function */
+  if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
+    ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+    if (ret < 0)
+      goto err;
+  }
+
+  /* we now need to know what is the remote address. keep the process hanging
+     here until any packet is received: the sender of the packet will be our
+     other end */
+  tt.tv_usec = 0;
+  tt.tv_sec = timeout;
+  FD_ZERO(&ins);
+  FD_SET(sock, &ins);
+
+  select(sock + 1, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
+  if (FD_ISSET(sock, &ins)) {
+    char buf[1];
+    struct sockaddr_in ix;
+    int slen = sizeof(ix);
+
+    ret = recvfrom(sock, buf, sizeof(buf), MSG_PEEK, (struct sockaddr *)&ix, &slen);
+    debug_v("received packet from %s:%d, using as default dest",
+	    netcat_inet_ntop(&ix.sin_addr), ntohs(ix.sin_port));
+    connect(sock, (struct sockaddr *)&ix, slen);
+
+    /* connect and all */
+    return sock;
+  }
+
+  /* no packets until timeout, set errno and proceed to general error handling */
+  errno = ETIMEDOUT;
+
+ err:
+  close(sock);
+  return -1;
 }				/* end of core_udp_listen() */
 
-/* ... */
-
-int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
+static int core_tcp_connect(netcat_sock *ncsock)
 {
-  int ret, sock;
+  int ret, sock, timeout = ncsock->timeout;
   struct timeval timest;
   fd_set outs;
-  debug_v("core_tcp_connect(host=%p, port=%hu, timeout=%d)", (void *)host,
-	  port, timeout);
+  debug_v("core_tcp_connect(ncsock=%p)", (void *)ncsock);
 
-  /* since we are nonblocking now, we can start as many connections as we want
-     but it's not a great idea connecting more than one host at time */
-  sock = netcat_socket_new_connect(PF_INET, SOCK_STREAM, host, port,
-			NULL, (opt_tunnel ? 0 : local_port.num));
-  /* FIXME: we should use our specified address (if any) */
+  /* since we are nonblocking now, we could start as many connections as we
+     want but it's not a great idea connecting more than one host at time */
+  sock = netcat_socket_new_connect(PF_INET, SOCK_STREAM,
+			&ncsock->host.iaddrs[0], ncsock->port.num,
+			&ncsock->local_host.iaddrs[0], ncsock->local_port.num);
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
@@ -160,7 +168,8 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
 
       shutdown(sock, 2);
       close(sock);
-      errno = get_ret;
+      ncsock->fd = -1;
+      errno = get_ret;		/* value returned by getsockopt(SO_ERROR) */
       return -1;
     }
     return sock;
@@ -185,14 +194,13 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
    forever.
    Returns: The new socket descriptor for the fetched connection */
 
-int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int timeout)
+static int core_tcp_listen(netcat_sock *ncsock)
 {
-  int sock_listen, sock_accept;
-  debug_v("core_tcp_listen(local_host=%p, local_port=%hu, timeout=%d)",
-	  (void *)local_host, local_port, timeout);
+  int sock_listen, sock_accept, timeout = ncsock->timeout;
+  debug_v("core_tcp_listen(ncsock=%p)", (void *)ncsock);
 
-  sock_listen = netcat_socket_new_listen(local_host, local_port);
-
+  sock_listen = netcat_socket_new_listen(&ncsock->local_host.iaddrs[0],
+			ncsock->local_port.num);
   if (sock_listen < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't setup listen socket (err=%d)",
 	    sock_listen);
@@ -216,17 +224,16 @@ int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int t
        i also must check _resolvehost() */
     getpeername(sock_accept, (struct sockaddr *)&my_addr, &my_len);
 
-    /* if a remote address (and optionally some ports) have been specified
-       AND we are NOT in tunnnel mode, we assume it as the only ip and port
-       that it is allowed to connect to this socket */
-    if (!opt_tunnel) {
-      if ((remote_host.iaddrs[0].s_addr && memcmp(&remote_host.iaddrs[0],
-	   &my_addr.sin_addr, sizeof(remote_host.iaddrs[0]))) ||
-	  (netcat_flag_count() && !netcat_flag_get(ntohs(my_addr.sin_port)))) {
-	ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
-		netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
-	goto refuse;
-      }
+    /* if a remote address (and optionally some ports) have been specified we
+       assume it as the only ip and port that it is allowed to connect to
+       this socket */
+
+    if ((ncsock->host.iaddrs[0].s_addr && memcmp(&ncsock->host.iaddrs[0],
+	 &my_addr.sin_addr, sizeof(ncsock->host.iaddrs[0]))) ||
+	(netcat_flag_count() && !netcat_flag_get(ntohs(my_addr.sin_port)))) {
+      ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
+	      netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
+      goto refuse;
     }
     ncprint(NCPRINT_VERB1, _("Connection from %s:%hu"),
 	    netcat_inet_ntop(&my_addr.sin_addr), ntohs(my_addr.sin_port));
@@ -249,11 +256,43 @@ int core_tcp_listen(struct in_addr *local_host, unsigned short local_port, int t
   return sock_accept;
 }				/* end of core_tcp_listen() */
 
+/* ... */
+
+int core_connect(netcat_sock *ncsock)
+{
+  assert(ncsock);
+
+  if (ncsock->proto == SOCK_STREAM)
+    return ncsock->fd = core_tcp_connect(ncsock);
+  else if (ncsock->proto == SOCK_DGRAM)
+    return ncsock->fd = core_udp_connect(ncsock);
+  else
+    abort();
+
+  return -1;
+}
+
+/* ... */
+
+int core_listen(netcat_sock *ncsock)
+{
+  assert(ncsock);
+
+  if (ncsock->proto == SOCK_STREAM)
+    return ncsock->fd = core_tcp_listen(ncsock);
+  else if (ncsock->proto == SOCK_DGRAM)
+    return ncsock->fd = core_udp_listen(ncsock);
+  else
+    abort();
+
+  return -1;
+}
+
 /* handle stdin/stdout/network I/O. */
 
-int core_readwrite(int sock, int sock2)
+int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
 {
-  int fd_stdin, fd_stdout, fd_max;
+  int fd_stdin, fd_stdout, fd_sock, fd_max;
   int read_ret, write_ret, pbuf_len = 0;
   char buf[1024], *pbuf = NULL, *ptmp = NULL;
   fd_set ins;
@@ -263,21 +302,25 @@ int core_readwrite(int sock, int sock2)
   delayer.tv_sec = 0;
   delayer.tv_usec = 0;
 
-  debug_v("readwrite(sock=%d)", sock);
+  debug_v("readwrite(nc_main=%p, nc_tunnel=%p)", (void *)nc_main, (void *)nc_tunnel);
 
-  /* set the actual "local" input and output and find out the max fd + 1 */
-  if (sock2 < 0) {
+  /* set the actual input and output fds and find out the max fd + 1 */
+  fd_sock = nc_main->fd;
+  assert(fd_sock >= 0);
+  if (nc_tunnel) {
+    fd_stdin = fd_stdout = nc_tunnel->fd;
+    assert(fd_stdin >= 0);
+  }
+  else {
     fd_stdin = STDIN_FILENO;
     fd_stdout = STDOUT_FILENO;
   }
-  else
-    fd_stdin = fd_stdout = sock2;
-  fd_max = 1 + (fd_stdin > sock ? fd_stdin : sock);
+  fd_max = 1 + (fd_stdin > fd_sock ? fd_stdin : fd_sock);
 
   while (inloop) {
     /* reset the ins events watch because some changes could happen */
     FD_ZERO(&ins);
-    FD_SET(sock, &ins);
+    FD_SET(fd_sock, &ins);
 
     /* if we have a send buffer being sent OR we are in udp mode AND the
        remote address have not been initialized yet (for example because
@@ -332,7 +375,7 @@ int core_readwrite(int sock, int sock2)
 
 	  read_ret = i;
         }
-	write_ret = write(sock, buf, read_ret);
+	write_ret = write(fd_sock, buf, read_ret);
 	bytes_sent += write_ret;		/* update statistics */
 	debug_dv("write(net) = %d", write_ret);
 
@@ -353,27 +396,22 @@ int core_readwrite(int sock, int sock2)
     }				/* end of reading from stdin section */
 
     /* reading from the socket (net). */
-    if (FD_ISSET(sock, &ins)) {
-#if 0
-      /* hold on! before reading, make sure we don't really need to know the
-         sender's address */
-      if (opt_udpmode && !core_initialized) {
-	struct sockaddr_in myad;
-	unsigned int myadlen = sizeof(myad);
+    if (FD_ISSET(fd_sock, &ins)) {
+      if (nc_main->proto == SOCK_DGRAM) {
+	struct sockaddr_in recv_addr;
+	unsigned int recv_len = sizeof(recv_addr);
 
-	/* FIXME: this is broken badly! we NEED some type of local socket
-	   buffering record, so we can have such options localized */
-	read_ret = recvfrom(sock, buf, sizeof(buf), 0, (struct sockaddr *)&myad,
-			    &myadlen);
-	debug_dv("recvfrom(net) = %d (address=%s)", read_ret,
-		netcat_inet_ntop(&myad.sin_addr));
-	goto skipread;
+	/* this allows us to fetch packets from different addresses */
+	read_ret = recvfrom(fd_sock, buf, sizeof(buf), 0,
+			    (struct sockaddr *)&recv_addr, &recv_len);
+	debug_dv("recvfrom(net) = %d (address=%s:%p)", read_ret,
+		netcat_inet_ntop(&recv_addr.sin_addr));
       }
-#endif
-      read_ret = read(sock, buf, sizeof(buf));
-      debug_dv("read(net) = %d", read_ret);
-
- /* skipread: */
+      else {
+	/* common file read fallback */
+	read_ret = read(fd_sock, buf, sizeof(buf));
+	debug_dv("read(net) = %d", read_ret);
+      }
 
       if (read_ret < 0) {
 	perror("read(net)");
@@ -387,7 +425,7 @@ int core_readwrite(int sock, int sock2)
 	/* check for telnet codes (if enabled).  Note that the buffered output
            interval does NOT apply to telnet code answers */
 	if (opt_telnet)
-	  netcat_telnet_parse(sock, buf, &read_ret);
+	  netcat_telnet_parse(fd_sock, buf, &read_ret);
 
 	/* the telnet parsing could have returned 0 chars! */
 	if (read_ret) {
@@ -424,7 +462,7 @@ int core_readwrite(int sock, int sock2)
       /* if this reaches 0, the buffer is over and we can clean it */
       pbuf_len -= i;
 
-      write_ret = write(sock, pbuf, i);
+      write_ret = write(fd_sock, pbuf, i);
       bytes_sent += write_ret;
       debug_dv("write(stdout)[buf] = %d", write_ret);
 
@@ -449,4 +487,3 @@ int core_readwrite(int sock, int sock2)
 
   return 0;
 }				/* end of core_readwrite() */
-
