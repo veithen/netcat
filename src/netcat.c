@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.40 2002-05-27 20:43:50 themnemonic Exp $
+ * $Id: netcat.c,v 1.41 2002-05-28 20:58:05 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -504,7 +504,7 @@ int main(int argc, char *argv[])
 
     /* connection failure? (we cannot get this in UDP mode) */
     if (sock_connect < 0) {
-      assert(opt_proto != NETCAT_PROTO_TCP);
+      assert(opt_proto != NETCAT_PROTO_UDP);
       ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
 	      strerror(errno));
       continue;			/* go with next port */
