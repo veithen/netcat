@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.7 2002-04-26 22:06:15 themnemonic Exp $
+ * $Id: netcat.c,v 1.8 2002-04-27 12:44:33 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,6 +33,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <getopt.h>
 
 /* globals: */
 jmp_buf jbuf;			/* timer crud */
@@ -1196,10 +1198,6 @@ int readwrite(int fd)
    now we pull it all together... */
 int main(int argc, char *argv[])
 {
-#ifndef HAVE_GETOPT
-  extern char *optarg;
-  extern int optind, optopt;
-#endif
   register int x;
   register char *cp;
   HINF *gp;
@@ -1213,6 +1211,9 @@ int main(int argc, char *argv[])
   USHORT hiport = 0;
   USHORT curport = 0;
   char *randports = NULL;
+
+  int c;
+  int digit_optind = 0;
 
 #ifdef HAVE_BIND
 /* can *you* say "cc -yaddayadda netcat.c -lresolv -l44bsd" on SunLOSs? */
@@ -1288,11 +1289,30 @@ int main(int argc, char *argv[])
     argc = x;
   }				/* if no args given */
 
-/* If your shitbox doesn't have getopt, step into the nineties already. */
-/* optarg, optind = next-argv-component [i.e. flag arg]; optopt = last-char */
-  while ((x = getopt(argc, argv, "ae:g:G:hi:lno:p:rs:tuvw:z")) != EOF) {
-/* Debug (("in go: x now %c, optarg %x optind %d", x, optarg, optind)) */
-    switch (x) {
+  while (TRUE) {
+    int this_option_optind = optind ? optind : 1;
+    int option_index = 0;
+    static const struct option long_options[] = {
+	{ "help", no_argument, NULL, 'h' },
+	{ "gateway", required_argument, NULL, 'g' },
+	{ "pointer", required_argument, NULL, 'G' },
+	{ "interval", required_argument, NULL, 'i' },
+	{ "listen", no_argument, NULL, 'l' },
+	{ "udp", no_argument, NULL, 'u' },
+	{ "verbose", no_argument, NULL, 'v' },
+	{ "zero", no_argument, NULL, 'z' },
+	{ "dont-resolve", no_argument, NULL, 'n' },
+	{ "output", required_argument, NULL, 'o' },
+	{ "local-port", required_argument, NULL, 'p' },
+	{ "randomize", no_argument, NULL, 'r' },
+	{ 0, 0, 0, 0 }
+    };
+
+    c = getopt_long(argc, argv, "hg:G:i:luvzno:p:r", long_options, &option_index);
+    if (c == -1)
+      break;
+
+    switch (c) {
     case 'a':
       bail("all-A-records NIY");
       o_alla++;
@@ -1378,7 +1398,7 @@ int main(int argc, char *argv[])
     default:
       errno = 0;
       bail("nc -h for help");
-    }				/* switch x */
+    }				/* switch c */
   }				/* while getopt */
 
 /* other misc initialization */
