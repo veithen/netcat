@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.53 2002-08-15 22:26:37 themnemonic Exp $
+ * $Id: netcat.c,v 1.54 2002-08-16 11:58:43 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -38,6 +38,7 @@
 /* char *optbuf = NULL; */	/* LSRR or sockopts */
 FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
 bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
+bool got_sigterm = FALSE;	/* when this TRUE the application must exit */
 
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
@@ -89,36 +90,52 @@ static void got_term(int z)
 static void got_int(int z)
 {
   ncprint(NCPRINT_VERB1, _("Exiting."));
+#ifdef BETA_SIGHANDLER
+#warning "Using beta code for signal handling functions"
+  got_sigterm = TRUE;
+  debug_dv("_____ RECEIVED SIGINT _____");
+#else
   printstats();
   exit(EXIT_FAILURE);
+#endif
 }
 
-#if 0
+#ifdef BETA_NCEXEC
+#warning "Using beta code for ncexec"
 /* ... */
 
-static void ncexec(int fd)
+static void ncexec(nc_sock_t *ncsock)
 {
-  register char *p;
+  int saved_stderr;
+  char *p;
+  assert(ncsock && (ncsock->fd >= 0));
 
-  dup2(fd, 0);			/* the precise order of fiddlage */
-  close(fd);			/* is apparently crucial; this is */
+  /* save the stderr fd because we may need it later */
+  saved_stderr = dup(2);
+  dup2(ncsock->fd, 0);		/* the precise order of fiddlage */
+  close(ncsock->fd);		/* is apparently crucial; this is */
   dup2(0, 1);			/* swiped directly out of "inetd". */
-  dup2(0, 2);
+#ifdef USE_OLD_COMPAT
+  dup2(0, 2);			/* also duplicate the stderr channel */
+#endif
   if ((p = strrchr(opt_exec, '/')))
     p++;			/* shorter argv[0] */
   else
     p = opt_exec;
 
   execl(opt_exec, p, NULL);
-  fprintf(stderr, "exec %s failed", opt_exec);
-}				/* end of ncexec */
+  dup2(saved_stderr, 2);
+  ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't execute %s: %s"),
+	  opt_exec, strerror(errno));
+}				/* end of ncexec() */
 #endif
 
 /* main: handle command line arguments and listening status */
 
 int main(int argc, char *argv[])
 {
-  int c, total_ports, accept_ret = -1, connect_ret = -1;
+  int c, glob_ret = EXIT_FAILURE;
+  int total_ports, accept_ret = -1, connect_ret = -1;
   struct sigaction sv;
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
@@ -464,6 +481,12 @@ int main(int argc, char *argv[])
        otherwise now it's the time to connect to the target host and tunnel
        them together (which means passing to the next section. */
     if (netcat_mode == NETCAT_LISTEN) {
+#ifdef BETA_NCEXEC
+      if (opt_exec) {
+	ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
+	ncexec(&listen_sock);		/* this won't return */
+      }
+#endif
       core_readwrite(&listen_sock, &stdio_sock);
       debug_dv("Listen: EXIT");
     }
@@ -480,8 +503,12 @@ int main(int argc, char *argv[])
 		netcat_strid(&connect_sock.host, &connect_sock.port),
 		strerror(errno));
       }
-      core_readwrite(&listen_sock, &connect_sock);
-      debug_dv("Tunnel: EXIT");
+      else {
+	glob_ret = EXIT_SUCCESS;
+	core_readwrite(&listen_sock, &connect_sock);
+      }
+
+      debug_dv("Tunnel: EXIT (ret=%d)", glob_ret);
     }
 
     /* all jobs should be ok, go to the cleanup */
@@ -527,19 +554,30 @@ int main(int argc, char *argv[])
 
     /* connection failure? (we cannot get this in UDP mode) */
     if (connect_ret < 0) {
-      assert(opt_proto != NETCAT_PROTO_UDP);
+      assert(connect_sock.proto != NETCAT_PROTO_UDP);
       ncprint(NCPRINT_VERB1, "%s: %s",
 	      netcat_strid(&connect_sock.host, &connect_sock.port),
 	      strerror(errno));
       continue;			/* go with next port */
     }
 
+    /* when portscanning (or checking a single port) we are happy if AT LEAST
+       ONE port is available. */
+    glob_ret = EXIT_SUCCESS;
+
     if (opt_zero) {
       shutdown(connect_ret, 2);
       close(connect_ret);
     }
     else {
+#ifdef BETA_NCEXEC
+      if (opt_exec) {
+	ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
+	ncexec(&connect_sock);		/* this won't return */
+      }
+#endif
       core_readwrite(&connect_sock, &stdio_sock);
+      debug_v("Connect: EXIT");
     }
   }			/* end of while (total_ports > 0) */
 
@@ -548,5 +586,5 @@ int main(int argc, char *argv[])
   debug_v("Main: EXIT (cleaning up)");
 
   printstats();
-  return 0;
+  return glob_ret;
 }				/* end of main() */
