@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: telnet.c,v 1.6 2002-05-12 21:22:48 themnemonic Exp $
+ * $Id: telnet.c,v 1.7 2002-05-15 20:21:20 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -78,20 +78,26 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
   debug_v("netcat_telnet_parse(sock=%d, buf=%p, size=%d", sock, (void *)buf,
 	  *size);
 
-  /* parse ALL chars of the string */
+  /* loop all chars of the string */
   for (i = 0; i < ref_size; i++) {
+    /* if we found a IAC char OR we are fetching a IAC code string process it */
     if ((buf[i] != TELNET_IAC) && (l == 0))
       continue;
 
+#ifndef USE_OLD_TELNET
+    /* this is surely a char that will be eaten */
     eat_chars++;
+#endif
 
-    if (l == 0) {
-      getrq[l++] = buf[i];
-      continue;
-    }
-
+    /* copy the char in the IAC-code-building buffer */
     getrq[l++] = buf[i];
 
+    /* if this is the first char (IAC!) go straight to the next one */
+    if (l == 1)
+      continue;
+
+    /* identify the IAC code. The effect is resolved here. If the char needs
+       further data the subsection just needs to leave the index 'l' set. */
     switch (getrq[1]) {
     case TELNET_SE:
     case TELNET_NOP:
@@ -129,24 +135,29 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
       write(sock, putrq, 3);
       goto do_eat_chars;
     case TELNET_IAC:
+#ifndef USE_OLD_TELNET
       /* insert a byte 255 in the buffer.  Note that we don't know in which
          position we are, but there must be at least 1 eaten char where we
-         can park our data byte. */
+         can park our data byte.  This effect is senseless if using the old
+         telnet codes parsing policy. */
       buf[i - --eat_chars] = 0xFF;
+#endif
       goto do_eat_chars;
+    default:
+      /* FIXME: how to handle the unknown code? */
+      break;
     }
-
-
     continue;
 
  do_eat_chars:
     /* ... */
     l = 0;
 
+#ifndef USE_OLD_TELNET
     if (eat_chars > 0) {
       char *from, *to;
 
-      debug("telnet: ate %d chars\n", eat_chars);
+      debug("(telnet) ate %d chars\n", eat_chars);
 
       /* move the index to the overlapper character */
       i++;
@@ -164,6 +175,7 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
       ref_size -= eat_chars;
       eat_chars = 0;
     }
+#endif
   }
 
   /* we are at the end of the buffer. all we have to do now is updating the
@@ -172,5 +184,10 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
      pending chars that needs to be removed.  This is handled here in an easy
      way: since they are at the end of the buffer, just cut them playing with
      the buffer length. */
+
+#ifdef USE_OLD_TELNET
+  assert(eat_chars == 0);
+#endif
+
   *size = ref_size - eat_chars;
 }
