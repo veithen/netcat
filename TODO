@@ -13,7 +13,7 @@ to mail me if you need any further information.
  o Write the README file!
 
  o I need to study deeply the -g/-G options issue in order to make
-   it working properly.
+   them working properly.
 
  o I need to fetch information about the history of this tool,
    so I can give credits to the right people for the design and
@@ -34,6 +34,16 @@ to mail me if you need any further information.
    telnet codes found in the incoming data.  Check what the RFC
    says about this, since with the `-i' option this could be
    a very important difference.
+
+ o The following execution of Netcat causes an assertion to trigger:
+      sh1~$ cat bigfile | netcat -l -p <some port>
+      sh2~$ netcat localhost <listening port>
+   This can be caused by a listening daemon that sends some data and
+   then closes the connection immediately.
+
+ o In core_udp_listen() there is a socket duplication that may cause
+   data loss in the receive queue.  Remove that code and solve that
+   issue in some other way.
 
 
 
