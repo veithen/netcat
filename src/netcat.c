@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.24 2002-05-06 19:10:47 themnemonic Exp $
+ * $Id: netcat.c,v 1.25 2002-05-07 18:09:05 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -59,6 +59,15 @@ int opt_wait = 0;		/* wait time (FIXME) */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
 
+/* common functions */
+
+static void printstats()
+{
+  ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
+	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
+	  bytes_recv, bytes_sent);
+}
+
 /* signal handling */
 
 static void got_term(int z)
@@ -70,10 +79,7 @@ static void got_term(int z)
 static void got_int(int z)
 {
   ncprint(NCPRINT_VERB1, _("Exiting."));
-  ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
-	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
-	  bytes_recv, bytes_sent);
-
+  printstats();
   exit(EXIT_FAILURE);
 }
 
@@ -648,8 +654,8 @@ int main(int argc, char *argv[])
     debug_dv("Connect-loop for port %d finished", c);
 
   }
-
   debug_v("EXIT");
-  return 0;
 
+  printstats();			/* FIXME: is this the RIGHT place? */
+  return 0;
 }				/* end of main */
