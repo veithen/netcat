@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.5 2002-05-31 13:41:30 themnemonic Exp $
+@c $Id: netcat.texi,v 1.6 2002-06-10 10:02:33 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -93,6 +93,9 @@ Foundation, Inc.
 @menu
 * Overview::            Features of Netcat.
 * Invoking::            Netcat command-line arguments.
+* The Connect Mode::    Using Netcat in the connect mode.
+* The Listen Mode::     Using Netcat in the listen mode.
+* The Tunnel Mode::     Using Netcat in the tunnel mode.
 * Examples::            Examples of usage.
 @end menu
 @end ifinfo
@@ -115,7 +118,7 @@ standard Unix tools.
 
 @c man end
 
-@node Invoking, Examples, Overview, Top
+@node Invoking, The Connect Mode, Overview, Top
 @chapter Invoking
 @cindex invoking
 
@@ -140,7 +143,7 @@ and from which port.
 @menu
 * Basic Startup Options::
 * Protocol and Interface Options::
-* Common Behaviour Options::
+* Advanced Options::
 @end menu
 
 @c man begin OPTIONS
@@ -157,9 +160,16 @@ Display the version of Netcat and exit.
 @itemx --help
 Print a help message describing most common Netcat's command-line switches and
 a short description.
+
+@item -v
+@itemx --verbose
+Prints status messages, usually needed for using Netcat as user front-end.  All
+messages are printed to stderr in order not to affect the data stream.
+
+Use this option double to get more messages.
 @end table
 
-@node Protocol and Interface Options, Common Behaviour Options, Basic Startup Options, Invoking
+@node Protocol and Interface Options, Advanced Options, Basic Startup Options, Invoking
 @section Protocol and Interface Options
 
 @table @samp
@@ -175,7 +185,12 @@ Use the UDP protocol. see TCP.
 
 @item -p NUM
 @itemx --local-port=NUM
-under writing ...
+@c that "listen mode" must be a link
+Selects the local port.  In listen mode and tunnel mode, it specifies which
+port to use for listening, while in connect mode it specifies the source
+port (the port from which originating the connection).
+
+If this option is not specified, the OS will assign a random available port.
 
 @item -s ADDRESS
 @itemx --source=ADDRESS
@@ -191,8 +206,8 @@ under writing ...
 
 @end table
 
-@node Common Behaviour Options,  , Protocol and Interface Options, Invoking
-@section Common Behaviour Options
+@node Advanced Options,  , Protocol and Interface Options, Invoking
+@section Advanced Options
 
 @table @samp
 @item -i SECS
@@ -206,11 +221,69 @@ socket.
 @itemx --randomize
 randomizes the target remote ports ranges.  If more than one range is
 specified it will randomize the ports in the whole range.
-@end table
 
+@item -w
+@itemx --wait=SECS
+under writing...
+
+@item -T
+@itemx --telnet
+Answers the telnet codes as described in the RFC 0854.  With this option, the
+incoming telnet codes are parsed inside the receiving queue and are stripped
+off as they were never received (unless it was compiled with --enable-compat
+or with --enable-oldtelnet).
+
+@item -z
+@itemx --zero
+under writing...
+
+@end table
 @c man end
 
-@node Examples,  , Invoking, Top
+@node The Connect Mode, The Listen Mode, Invoking, Top
+@chapter The Connect Mode
+@cindex connect
+In the connect mode, Netcat connects to a remote host and simply links
+his stdin and stdout to the remote data stream.
+
+Basic usage is:
+
+netcat [options] hostname ports @dots{}
+
+The specified ports indicates actually all ports to connect to.  With
+normal operations Netcat will sequentially (or randomly, if you specified
+the `-r' option) connect to all the specified ports and links stdin/stdout.
+No more than one port is used at once.
+
+Particular options:
+In this mode, the `-p' option specifies the source port for connection, but
+it should never be specified unless you know what you are doing. The `-w'
+(timeout) option specifies how long to wait for the connection to succeed
+(if the remote host connects but doesn't send any data, the timeout DOESN'T
+apply).
+
+@node The Listen Mode, The Tunnel Mode, The Connect Mode, Top
+@chapter The Listen Mode
+@cindex listen
+
+In listen mode, Netcat stays idle listening on a port, specified by the `-p'
+switch, until some remote host connects. At this point, the basic behaviour
+is the same of the connect mode.
+
+Basic usage is:
+
+netcat -l -p port [remote_hostname] [remote_ports] @dots{}
+
+The remote hostname specifies which host is allowed to connect and from which
+ports. Usually these parameters are not specified, but if you want to sort
+out a special connection.
+
+@node The Tunnel Mode, Examples, The Listen Mode, Top
+@chapter The Tunnel Mode
+@cindex tunnel
+The tunnel mode ...
+
+@node Examples,  , The Tunnel Mode, Top
 @chapter Examples
 @cindex examples
 
