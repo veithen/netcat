@@ -5,14 +5,24 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: netcat 0.3.0+cvs\n"
-"POT-Creation-Date: 2002-05-08 22:43+0200\n"
-"PO-Revision-Date: 2002-05-06 22:45+0200\n"
+"Project-Id-Version: netcat 0.4.0+cvs\n"
+"POT-Creation-Date: 2002-05-11 22:32+0200\n"
+"PO-Revision-Date: 2002-05-11 22:33+0200\n"
 "Last-Translator: Giovanni Giacobbi <johnny@themnemonic.org>\n"
 "Language-Team: Italian <johnny@themnemonic.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=iso-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: src/core.c:189
+#, c-format
+msgid "Unwanted connection from %s:%hu (refused)"
+msgstr "Connessione non voluta da %s:%hu (rifiutata)"
+
+#: src/core.c:194
+#, c-format
+msgid "Connection from %s:%hu"
+msgstr "Connessione da %s:%hu"
 
 #: src/misc.c:156
 msgid "Error:"
@@ -127,7 +137,7 @@ msgstr ""
 "Design e idea originale di Avian Research <hobbit@avian.org>,\n"
 "Scritto da Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 
-#: src/netcat.c:67
+#: src/netcat.c:72
 #, c-format
 msgid ""
 "Total received bytes: %ld\n"
@@ -136,73 +146,67 @@ msgstr ""
 "Totale byte ricevuti: %ld\n"
 "Totale byte inviati: %ld\n"
 
-#: src/netcat.c:91
+#: src/netcat.c:96
 msgid "Exiting."
 msgstr "Uscita."
 
-#: src/netcat.c:361
+#: src/netcat.c:195
 msgid "Cannot specify `-e' option double"
 msgstr "Impossibile utilizzare l'opzione `-e' più volte"
 
-#: src/netcat.c:375
+#: src/netcat.c:209
 #, c-format
 msgid "Invalid interval time \"%s\""
 msgstr "Tempo di intervallo non valido \"%s\""
 
-#: src/netcat.c:380 src/netcat.c:386
+#: src/netcat.c:214 src/netcat.c:220
 msgid "`-L' and '-l' options are incompatible"
 msgstr "Le opzioni `-L' e `-l' sono incompatibili"
 
-#: src/netcat.c:398
+#: src/netcat.c:223 src/netcat.c:272
+msgid "`-L' and '-z' options are incompatible"
+msgstr "Le opzioni `-L' e `-z' sono incompatibili"
+
+#: src/netcat.c:235
 #, c-format
 msgid "Invalid local port: %s"
 msgstr "Porta locale specificata non valida: %s"
 
-#: src/netcat.c:407
+#: src/netcat.c:244
 #, c-format
 msgid "Couldn't resolve local host: %s"
 msgstr "Porta locale non valida: %s"
 
-#: src/netcat.c:426
+#: src/netcat.c:263
 #, c-format
 msgid "Invalid wait-time: %s"
 msgstr "Tempo di attesa non valido: %s"
 
-#: src/netcat.c:436
+#: src/netcat.c:276
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr "Usare `%s --help' per ulteriori informazioni.\n"
 
-#: src/netcat.c:451
+#: src/netcat.c:291
 msgid "Failed to open output file"
 msgstr "Impossibile aprire il file di output"
 
-#: src/netcat.c:464
+#: src/netcat.c:304
 #, c-format
 msgid "Couldn't resolve host \"%s\""
 msgstr "Impossibile risolvere l'host \"%s\""
 
-#: src/netcat.c:505
+#: src/netcat.c:345
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr "Specificazione porta non valida: %s"
 
-#: src/netcat.c:543
+#: src/netcat.c:379
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr "Modalità di attesa fallita: %s"
 
-#: src/netcat.c:555
-#, c-format
-msgid "Unwanted connection from %s:%hu (refused)"
-msgstr "Connessione non voluta da %s:%hu (rifiutata)"
-
-#: src/netcat.c:562
-#, c-format
-msgid "Connection from %s:%hu"
-msgstr "Connessione da %s:%hu"
-
-#: src/netcat.c:647
+#: src/netcat.c:423
 #, c-format
 msgid "%s open"
 msgstr "%s è aperto"

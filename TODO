@@ -28,6 +28,11 @@ to mail me if you need any further information.
 
  o Make it compiling on SunOS. It requires -lsocket -lnsl -lresolv.
 
+ o While listening in UDP mode, we should NOT read stdin until
+   any packet is received from outside.
+
+ o Hexdump in UDP mode should also output the source ip address (?)
+
 
 
     Future features/Planning
