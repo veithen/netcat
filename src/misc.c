@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.18 2002-05-06 15:02:55 themnemonic Exp $
+ * $Id: misc.c,v 1.19 2002-05-06 18:42:02 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -125,10 +125,10 @@ void ncprint(int type, const char *fmt, ...)
 
 #ifndef DEBUG
   /* return if this requires some verbosity levels and we haven't got it */
-  if ((type == NCPRINT_VERB2) && (opt_verbose < 2))
+  if ((flags & NCPRINT_VERB2) && (opt_verbose < 2))
     return;
 
-  if ((type == NCPRINT_VERB1) && (opt_verbose < 1))
+  if ((flags & NCPRINT_VERB1) && (opt_verbose < 1))
     return;
 #endif
 
@@ -146,8 +146,6 @@ void ncprint(int type, const char *fmt, ...)
 
   switch (type) {
   case NCPRINT_NORMAL:
-  case NCPRINT_VERB1:
-  case NCPRINT_VERB2:
     fprintf((fstream ? fstream : stdout), "%s%c", buf, newline);
     break;
 #ifdef DEBUG
