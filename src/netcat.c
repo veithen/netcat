@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.34 2002-05-15 14:38:24 themnemonic Exp $
+ * $Id: netcat.c,v 1.35 2002-05-15 20:56:39 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -77,6 +77,7 @@ static char *netcat_strid(netcat_host *host, unsigned short port)
   static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
 
   /* FIXME: this should use the portnames also */
+  /* FIXME: this is broken, cause they fill in (unknown) */
   if (host->name[0])
     snprintf(buf, sizeof(buf), "%s [%s] %d", host->name, host->addrs[0], port);
   else
@@ -292,7 +293,7 @@ int main(int argc, char *argv[])
     }
   }
   else
-    output_fd = stdout;
+    output_fd = stderr;
 
   debug_v("Trying to parse non-args parameters (argc=%d, optind=%d)", argc, optind);
 
