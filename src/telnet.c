@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: telnet.c,v 1.3 2002-05-01 13:47:29 themnemonic Exp $
+ * $Id: telnet.c,v 1.4 2002-05-05 08:42:58 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -88,7 +88,7 @@ void atelnet(unsigned char *buf, unsigned int size)
       p++;
       x--;
       obuf[2] = *p;		/* copy actual option byte */
-      (void) write(netfd, obuf, 3);
+      //(void) write(netfd, obuf, 3); FIXME!
 /* if one wanted to bump wrote_net or do a hexdump line, here's the place */
       y = 0;
     }				/* if y */
