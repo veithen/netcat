@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.14 2002-05-04 22:21:36 themnemonic Exp $
+ * $Id: misc.c,v 1.15 2002-05-05 08:43:13 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -190,8 +190,8 @@ void netcat_printhelp(char *argv0)
   printf(_("listen for inbound:    %s -l -p port [options] [hostname] [port]\n"), argv0);
   printf("\n");
   printf(_("Mandatory arguments to long options are mandatory for short options too.\n"));
-  /* "  -e, --exec=PROGRAM         program to exec after connect [dangerous!!]\n" */
   printf(_("Options:\n"
+"  -e, --exec=PROGRAM         program to exec after connect\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
 "  -h, --help                 display this help and exit\n"
