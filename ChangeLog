@@ -1,5 +1,5 @@
 
-[*] Wed Jul 10 2002 - netcat (cvs)
+[*] Thu Aug 15 2002 - netcat (cvs)
 
   o Rewritten the udp listening routines. Now it uses the newly added udphelper
     routines in order to allow a portable way to simulate two-ends connections
@@ -7,6 +7,7 @@
   o Added the NEWS file containing release notes since version 0.2.1.
   o Fixes and additions to the configure script.
   o Now compiles even if random support is not present in the OS.
+  o Fixed `-V' option not working. [BUG #588761]
 
 
 [*] Tue Jun 18 2002 - netcat v0.5.2
@@ -62,7 +63,7 @@
   o Now the -x option hexdumps also the source ip address in the introducing
     message.
   o Changed all the netcat defined types names.
-  o Restore the tunnel mode functionality.  Now it is even able to tunnel from
+  o Restored the tunnel mode functionality.  Now it is even able to tunnel from
     tcp to udp and vice-versa.
   o The udp listening mode now recognizes the `-z' command line switch.
   o Changed telnet command line switch from `-t' to `-T', added the change

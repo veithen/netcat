@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.51 2002-07-10 11:16:55 themnemonic Exp $
+ * $Id: netcat.c,v 1.52 2002-08-15 17:30:07 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "e:g:G:hi:lL:no:p:P:rs:S:tTuvxw:z", long_options,
+    c = getopt_long(argc, argv, "e:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z", long_options,
 		    &option_index);
     if (c == -1)
       break;
