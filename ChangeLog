@@ -1,5 +1,11 @@
 
-[*] Thu Aug 22 2002 - netcat (cvs)
+[*] Sun Sep  1 2002 - netcat (cvs)
+
+  o Fixed a compilation error in the "doc/" subdirectory when using virtual
+    paths.
+
+
+[*] Thu Aug 22 2002 - netcat v0.6.0
 
   o Rewritten the udp listening routines.  Now it uses the newly added
     udphelper routines in order to allow a portable way to simulate two-ends

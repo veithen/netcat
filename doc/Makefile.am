@@ -1,5 +1,5 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.7 2002-08-22 21:10:42 themnemonic Exp $
+# $Id: Makefile.am,v 1.8 2002-08-31 23:32:48 themnemonic Exp $
 
 info_TEXINFOS = netcat.texi
 
@@ -8,7 +8,7 @@ man_MANS = netcat.1
 
 # Netcat custom building rules
 
-TEXI2POD = $(srcdir)/texi2pod.pl
+TEXI2POD = $(top_builddir)/doc/texi2pod.pl
 
 netcat.pod: $(srcdir)/netcat.texi
 	$(TEXI2POD) $(srcdir)/netcat.texi $@
