@@ -41,28 +41,6 @@ dnl AC_CHECK_PROG(netcat_pod2man, pod2man, yes, no)
 AC_PATH_PROGS(PERL, perl5 perl, no)
 AC_PATH_PROG(POD2MAN, pod2man, no)
 
-dnl create only shared libtool-libraries
-AC_ENABLE_SHARED(yes)
- 
-dnl set the following to yes, if you want to create static
-dnl libtool-libraries
-AC_ENABLE_STATIC(no)
-
-dnl create a working libtool-script
-if test -z "$LIBTOOL"; then
-  AC_LANG_SAVE
-  AC_LANG_C
-  AC_LIBTOOL_DLOPEN
-  AM_PROG_LIBTOOL
-  dnl LIBTOOL="$LIBTOOL --silent"
-  dnl AC_SUBST(LIBTOOL)
-  AC_LANG_RESTORE
-  LIBTOOL_SHELL='/bin/sh ./libtool'
-else
-  LIBTOOL_SHELL=$LIBTOOL
-fi
-AC_PROG_LIBTOOL
-
 dnl add --with-extra-includes and --with-extra-libs switch to ./configure
 dnl
 all_libraries="$all_libraries $USER_LDFLAGS"
@@ -71,6 +49,10 @@ AC_SUBST(all_includes)
 AC_SUBST(all_libraries)
 
 AC_SUBST(AUTODIRS)
+
+dnl I18n support
+ALL_LINGUAS="it"
+AM_GNU_GETTEXT([external], need-ngettext)
 
 dnl check for the resolver function
 AC_CHECK_FUNC(res_init, , AC_CHECK_LIB(resolv, res_init, [LIBRESOLV="-lresolv"], , $LIBSOCKET))
@@ -96,7 +78,7 @@ AC_ARG_ENABLE(oldhexdump, AC_HELP_STRING([--enable-oldhexdump],
 	
 dnl add here all your Makefiles. These will be created by configure.
 dnl
-AC_CONFIG_FILES(Makefile doc/Makefile src/Makefile)
+AC_CONFIG_FILES(Makefile doc/Makefile src/Makefile po/Makefile.in m4/Makefile)
 
 dnl this one is special, it needs the executable flag
 dnl

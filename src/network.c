@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.5 2002-04-30 17:52:50 themnemonic Exp $
+ * $Id: network.c,v 1.6 2002-04-30 20:47:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -49,13 +49,13 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
   ret = inet_pton(AF_INET, name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
     if (opt_numeric) {
-      fprintf(stderr, "Can't parse %s as an IP address", name);
+      fprintf(stderr, _("Can't parse %s as an IP address"), name);
       exit(EXIT_FAILURE); /* FIXME: i should return FALSE here */
     }
     hostent = gethostbyname(name);
     /* failure to look up a name is fatal, since we can't do anything with it */
     if (!hostent) {
-      fprintf(stderr, "Error: Host lookup failed for `%s'\n", name);
+      fprintf(stderr, _("Error: Host lookup failed for `%s'\n"), name);
       exit(EXIT_FAILURE);
     }
     strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
@@ -73,11 +73,13 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
       hostent = gethostbyaddr((char *) &dst->iaddrs[i], sizeof(struct in_addr), AF_INET);
 
       if (!hostent || !hostent->h_name) {
-	fprintf(stderr, "Warning: inverse host lookup failed for %s: ", dst->addrs[i]);
+	fprintf(stderr, _("Warning: inverse host lookup failed for %s: "),
+		dst->addrs[i]);
 	continue;
       }
       if (strcasecmp(dst->name, hostent->h_name)) {
-	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", dst->name, hostent->h_name);
+	fprintf(stderr, _("Warning, this host mismatch! %s - %s\n"),
+		dst->name, hostent->h_name);
       }
     }				/* for x -> addrs, part B */
   }
@@ -91,16 +93,18 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
     hostent = gethostbyaddr((char *) &res_addr, sizeof(struct in_addr), AF_INET);
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
     if (!hostent)
-      fprintf(stderr, "Error: Inverse name lookup failed for `%s'\n", name);
+      fprintf(stderr, _("Error: Inverse name lookup failed for `%s'\n"), name);
     else {
       strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
       /* now do the direct lookup to see if the IP was auth */
       hostent = gethostbyname(dst->name);
       if (!hostent || !hostent->h_addr_list[0]) {
-	fprintf(stderr, "Warning: forward host lookup failed for %s: ", dst->name);
+	fprintf(stderr, _("Warning: direct host lookup failed for %s: "),
+		dst->name);
       }
       else if (strcasecmp(dst->name, hostent->h_name)) {
-	fprintf(stderr, "Warning, this host mismatch! %s - %s\n", dst->name, hostent->h_name);
+	fprintf(stderr, _("Warning, this host mismatch! %s - %s\n"),
+		dst->name, hostent->h_name);
       }
       /* FIXME: I should erase the dst->name field, since the answer wasn't auth */
     }				/* if hostent */

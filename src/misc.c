@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.10 2002-04-30 17:50:27 themnemonic Exp $
+ * $Id: misc.c,v 1.11 2002-04-30 20:47:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -148,7 +148,7 @@ void netcat_commandline(int *argc, char ***argv)
   char *saved_argv0 = my_argv[0];
   char buf[4096], *p, *rest;
 
-  fprintf(stderr, "Cmd line: ");
+  fprintf(stderr, _("Cmd line: "));
   fflush(stderr);
   p = fgets(buf, sizeof(buf), stdin);
   my_argv = malloc(128 * sizeof(char *));
@@ -180,12 +180,13 @@ void netcat_commandline(int *argc, char ***argv)
 /* ... */
 void netcat_printhelp(char *argv0)
 {
-  printf("GNU netcat %s, a rewrite of the famous networking tool.\n", VERSION);
-  printf("Basic usages:\n");
-  printf("connect to somewhere:  %s [options] hostname port [port] ...\n", argv0);
-  printf("listen for inbound:    %s -l -p port [options] [hostname] [port]\n", argv0);
-  printf("\nMandatory arguments to long options are mandatory for short options too.\n");
-  printf("Options:\n"
+  printf(_("GNU netcat %s, a rewrite of the famous networking tool.\n"), VERSION);
+  printf(_("Basic usages:\n"));
+  printf(_("connect to somewhere:  %s [options] hostname port [port] ...\n"), argv0);
+  printf(_("listen for inbound:    %s -l -p port [options] [hostname] [port]\n"), argv0);
+  printf("\n");
+  printf(_("Mandatory arguments to long options are mandatory for short options too.\n"));
+  printf(_("Options:\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
 "  -h, --help                 display this help and exit\n"
@@ -201,20 +202,20 @@ void netcat_printhelp(char *argv0)
 "  -V, --version              output version information and exit\n"
 "  -x, --hexdump              hexdump incoming and outgoing traffic\n"
 "  -w, --wait=SECS            timeout for connects and final net reads\n"
-"  -z, --zero                 zero-I/O mode (used for scanning)\n\n");
+"  -z, --zero                 zero-I/O mode (used for scanning)\n\n"));
 }
 
 /* ... */
 void netcat_printversion(void)
 {
   printf("netcat (The GNU Netcat) %s\n", VERSION);
-  printf("Copyright (c) 2002 Johnny Mnemonic\n\n"
+  printf(_("Copyright (c) 2002 Johnny Mnemonic\n\n"
 "This program comes with NO WARRANTY, to the extent permitted by law.\n"
 "You may redistribute copies of this program under the terms of\n"
 "the GNU General Public License.\n"
 "For more information about these matters, see the file named COPYING.\n\n"
 "Original design by Avian Research,\n"
-"Written by Johnny Mnemonic.\n");
+"Written by Johnny Mnemonic.\n"));
 }
 
 

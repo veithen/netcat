@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.11 2002-04-29 23:41:00 themnemonic Exp $
+ * $Id: netcat.h,v 1.12 2002-04-30 20:47:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -125,5 +125,6 @@ typedef struct netcat_port_struct {
 } netcat_port;
 
 #include "proto.h"
+#include "intl.h"
 
 #endif	/* !NETCAT_H */

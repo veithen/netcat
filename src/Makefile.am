@@ -1,5 +1,8 @@
 ## Process this file with automake to produce Makefile.in
-# $Id: Makefile.am,v 1.5 2002-04-29 19:47:03 themnemonic Exp $
+# $Id: Makefile.am,v 1.6 2002-04-30 20:47:59 themnemonic Exp $
+
+localedir = $(datadir)/locale
+DEFS = -DLOCALEDIR=\"\$(localedir)\" @DEFS@
 
 bin_PROGRAMS = netcat
 netcat_SOURCES = \

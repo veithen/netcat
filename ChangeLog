@@ -1,5 +1,5 @@
 
-[*] Mon Apr 29 2002 - netcat (cvs)
+[*] Tue Apr 30 2002 - netcat v0.2.1
 
   o Various fixes to the Makefiles for the clean targets
   o Fixed --enable-debug configure parameter
@@ -10,6 +10,9 @@
   o Restored command line switch `-w' (wait).
   o Rewrote (again) netcat_resolvehost(), this time it's a little more
     abstracted.
+  o Removed libtool support (it wasn't really needed at the moment)
+  o Added Native Language Support to the project
+  o Added the first traslation file (italian)
 
 
 [*] Mon Apr 29 2002 - netcat v0.2.0

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.17 2002-04-30 17:52:50 themnemonic Exp $
+ * $Id: netcat.c,v 1.18 2002-04-30 20:47:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -882,6 +882,12 @@ int main(int argc, char *argv[])
 
   int c;
 
+#ifdef ENABLE_NLS
+  setlocale(LC_MESSAGES, "");
+  bindtextdomain(PACKAGE, LOCALEDIR);
+  textdomain(PACKAGE);
+#endif
+
 #ifdef HAVE_BIND
 /* can *you* say "cc -yaddayadda netcat.c -lresolv -l44bsd" on SunLOSs? */
   res_init();
@@ -1028,7 +1034,7 @@ int main(int argc, char *argv[])
       opt_zero++;
       break;
     default:
-      fprintf(stderr, "Try `%s --help' for more information.\n", argv[0]);
+      fprintf(stderr, _("Try `%s --help' for more information.\n"), argv[0]);
       exit(EXIT_FAILURE);
     }				/* switch c */
   }				/* while getopt */
@@ -1051,7 +1057,7 @@ int main(int argc, char *argv[])
   if (opt_outputfile) {
     output_fd = fopen(opt_outputfile, "w");
     if (!output_fd) {
-      perror("Failed to open output file: ");
+      perror(_("Failed to open output file: "));
       exit(EXIT_FAILURE);
     }
   }
