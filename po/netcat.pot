@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-10-15 19:07+0200\n"
+"POT-Creation-Date: 2002-12-08 20:02+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,37 +15,42 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:140 src/core.c:416
+#: src/core.c:149 src/core.c:428
 #, c-format
 msgid "Listening on %s"
 msgstr ""
 
-#: src/core.c:143
+#: src/core.c:152
 #, c-format
 msgid "Listening on %s (using %d sockets)"
 msgstr ""
 
-#: src/core.c:227
+#: src/core.c:235
 #, c-format
 msgid "Received packet from %s:%d -> %s:%d (local)"
 msgstr ""
 
-#: src/core.c:232
+#: src/core.c:240
 #, c-format
 msgid "Received packet from %s:%d"
 msgstr ""
 
-#: src/core.c:361
+#: src/core.c:373
 #, c-format
 msgid "%s open"
 msgstr ""
 
-#: src/core.c:444
+#: src/core.c:411
+#, c-format
+msgid "Couldn't setup listening socket (err=%d)"
+msgstr ""
+
+#: src/core.c:456
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr ""
 
-#: src/core.c:448
+#: src/core.c:460
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr ""
@@ -58,53 +63,61 @@ msgstr ""
 msgid "Warning:"
 msgstr ""
 
-#: src/misc.c:232
+#: src/misc.c:221
+#, c-format
+msgid ""
+"Total received bytes: %s\n"
+"Total sent bytes: %s\n"
+msgstr ""
+
+#: src/misc.c:258
 msgid "Cmd line:"
 msgstr ""
 
-#: src/misc.c:264
+#: src/misc.c:290
 #, c-format
 msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
 msgstr ""
 
-#: src/misc.c:265
+#: src/misc.c:291
 msgid "Basic usages:\n"
 msgstr ""
 
-#: src/misc.c:266
+#: src/misc.c:292
 #, c-format
 msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
 msgstr ""
 
-#: src/misc.c:267
+#: src/misc.c:293
 #, c-format
 msgid "listen for inbound:    %s -l -p port [options] [hostname] [port] ...\n"
 msgstr ""
 
-#: src/misc.c:268
+#: src/misc.c:294
 #, c-format
 msgid "tunnel to somewhere:   %s -L hostname:port -p port [options]\n"
 msgstr ""
 
-#: src/misc.c:270
+#: src/misc.c:296
 msgid ""
 "Mandatory arguments to long options are mandatory for short options too.\n"
 msgstr ""
 
-#: src/misc.c:271
+#: src/misc.c:297
 msgid ""
 "Options:\n"
+"  -c, --close                close connection on EOF from stdin\n"
 "  -e, --exec=PROGRAM         program to exec after connect\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
-"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 msgstr ""
 
-#: src/misc.c:279
+#: src/misc.c:305
 msgid ""
+"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
@@ -112,20 +125,20 @@ msgid ""
 "  -s, --source=ADDRESS       local source address (ip or hostname)\n"
 msgstr ""
 
-#: src/misc.c:286
+#: src/misc.c:313
 msgid ""
 "  -t, --tcp                  TCP mode (default)\n"
 "  -T, --telnet               answer using TELNET negotiation\n"
 msgstr ""
 
-#: src/misc.c:290
+#: src/misc.c:317
 msgid ""
 "      --tcp                  TCP mode (default)\n"
 "  -t, --telnet               answer using TELNET negotiation\n"
 "  -T                         same as --telnet (compat)\n"
 msgstr ""
 
-#: src/misc.c:295
+#: src/misc.c:322
 msgid ""
 "  -u, --udp                  UDP mode\n"
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
@@ -135,11 +148,11 @@ msgid ""
 "  -z, --zero                 zero-I/O mode (used for scanning)\n"
 msgstr ""
 
-#: src/misc.c:303
+#: src/misc.c:330
 msgid "Remote port number can also be specified as range.  Example: '1-1024'\n"
 msgstr ""
 
-#: src/misc.c:313
+#: src/misc.c:340
 msgid ""
 "Copyright (C) 2002  Giovanni Giacobbi\n"
 "\n"
@@ -152,125 +165,118 @@ msgid ""
 "Written by Giovanni Giacobbi <giovanni@giacobbi.net>.\n"
 msgstr ""
 
-#: src/netcat.c:80
-#, c-format
-msgid ""
-"Total received bytes: %s\n"
-"Total sent bytes: %s\n"
-msgstr ""
-
-#: src/netcat.c:89
+#: src/netcat.c:72
 msgid "Terminated."
 msgstr ""
 
-#: src/netcat.c:102
+#: src/netcat.c:87
 msgid "Exiting."
 msgstr ""
 
-#: src/netcat.c:143
+#: src/netcat.c:144
 #, c-format
 msgid "Couldn't execute %s: %s"
 msgstr ""
 
-#: src/netcat.c:242
+#: src/netcat.c:249
 msgid "Cannot specify `-e' option double"
 msgstr ""
 
-#: src/netcat.c:256
+#: src/netcat.c:263
 #, c-format
 msgid "Invalid interval time \"%s\""
 msgstr ""
 
-#: src/netcat.c:261 src/netcat.c:267
+#: src/netcat.c:268 src/netcat.c:274
 msgid "`-L' and `-l' options are incompatible"
 msgstr ""
 
-#: src/netcat.c:270 src/netcat.c:357
+#: src/netcat.c:277 src/netcat.c:364
 msgid "`-L' and `-z' options are incompatible"
 msgstr ""
 
-#: src/netcat.c:278
+#: src/netcat.c:285
 msgid "Invalid target string for `-L' option"
 msgstr ""
 
-#: src/netcat.c:283
+#: src/netcat.c:290
 #, c-format
 msgid "Couldn't resolve tunnel target host: %s"
 msgstr ""
 
-#: src/netcat.c:286
+#: src/netcat.c:293
 #, c-format
 msgid "Invalid tunnel target port: %s"
 msgstr ""
 
-#: src/netcat.c:302
+#: src/netcat.c:309
 #, c-format
 msgid "Invalid local port: %s"
 msgstr ""
 
-#: src/netcat.c:308
+#: src/netcat.c:315
 #, c-format
 msgid "Invalid tunnel connect port: %s"
 msgstr ""
 
-#: src/netcat.c:317
+#: src/netcat.c:324
 #, c-format
 msgid "Couldn't resolve local host: %s"
 msgstr ""
 
-#: src/netcat.c:322
+#: src/netcat.c:329
 #, c-format
 msgid "Couldn't resolve tunnel local host: %s"
 msgstr ""
 
-#: src/netcat.c:348
+#: src/netcat.c:355
 #, c-format
 msgid "Invalid wait-time: %s"
 msgstr ""
 
-#: src/netcat.c:361 src/netcat.c:539
+#: src/netcat.c:368 src/netcat.c:546
 #, c-format
 msgid "Try `%s --help' for more information."
 msgstr ""
 
-#: src/netcat.c:372
+#: src/netcat.c:379
 msgid "Debugging support not compiled, option `-d' discarded."
 msgstr ""
 
-#: src/netcat.c:381
+#: src/netcat.c:388
 msgid "Randomization support not compiled, option `-r' discarded."
 msgstr ""
 
-#: src/netcat.c:388
+#: src/netcat.c:395
 #, c-format
 msgid "Failed to open output file: %s"
 msgstr ""
 
-#: src/netcat.c:401
+#: src/netcat.c:408
 #, c-format
 msgid "Couldn't resolve host \"%s\""
 msgstr ""
 
-#: src/netcat.c:448
+#: src/netcat.c:455
 #, c-format
 msgid "Invalid port specification: %s"
 msgstr ""
 
-#: src/netcat.c:490
+#: src/netcat.c:497
 #, c-format
 msgid "Listen mode failed: %s"
 msgstr ""
 
-#: src/netcat.c:499 src/netcat.c:592
+#: src/netcat.c:506 src/netcat.c:599
 msgid "Passing control to the specified program"
 msgstr ""
 
-#: src/netcat.c:538
+#: src/netcat.c:545
 #, c-format
 msgid "%s: missing hostname argument"
 msgstr ""
 
-#: src/netcat.c:546
+#: src/netcat.c:553
 msgid "No ports specified for connection"
 msgstr ""
 
