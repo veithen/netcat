@@ -3,7 +3,7 @@
 #
 #  Author: Giovanni Giacobbi <giovanni@giacobbi.net>
 #
-#  Copyright (C) 2002  Giovanni Giacobbi
+#  Copyright (C) 2002 - 2003  Giovanni Giacobbi
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,8 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.6.1)
-AC_PREREQ(2.52)
+AM_INIT_AUTOMAKE(netcat, 0.6.2+cvs)
+AC_PREREQ(2.54)
 
 dnl without this order in this file, automake will be confused!
 AM_CONFIG_HEADER(config.h)
@@ -52,15 +52,11 @@ ALL_LINGUAS="it sk"
 AM_GNU_GETTEXT([external], need-ngettext)
 AM_INTL_SUBDIR
 
-dnl find the socket library on some broken OS
+dnl find resolver functions and the socket library on some broken OS
 AC_LBL_LIBRARY_NET
 
 dnl Fortunately we have Solaris...
 AC_CHECK_HEADERS(sys/sockio.h)
-
-dnl check for the resolver function
-AC_CHECK_FUNC(res_init, ,
-    AC_CHECK_LIB(resolv, res_init, LIBS="-lresolv $LIBS"))
 
 AC_CHECK_FUNCS(srandom random)
 if test $ac_cv_func_srandom = no; then
@@ -79,6 +75,11 @@ dnl Check if it is available the RFC2292 IPv4 extension and in_port_t.
 AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <sys/types.h>
 #include <netinet/in.h>])
 
+# check if this compiler supports the common parameter `-Wall'
+if test -n "$GCC"; then
+  CFLAGS="$CFLAGS -Wall"
+fi
+
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
@@ -87,9 +88,8 @@ dnl the non-debug CFLAGS should include -DNDEBUG in a more stable context
 dnl in order to remove the assert() calls
 
 AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
-	[enable use of Memory Debug (default: no)]),
-	[CFLAGS="$CFLAGS -Wall -O0 -g3 -ggdb3 -DDEBUG"],
-	[CFLAGS="$CFLAGS -Wall"])
+	[enable debugging (requires GNU compiler, default: no)]),
+	[CFLAGS="$CFLAGS -O0 -g3 -ggdb3 -DDEBUG"])
 
 AC_ARG_ENABLE(compat, AC_HELP_STRING([--enable-compat],
 	[enable all old compatibility switches (default: no)]),
