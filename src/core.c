@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.21 2002-06-17 21:52:59 themnemonic Exp $
+ * $Id: core.c,v 1.22 2002-06-27 00:18:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -80,16 +80,27 @@ static int core_udp_connect(nc_sock_t *ncsock)
 
 static int core_udp_listen(nc_sock_t *ncsock)
 {
-  int ret, sock, sockopt = 1, timeout = ncsock->timeout;
-  bool use_ancillary = FALSE;
+  int ret, *sockbuf, sock, sock_max, timeout = ncsock->timeout;
+#ifdef USE_PKTINFO
+  int sockopt = 1;
   struct sockaddr_in myaddr;
+#endif
   struct timeval tt;		/* needed by the select() call */
   debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
 
-  sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
+#ifdef USE_PKTINFO
+  /* simulates a udphelper_sockets_open() call */
+  sockbuf = calloc(2, sizeof(int));
+  sockbuf[0] = 1;
+  sockbuf[1] = sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
   if (sock < 0)
     return -1;
+#else
+  if (udphelper_sockets_open(&sockbuf, htons(ncsock->local_port.num)) == FALSE)
+    return -1;
+#endif
 
+#ifdef USE_PKTINFO
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
   myaddr.sin_port = htons(ncsock->local_port.num);
@@ -100,14 +111,17 @@ static int core_udp_listen(nc_sock_t *ncsock)
   if (ret < 0)
     goto err;
 
-#ifdef USE_PKTINFO
   /* set the right flag in order to obtain the ancillary data */
   ret = setsockopt(sock, SOL_IP, IP_PKTINFO, &sockopt, sizeof(sockopt));
-  if (ret >= 0)
-    use_ancillary = TRUE;
-#else
-# warning "Couldn't setup ancillary data helpers"
+  if (ret < 0)
+    goto err;
 #endif
+
+  /* find the highest sock number and prepare it for select() */
+  for (ret = 1, sock_max = 0; ret <= sockbuf[0]; ret++)
+    if (sockbuf[ret] > sock_max)
+      sock_max = sockbuf[ret];
+  sock_max++;
 
   /* if the port was set to 0 this means that it is assigned randomly by the
      OS.  Find out which port they assigned to us. */
@@ -121,8 +135,13 @@ static int core_udp_listen(nc_sock_t *ncsock)
     netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
   }
 
+#ifdef USE_PKTINFO
   ncprint(NCPRINT_VERB2, _("Listening on %s"),
 	netcat_strid(&ncsock->local_host, &ncsock->local_port));
+#else
+  ncprint(NCPRINT_VERB2, _("Listening on %s (using %d sockets)"),
+	netcat_strid(&ncsock->local_host, &ncsock->local_port), sockbuf[0]);
+#endif
 
   /* since this protocol is connectionless, we need a special handling here.
      We want to simulate a two-ends connection but in order to do this we need
@@ -134,23 +153,33 @@ static int core_udp_listen(nc_sock_t *ncsock)
   tt.tv_usec = 0;
 
   while (TRUE) {
+    int socks_loop;
     fd_set ins;
 
     FD_ZERO(&ins);
-    FD_SET(sock, &ins);
-    select(sock + 1, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
+    for (socks_loop = 1; socks_loop <= sockbuf[0]; socks_loop++) {
+      debug_v("Setting sock %d on ins", sockbuf[socks_loop]);
+      FD_SET(sockbuf[socks_loop], &ins);
+    }
 
-    if (FD_ISSET(sock, &ins)) {
+    ret = select(sock_max, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
+    if (ret == 0)
+      break;
+
+    /* loop all the open sockets to find the active one */
+    for (socks_loop = 1; socks_loop <= sockbuf[0]; socks_loop++) {
       int recv_ret, write_ret;
       struct msghdr my_hdr;
-      bool local_fetch = FALSE;
       unsigned char buf[1024];
       struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
       struct sockaddr_in local_addr;
-#ifdef USE_PKTINFO
       unsigned char anc_buf[512];
-#endif
+
+      sock = sockbuf[socks_loop];
+
+      if (!FD_ISSET(sock, &ins))
+	continue;
 
       /* I've looked for this code for a lot of hours, and finally found the
          RFC 2292 which provides a socket API for fetching the destination
@@ -165,11 +194,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
       my_hdr_vec.iov_len = sizeof(buf);
       my_hdr.msg_iov = &my_hdr_vec;
       my_hdr.msg_iovlen = 1;
-#ifdef USE_PKTINFO
       /* now the most important part: the ancillary data, used to recovering the dst */
       my_hdr.msg_control = anc_buf;
       my_hdr.msg_controllen = sizeof(anc_buf);
-#endif
 
       /* now check the remote address.  If we are simulating a routing then
          use the MSG_PEEK flag, which leaves the received packet untouched */
@@ -179,33 +206,15 @@ static int core_udp_listen(nc_sock_t *ncsock)
 		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest"));
 
 #ifdef USE_PKTINFO
-      /* let's hope that there is some ancillary data! */
-      if (my_hdr.msg_controllen > 0) {
-	struct cmsghdr *get_cmsg;
-
-	/* We don't know which is the order of the ancillary messages and we
-	   dont know how many are there.  So I simply parse all of them until
-	   we find the right one, checking the index type. */
-	for (get_cmsg = CMSG_FIRSTHDR(&my_hdr); get_cmsg;
-		get_cmsg = CMSG_NXTHDR(&my_hdr, get_cmsg)) {
-	  debug_v("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type);
-
-	  if (get_cmsg->cmsg_type == IP_PKTINFO) {
-	    struct in_pktinfo *get_pktinfo;
-
-	    /* can we get this field double? RFC isn't clear on this */
-	    assert(local_fetch == FALSE);
-	    get_pktinfo = (struct in_pktinfo *) CMSG_DATA(get_cmsg);
-	    memcpy(&local_addr.sin_addr, &get_pktinfo->ipi_spec_dst, sizeof(local_addr.sin_addr));
-	    local_addr.sin_port = myaddr.sin_port;
-	    local_addr.sin_family = myaddr.sin_family;
-	    local_fetch = TRUE;
-	  }
-	}
-      }
+      ret = udphelper_ancillary_read(&my_hdr, &local_addr);
+      local_addr.sin_port = myaddr.sin_port;
+      local_addr.sin_family = myaddr.sin_family;
+#else
+      ret = sizeof(local_addr);
+      ret = getsockname(sock, (struct sockaddr *)&local_addr, &ret);
 #endif
 
-      if (local_fetch) {
+      if (ret == 0) {
 	char tmpbuf[127];
 
 	strncpy(tmpbuf, netcat_inet_ntop(&rem_addr.sin_addr), sizeof(tmpbuf));
@@ -218,7 +227,6 @@ static int core_udp_listen(nc_sock_t *ncsock)
 		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
 
       if (opt_zero) {
-	/* FIXME: why don't allow -z with -L? but only for udp! (?) */
 	write_ret = write(STDOUT_FILENO, buf, recv_ret);
 	bytes_recv += write_ret;
 	debug_dv("write_u(stdout) = %d", write_ret);
@@ -241,11 +249,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	}
       }
       else {
+#ifdef USE_PKTINFO
 	nc_sock_t dup_socket;
-
-	/* don't duplicate the socket if we don't have ancillary data available */
-	if (!use_ancillary)
-	  return sock;
 
 	memset(&dup_socket, 0, sizeof(dup_socket));
 	dup_socket.domain = ncsock->domain;
@@ -259,22 +264,30 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	ncsock->recvq.head = ncsock->recvq.pos = malloc(recv_ret);
 	memcpy(ncsock->recvq.head, my_hdr_vec.iov_base, recv_ret);
 	/* FIXME: this ONLY saves the first 1024 bytes! and the others? */
-	close(sock);
+#else
+	ret = connect(sock, (struct sockaddr *)&rem_addr, sizeof(rem_addr));
+	if (ret < 0)
+	  goto err;
+	sockbuf[socks_loop] = -1;
+#endif
+	udphelper_sockets_close(sockbuf);
 
+#ifdef USE_PKTINFO
 	/* this is all we want from this function */
 	debug_dv("calling the udp_connect() function...");
 	return core_udp_connect(&dup_socket);
+#else
+	return sock;
+#endif
       }
-    }
-    else			/* select() timed out! */
-      break;
+    }				/* end of foreach (sock, sockbuf) */
   }				/* end of packet receiving loop */
 
   /* no packets until timeout, set errno and proceed to general error handling */
   errno = ETIMEDOUT;
 
  err:
-  close(sock);
+  udphelper_sockets_close(sockbuf);
   return -1;
 }				/* end of core_udp_listen() */
 

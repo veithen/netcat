@@ -6,3 +6,4 @@ src/misc.c
 src/netcat.c
 src/network.c
 src/telnet.c
+src/udphelper.c

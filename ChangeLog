@@ -1,4 +1,11 @@
 
+[*] Thu Jun 27 2002 - netcat (cvs)
+
+  o Rewritten the udp listening routines. Now it uses the newly added udphelper
+    routines in order to allow a portable way to simulate two-ends connections
+    in UDP mode.
+
+
 [*] Tue Jun 18 2002 - netcat v0.5.2
 
   o Fixed a bug in UDP listen mode with unspecified port where Netcat was not

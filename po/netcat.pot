@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2002-06-17 23:54+0200\n"
+"POT-Creation-Date: 2002-06-27 02:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,32 +15,37 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core.c:124 src/core.c:391
+#: src/core.c:139 src/core.c:404
 #, c-format
 msgid "Listening on %s"
 msgstr ""
 
-#: src/core.c:212
+#: src/core.c:142
+#, c-format
+msgid "Listening on %s (using %d sockets)"
+msgstr ""
+
+#: src/core.c:221
 #, c-format
 msgid "Received packet from %s:%d -> %s:%d (local)"
 msgstr ""
 
-#: src/core.c:217
+#: src/core.c:226
 #, c-format
 msgid "Received packet from %s:%d"
 msgstr ""
 
-#: src/core.c:342
+#: src/core.c:355
 #, c-format
 msgid "%s open"
 msgstr ""
 
-#: src/core.c:419
+#: src/core.c:432
 #, c-format
 msgid "Unwanted connection from %s:%hu (refused)"
 msgstr ""
 
-#: src/core.c:423
+#: src/core.c:436
 #, c-format
 msgid "Connection from %s:%hu"
 msgstr ""
@@ -179,12 +184,12 @@ msgstr ""
 msgid "Invalid target string for `-L' option"
 msgstr ""
 
-#: src/netcat.c:244
+#: src/netcat.c:245
 #, c-format
 msgid "Couldn't resolve tunnel target host: %s"
 msgstr ""
 
-#: src/netcat.c:247
+#: src/netcat.c:248
 #, c-format
 msgid "Invalid tunnel target port: %s"
 msgstr ""
