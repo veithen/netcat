@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.27 2002-08-15 22:26:37 themnemonic Exp $
+ * $Id: misc.c,v 1.28 2002-08-16 11:47:49 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -137,16 +137,14 @@ void ncprint(int type, const char *fmt, ...)
   /* clear the flags section so we obtain the pure command */
   type &= ~0xFF;
 
-#ifndef DEBUG
   /* return if this requires some verbosity levels and we haven't got it */
-  if (opt_debug) {
+  if (!opt_debug) {
     if ((flags & NCPRINT_VERB2) && (opt_verbose < 2))
       goto end;
 
     if ((flags & NCPRINT_VERB1) && (opt_verbose < 1))
       goto end;
   }
-#endif
 
   /* known flags */
   if (flags & NCPRINT_STDOUT)
@@ -190,9 +188,7 @@ void ncprint(int type, const char *fmt, ...)
   if (flags & NCPRINT_DELAY)
     usleep(NCPRINT_WAITTIME);
 
-#ifndef DEBUG
  end:
-#endif
   /* now resolve the EXIT flag. If this was a verbosity but the required level
      wasn't given, exit anyway */
   if (flags & NCPRINT_EXIT)
