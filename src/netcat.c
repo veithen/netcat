@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.32 2002-05-11 20:27:46 themnemonic Exp $
+ * $Id: netcat.c,v 1.33 2002-05-12 21:20:09 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -66,12 +66,13 @@ netcat_port remote_port;
 
 /* common functions */
 
-static void printstats()
+static void printstats(void)
 {
   ncprint(NCPRINT_VERB2 | NCPRINT_NONEWLINE,
 	  _("Total received bytes: %ld\nTotal sent bytes: %ld\n"),
 	  bytes_recv, bytes_sent);
 }
+
 static char *netcat_strid(netcat_host *host, unsigned short port)
 {
   static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
@@ -311,7 +312,10 @@ int main(int argc, char *argv[])
     char *q, *parse = strdup(get_argv);
     int port_lo = 0, port_hi = 65535;
 
-    if (!(q = strchr(parse, '-'))) {		/* simple number */
+    if (!(q = strchr(parse, '-')))		/* simple number? */
+      q = strchr(parse, ':');			/* try with the other separator */
+
+    if (!q) {
       if (netcat_getport(&remote_port, parse, 0))
 	netcat_flag_set(remote_port.num, TRUE);
       else
