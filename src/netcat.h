@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.5 2002-04-27 12:43:53 themnemonic Exp $
+ * $Id: netcat.h,v 1.6 2002-04-27 14:55:38 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <ctype.h>
 
 /* conditional includes -- a very messy section which you may have to dink
    for your own architecture [and please send diffs...]: */
@@ -125,6 +125,8 @@ struct port_poop
 #endif
 
 /* misc.c */
+char *netcat_string_split(char **buf);
+void netcat_commandline(int *argc, char ***argv);
 void netcat_printhelp();
 
 #endif	/* !NETCAT_H */

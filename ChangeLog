@@ -1,4 +1,8 @@
 
-[*] Thu Mar 28 2001 - netcat v0.0.1
+[*] Sat Apr 27 2002 - netcat v0.1.0
 
-  o Nothing
+  o Great cleanup of the original source files, this will be the base
+    for the rewrite.
+  o Rewrote command line reader from stdin (dynamically rebuilds argv
+    based on the input string.
+  o Added functions netcat_string_split() and netcat_commandline().

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.2 2002-04-27 12:44:33 themnemonic Exp $
+ * $Id: misc.c,v 1.3 2002-04-27 14:55:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -29,14 +29,66 @@
 #include "netcat.h"
 
 /* ... */
-
-void netcat_printhelp()
+char *netcat_string_split(char **buf)
 {
-  printf("[v1.10]\n"
-"connect to somewhere:	nc [-options] hostname port[s] [ports] ... \n"
-"listen for inbound:	nc -l -p port [-options] [hostname] [port]\n");
+  register char *o, *r;
 
-printf("options:\n"
+  if (!buf)
+    return *buf = "";
+  for (o = *buf; isspace(*o); o++);	/* split all initial spaces */
+  for (r = o; *o && !isspace(*o); o++);	/* save the pointer and move to the next token */
+  if (*o)
+    *o++ = 0;
+  *buf = o;
+  return r;
+}
+
+/* construct an argv, and hand anything left over to readwrite(). */
+void netcat_commandline(int *argc, char ***argv)
+{
+  int my_argc = 1;
+  char **my_argv = *argv;
+  char *saved_argv0 = my_argv[0];
+  char buf[4096], *p, *rest;
+
+  fprintf(stderr, "Cmd line: ");
+  fflush(stderr);
+  p = fgets(buf, sizeof(buf), stdin);
+  my_argv = malloc(128 * sizeof(char *));
+  my_argv[0] = saved_argv0;		/* leave the program name intact */
+
+  do {
+    rest = netcat_string_split(&p);
+    my_argv[my_argc++] = (rest[0] ? strdup(rest) : NULL);
+  } while (rest[0]);
+
+  /* now my_argc counts one more, because we have a NULL element at
+   * the end of the list */
+  my_argv = realloc(my_argv, my_argc-- * sizeof(char *));
+
+  /* sends out the results */
+  *argc = my_argc;
+  *argv = my_argv;
+
+  /* debug */
+/*  {
+  int i;
+    printf("my_argc=%d\n", my_argc);
+    for (i = 0; i < my_argc; i++) {
+      printf("my_argv[%d] = \"%s\"\n", i, my_argv[i]);
+    }
+  } */
+}
+
+/* ... */
+void netcat_printhelp(char *argv0)
+{
+  printf("GNU netcat %s, a rewrite of the famous networking tool.\n", VERSION);
+  printf("Basic usages:\n");
+  printf("connect to somewhere:  %s [options] hostname port [port] ...\n", argv0);
+  printf("listen for inbound:    %s -l -p port [options] [hostname] [port]\n", argv0);
+  printf("\nMandatory arguments to long options are mandatory for short options too.\n");
+  printf("Options:\n"
 "  -h, --help                 display this help and exit\n"
 "  -g, --gateway=LIST         source-routing hop point[s], up to 8\n"
 "  -G, --pointer=NUM          source-routing pointer: 4, 8, 12, ...\n"

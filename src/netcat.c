@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.8 2002-04-27 12:44:33 themnemonic Exp $
+ * $Id: netcat.c,v 1.9 2002-04-27 14:55:37 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -1213,7 +1213,7 @@ int main(int argc, char *argv[])
   char *randports = NULL;
 
   int c;
-  int digit_optind = 0;
+  /* int digit_optind = 0; */
 
 #ifdef HAVE_BIND
 /* can *you* say "cc -yaddayadda netcat.c -lresolv -l44bsd" on SunLOSs? */
@@ -1245,49 +1245,9 @@ int main(int argc, char *argv[])
   signal(SIGPIPE, SIG_IGN);	/* important! */
 #endif
 
-/* if no args given at all, get 'em from stdin, construct an argv, and hand
-   anything left over to readwrite(). */
-  if (argc == 1) {
-    cp = argv[0];
-    argv = (char **) Hmalloc(128 * sizeof(char *));	/* XXX: 128? */
-    argv[0] = cp;		/* leave old prog name intact */
-    cp = Hmalloc(BIGSIZ);
-    argv[1] = cp;		/* head of new arg block */
-    fprintf(stderr, "Cmd line: ");
-    fflush(stderr);		/* I dont care if it's unbuffered or not! */
-    insaved = read(0, cp, BIGSIZ);	/* we're gonna fake fgets() here */
-    if (insaved <= 0)
-      bail("wrong");
-    x = findline(cp, insaved);
-    if (x)
-      insaved -= x;		/* remaining chunk size to be sent */
-    if (insaved)		/* which might be zero... */
-      memcpy(bigbuf_in, &cp[x], insaved);
-    cp = strchr(argv[1], '\n');
-    if (cp)
-      *cp = '\0';
-    cp = strchr(argv[1], '\r');	/* look for ^M too */
-    if (cp)
-      *cp = '\0';
-
-/* find and stash pointers to remaining new "args" */
-    cp = argv[1];
-    cp++;			/* skip past first char */
-    x = 2;			/* we know argv 0 and 1 already */
-    for (; *cp != '\0'; cp++) {
-      if (*cp == ' ') {
-	*cp = '\0';		/* smash all spaces */
-	continue;
-      }
-      else {
-	if (*(cp - 1) == '\0') {
-	  argv[x] = cp;
-	  x++;
-	}
-      }				/* if space */
-    }				/* for cp */
-    argc = x;
-  }				/* if no args given */
+  /* if no args given at all, get them from stdin */
+  if (argc == 1)
+    netcat_commandline(&argc, &argv);
 
   while (TRUE) {
     int this_option_optind = optind ? optind : 1;
@@ -1423,7 +1383,7 @@ int main(int argc, char *argv[])
   }
 
 /* optind is now index of first non -x arg */
-  Debug(("after go: x now %c, optarg %x optind %d", x, optarg, optind))
+  Debug(("after go: x now %c, optarg %x optind %d", x, (int)optarg, optind))
 /* Debug (("optind up to %d at host-arg %s", optind, argv[optind])) */
 /* gonna only use first addr of host-list, like our IQ was normal; if you wanna
    get fancy with addresses, look up the list yourself and plug 'em in for now.
