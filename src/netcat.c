@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.25 2002-05-07 18:09:05 themnemonic Exp $
+ * $Id: netcat.c,v 1.26 2002-05-07 18:48:33 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -628,11 +628,11 @@ int main(int argc, char *argv[])
 
       /* output the hostname in the message only if it's authoritative */
       if (remote_host.name[0])
-	ncprint(NCPRINT_VERB1, "%s [%s] %s: %s", remote_host.name,
-		remote_host.addrs[0], remote_port.ascnum, strerror(errno));
+	ncprint(NCPRINT_VERB1, "%s [%s] %d: %s", remote_host.name,
+		remote_host.addrs[0], c, strerror(errno));
       else
-	ncprint(NCPRINT_VERB1, "%s %s: %s", remote_host.addrs[0],
-		remote_port.ascnum, strerror(errno));
+	ncprint(NCPRINT_VERB1, "%s %d: %s", remote_host.addrs[0], c,
+		strerror(errno));
 
       close(sock_connect);
       continue;			/* go on with next port */
@@ -648,6 +648,17 @@ int main(int argc, char *argv[])
 	assert(sock_accept == -1);
 	readwrite(sock_connect, -1);
       }
+
+    }
+
+    if (!FD_ISSET(sock_connect, &ins) && !FD_ISSET(sock_connect, &outs)) {
+      errno = ETIMEDOUT;
+      if (remote_host.name[0])
+	ncprint(NCPRINT_VERB1, "%s [%s] %d: %s", remote_host.name,
+		remote_host.addrs[0], c, strerror(errno));
+      else
+	ncprint(NCPRINT_VERB1, "%s %d: %s", remote_host.addrs[0], c,
+		strerror(errno));
 
     }
 
