@@ -39,4 +39,4 @@ this command:
  $ cvs update -dP
 
 (note that the -dP is very important to keep your repository directory
-structured sync with the server's one)
+structure sync with the server's one)
