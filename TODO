@@ -29,6 +29,9 @@ to mail me if you need any further information.
 
  o Hexdump in UDP mode should also output the source ip address (?)
 
+ o Netcat should be ported on Win32 too, but I haven't Win32 coding
+   experience unfortunately.  Anyone is willing to help?
+
 
 
     Future features/Planning
