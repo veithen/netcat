@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.23 2002-06-04 22:09:36 themnemonic Exp $
+ * $Id: proto.h,v 1.24 2002-06-05 12:34:54 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -67,4 +67,4 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
 int netcat_socket_accept(int fd, int timeout);
 
 /* telnet.c */
-void netcat_telnet_parse(int sock, unsigned char *buf, int *size);
+void netcat_telnet_parse(nc_sock_t *ncsock);

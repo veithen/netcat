@@ -6,6 +6,8 @@
   o Minor code cleanup.
   o Fixed a variable not correctly initialized, causing netcat to bind() with
     bogus information in certain circumstances.
+  o Changed the prototype of the telnet codes parsing function to match the new
+    objects-based design.
 
 
 [*] Fri May 31 2002 - netcat v0.5.0

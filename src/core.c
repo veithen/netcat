@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.14 2002-06-04 22:09:36 themnemonic Exp $
+ * $Id: core.c,v 1.15 2002-06-05 12:34:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -633,20 +633,22 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
       /* check for telnet codes (if enabled).  Note that the buffered output
          interval does NOT apply to telnet code answers */
-      if (opt_telnet)	/* FIXME: don't give the fd, give the sock_t object */
-	netcat_telnet_parse(fd_sock, my_recvq->pos, &my_recvq->len);
-      /* the telnet parsing could have returned 0 chars! */
+      if (opt_telnet)
+	netcat_telnet_parse(nc_main);
 
-      /* if the remote send queue is empty, move there the entire data block */
-      if (rem_sendq->len == 0) {
-	memcpy(rem_sendq, my_recvq, sizeof(*rem_sendq));
-	memset(my_recvq, 0, sizeof(*my_recvq));
-      }
-      else if (!my_recvq->head) {
-	/* move the data block in a dedicated allocated space */
-	my_recvq->head = malloc(my_recvq->len);
-	memcpy(my_recvq->head, my_recvq->pos, my_recvq->len);
-	my_recvq->pos = my_recvq->head;
+      /* the telnet parsing could have returned 0 chars! */
+      if (my_recvq->len > 0) {
+	/* if the remote send queue is empty, move there the entire data block */
+	if (rem_sendq->len == 0) {
+	  memcpy(rem_sendq, my_recvq, sizeof(*rem_sendq));
+	  memset(my_recvq, 0, sizeof(*my_recvq));
+	}
+	else if (!my_recvq->head) {
+	  /* move the data block in a dedicated allocated space */
+	  my_recvq->head = malloc(my_recvq->len);
+	  memcpy(my_recvq->head, my_recvq->pos, my_recvq->len);
+	  my_recvq->pos = my_recvq->head;
+	}
       }
     }
 

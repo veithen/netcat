@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: telnet.c,v 1.8 2002-05-31 13:42:15 themnemonic Exp $
+ * $Id: telnet.c,v 1.9 2002-06-05 12:34:55 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -46,7 +46,7 @@
 #define TELNET_WILL	251	/* Indicates the desire to begin performing,
 				 * or confirmation that you are now performing,
 				 * the indicated option. */
-#define TELNET_WONT	252	/* Indicates the refusal to perform, or
+#define TELNET_WONT	252	/* Indicates the refusal to perform, or to
 				 * continue performing, the indicated option. */
 #define TELNET_DO	253	/* Indicates the request that the other party
 				 * perform, or confirmation that you are
@@ -58,29 +58,36 @@
 				 * to perform, the indicated option. */
 #define TELNET_IAC	255	/* Data Byte 255. */
 
-/* Handle the RFC0854 telnet codes found in the buffer `buf' which is `size'
-   bytes long.  This is a reliable implementation of the rfc, which understands
-   most of the described codes, and automatically replies to `sock' with the
-   appropriate code.
-   The buffer `buf' is then rewritten with the telnet codes stripped, and the
-   size is updated to the new length which is less than or equal to the
-   original one.
+/* Handle the RFC0854 telnet codes found in the receiving buffer of the
+   specified socket object.  This is a reliable implementation of the rfc,
+   which understands most of the described codes, and automatically replies to
+   the remote end with the appropriate answer codes.
+   The receiving queue is then rewritten with the telnet codes stripped off,
+   and the size is updated to the new length which is less than or equal to
+   the original one (and can also be 0).
    The case where a telnet code is broken down (i.e. if the buffering block
    cuts it into two different calls to netcat_telnet_parse() is also handled
-   properly with an internal buffer. */
+   properly with an internal buffer.
+   If you'll ever need to reset the internal buffer for a fresh call of the
+   telnet parsing function just call it with a NULL argument. */
 
-void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
+void netcat_telnet_parse(nc_sock_t *ncsock)
 {
   static unsigned char getrq[4];
   static int l = 0;
-  unsigned char putrq[4];
-  int i, eat_chars = 0, ref_size = *size;
-  debug_v("netcat_telnet_parse(sock=%d, buf=%p, size=%d", sock, (void *)buf,
-	  *size);
+  unsigned char putrq[4], *buf = ncsock->recvq.pos;
+  int i, *size = &ncsock->recvq.len, eat_chars = 0, ref_size = *size;
+  debug_v("netcat_telnet_parse(ncsock=%p)", (void *)ncsock);
+
+  /* if the socket object is NULL, assume a reset command */
+  if (ncsock == NULL) {
+    l = 0;
+    return;
+  }
 
   /* loop all chars of the string */
   for (i = 0; i < ref_size; i++) {
-    /* if we found a IAC char OR we are fetching a IAC code string process it */
+    /* if we found IAC char OR we are fetching a IAC code string process it */
     if ((buf[i] != TELNET_IAC) && (l == 0))
       continue;
 
@@ -121,7 +128,10 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
       putrq[0] = 0xFF;
       putrq[1] = TELNET_DONT;
       putrq[2] = getrq[2];
-      write(sock, putrq, 3);
+      /* FIXME: the rfc seems not clean about what to do if the sending queue
+         is not empty.  Since it's the simplest solution, just override the
+         queue for now, but this must change in future. */
+      write(ncsock->fd, putrq, 3);		/* FIXME: handle failures */
       goto do_eat_chars;
     case TELNET_DO:
     case TELNET_DONT:
@@ -132,7 +142,7 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
       putrq[0] = 0xFF;
       putrq[1] = TELNET_WONT;
       putrq[2] = getrq[2];
-      write(sock, putrq, 3);
+      write(ncsock->fd, putrq, 3);
       goto do_eat_chars;
     case TELNET_IAC:
 #ifndef USE_OLD_TELNET
@@ -168,9 +178,9 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
       to = &buf[i - eat_chars];
       memmove(to, from, ref_size - i);
 
-      /* fix the index. since the loop will auto-increment the index we need to
-         put it one char before. this means that it can become negative but it
-         isn't a big problem since it is signed. */
+      /* fix the index.  since the loop will auto-increment the index we need
+         to put it one char before.  this means that it can become negative
+         but it isn't a big problem since it is signed. */
       i -= eat_chars + 1;
       ref_size -= eat_chars;
       eat_chars = 0;
