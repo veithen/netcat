@@ -6,46 +6,53 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: netcat 0.3.0+cvs\n"
-"POT-Creation-Date: 2002-05-05 10:58+0200\n"
-"PO-Revision-Date: 2002-05-05 10:59+0200\n"
+"POT-Creation-Date: 2002-05-06 22:43+0200\n"
+"PO-Revision-Date: 2002-05-06 22:45+0200\n"
 "Last-Translator: Giovanni Giacobbi <johnny@themnemonic.org>\n"
 "Language-Team: Italian <johnny@themnemonic.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=iso-8859-1\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/misc.c:155
+#: src/misc.c:157
+msgid "Error:"
+msgstr "Errore:"
+
+#: src/misc.c:160
+msgid "Warning:"
+msgstr "Attenzione:"
+
+#: src/misc.c:200
 msgid "Cmd line: "
 msgstr "Riga comando: "
 
-#: src/misc.c:187
+#: src/misc.c:232
 #, c-format
 msgid "GNU netcat %s, a rewrite of the famous networking tool.\n"
-msgstr ""
-"GNU netcat %s, una reimplementazione del famoso tool per networking.\n"
+msgstr "GNU netcat %s, una reimplementazione del famoso tool per networking.\n"
 
-#: src/misc.c:188
+#: src/misc.c:233
 msgid "Basic usages:\n"
-msgstr "Uso di base:\n"
+msgstr "Utilizzo di base:\n"
 
-#: src/misc.c:189
+#: src/misc.c:234
 #, c-format
 msgid "connect to somewhere:  %s [options] hostname port [port] ...\n"
 msgstr "connessione ad un host: %s [opzioni] hostname port [port] ...\n"
 
-#: src/misc.c:190
+#: src/misc.c:235
 #, c-format
 msgid "listen for inbound:    %s -l -p port [options] [hostname] [port]\n"
 msgstr "attesa connessione:     %s -l -p port [opzioni] [hostname] [port]\n"
 
-#: src/misc.c:192
+#: src/misc.c:237
 msgid ""
 "Mandatory arguments to long options are mandatory for short options too.\n"
 msgstr ""
 "Gli argomenti che sono obbligatori per le istruzioni lunghe lo sono anche "
 "per quelle corte.\n"
 
-#: src/misc.c:193
+#: src/misc.c:238
 msgid ""
 "Options:\n"
 "  -e, --exec=PROGRAM         program to exec after connect\n"
@@ -54,6 +61,7 @@ msgid ""
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
+"  -L, --tunnel               forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
@@ -91,12 +99,12 @@ msgstr ""
 "connessioni\n"
 "  -z, --zero                 zero-I/O mode (used for scanning)\n"
 
-#: src/misc.c:213
+#: src/misc.c:259
 msgid "Remote port number can also be specified as range.  Example: '1-1024'\n"
 msgstr ""
 "La porta remota può essere specificata come intervallo.  Esempio: '1-1024'\n"
 
-#: src/misc.c:223
+#: src/misc.c:269
 msgid ""
 "Copyright (C) 2002  Giovanni Giacobbi\n"
 "\n"
@@ -112,98 +120,109 @@ msgstr ""
 "\n"
 "Questo programma viene pubblicato SENZA GARANZIA, con le estensioni\n"
 "consentite dalla legge.\n"
-"E' possibile ridistribuire le copie di questo programma entro i termini\n"
+"È possibile ridistribuire le copie di questo programma entro i termini\n"
 "stabiliti dalla GNU General Public License.\n"
 "Per ulteriori informazioni a riguardo vedere il file COPYING.\n"
 "\n"
 "Design e idea originale di Avian Research <hobbit@avian.org>,\n"
 "Scritto da Giovanni Giacobbi <johnny@themnemonic.org>.\n"
 
-#: src/netcat.c:96
+#: src/netcat.c:72
+msgid "Exiting."
+msgstr "Uscita."
+
+#: src/netcat.c:74
 #, c-format
 msgid ""
-"Exiting.\n"
 "Total received bytes: %ld\n"
 "Total sent bytes: %ld\n"
 msgstr ""
-"Terminato.\n"
 "Totale byte ricevuti: %ld\n"
 "Totale byte inviati: %ld\n"
 
-#: src/netcat.c:342
+#: src/netcat.c:357
 #, c-format
-msgid "Error: Invalid interval time \"%s\"\n"
-msgstr "Errore: tempo di intervallo non valido \"%s\"\n"
+msgid "Invalid interval time \"%s\""
+msgstr "Tempo di intervallo non valido \"%s\""
 
-#: src/netcat.c:358
+#: src/netcat.c:361 src/netcat.c:368
+msgid "Error: `-L' and `-l' options are incompatible\n"
+msgstr "Errore: Le opzioni `-L' e `-l' sono incompatibili\n"
+
+#: src/netcat.c:382
 #, c-format
 msgid "Error: invalid local port: %s\n"
 msgstr "Errore: porta locale non valida: %s\n"
 
-#: src/netcat.c:368
+#: src/netcat.c:392
 #, c-format
 msgid "Error: Couldn't resolve local host: %s\n"
 msgstr "Errore: porta locale non valida: %s\n"
 
-#: src/netcat.c:388
+#: src/netcat.c:412
 #, c-format
-msgid "Error: invalid wait-time: %s\n"
-msgstr "Errore: tempo di attesa non valido: %s\n"
+msgid "Invalid wait-time: %s"
+msgstr "Tempo di attesa non valido: %s"
 
-#: src/netcat.c:399
+#: src/netcat.c:422
 #, c-format
 msgid "Try `%s --help' for more information.\n"
 msgstr "Usare `%s --help' per ulteriori informazioni.\n"
 
-#: src/netcat.c:414
+#: src/netcat.c:437
 msgid "Failed to open output file: "
 msgstr "Impossibile aprire il file di output: "
 
-#: src/netcat.c:427
+#: src/netcat.c:450
 #, c-format
 msgid "Error: Couldn't resolve host \"%s\"\n"
 msgstr "Errore: Impossibile risolvere l'host \"%s\"\n"
 
-#: src/netcat.c:467
+#: src/netcat.c:490
 #, c-format
 msgid "Error: Invalid port specification: %s\n"
 msgstr "Errore: porta locale non valida: %s\n"
 
-#: src/netcat.c:488
+#: src/netcat.c:508
+msgid "Error: No ports specified for connection\n"
+msgstr "Errore: Nessuna porta specificata per la connessione\n"
+
+#: src/netcat.c:519
 #, c-format
 msgid "Error: Couldn't setup listen socket (err=%d)\n"
 msgstr "Errore: Impossibile creare il socket in attesa (err=%d)\n"
 
-#: src/netcat.c:499
+#: src/netcat.c:533
 #, c-format
-msgid "Listen mode failed: %s\n"
-msgstr "Modalità di attesa fallita: %s\n"
+msgid "Listen mode failed: %s"
+msgstr "Modalità di attesa fallita: %s"
 
-#: src/netcat.c:513
+#: src/netcat.c:545
 #, c-format
-msgid "Unwanted connection from %s:%d\n"
-msgstr "Connessione non voluta da %s:%d\n"
+msgid "Unwanted connection from %s:%d (refused)"
+msgstr "Connessione non voluta da %s:%d (rifiutata)"
 
-#: src/netcat.c:540
-msgid "Error: No ports specified for connection\n"
-msgstr "Errore: Nessuna porta specificata per la connessione\n"
-
-#: src/network.c:80
+#: src/netcat.c:552
 #, c-format
-msgid "Warning: inverse host lookup failed for %s: "
-msgstr "Attenzione: fallita risoluzione inversa per %s: "
+msgid "Connection from %s:%d"
+msgstr "Connessione da %s:%d"
 
-#: src/network.c:85 src/network.c:111
+#: src/network.c:84
 #, c-format
-msgid "Warning, this host mismatch! %s - %s\n"
-msgstr "Attenzione, questo hostname non rispecchia! %s - %s\n"
+msgid "inverse host lookup failed for %s"
+msgstr "fallita risoluzione inversa per %s"
 
-#: src/network.c:101
+#: src/network.c:89 src/network.c:115
 #, c-format
-msgid "Error: Inverse name lookup failed for `%s'\n"
-msgstr "Errore: Risoluzione inversa fallita per `%s'\n"
+msgid "this host mismatch! %s - %s"
+msgstr "questo hostname non rispecchia! %s - %s"
 
-#: src/network.c:107
+#: src/network.c:106
 #, c-format
-msgid "Warning: direct host lookup failed for %s: \n"
-msgstr "Attenzione: Risoluzione fallita per %s: \n"
+msgid "Inverse name lookup failed for `%s'"
+msgstr "Risoluzione inversa fallita per `%s'"
+
+#: src/network.c:112
+#, c-format
+msgid "direct host lookup failed for %s"
+msgstr "Risoluzione fallita per %s"

@@ -1,5 +1,5 @@
 
-[*] Mon May  6 2002 - netcat (cvs)
+[*] Mon May  6 2002 - netcat v0.3.0
 
   o Fixed netcat_resolvehost() to be more library function.
   o Added function netcat_socket_new() to network.c
@@ -9,9 +9,10 @@
   o Updated files INSTALL and COPYING
   o Added function netcat_inet_ntop() to network.c
   o Fixed backward incompatibility in netcat_fhexdump()
+  o Added file doc/migration.
   o Fully rewrote the core part of the project.  The new core has total
     async I/O support and is totally select() based.  It also introduces
-    a new command line arguments parsing style.  See the doc/migrating
+    a new command line arguments parsing style.  See the doc/migration
     file for more information.
   o Fixed the delayed (-i) output sending not displaying incoming data
     immediately.
