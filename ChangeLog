@@ -1,5 +1,5 @@
 
-[*] Mon Jan  6 2003 - netcat (cvs)
+[*] Tue Aug 19 2003 - netcat (cvs)
 
   o Added command line switch `-c' (close), which shuts down the connection
     on EOF from stdin without waiting for any answer from remote host.
@@ -13,6 +13,9 @@
     the listening interface with `-s'.
   o Now when connecting to an host by an alias of its, it won't write a warning
     anymore but instead it will show the real name of the host.
+  o Various fixes for code portability.  Changed the debugging support routines,
+    and checking better what kind of compiler there is. [BUG #677625]
+  o Fixed a simple compile error on Solaris7. [BUG #788870]
 
 
 [*] Tue Oct 15 2002 - netcat v0.6.1
