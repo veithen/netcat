@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.20 2002-05-28 20:57:23 themnemonic Exp $
+ * $Id: netcat.h,v 1.21 2002-05-31 13:42:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -111,7 +111,7 @@
 typedef enum {
   NETCAT_PROTO_UNSPEC,
   NETCAT_PROTO_TCP,
-  NETCAT_PROTO_UDP,
+  NETCAT_PROTO_UDP
 } nc_proto_t;
 
 typedef struct {

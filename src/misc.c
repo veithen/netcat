@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.23 2002-05-27 20:43:50 themnemonic Exp $
+ * $Id: misc.c,v 1.24 2002-05-31 13:42:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -33,8 +33,7 @@
    This function was written by Giovanni Giacobbi for The GNU Netcat project,
    credits must be given for any use of this code outside this project */
 
-int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
-		    size_t datalen)
+int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen)
 {
   size_t pos;
   char buf[80], *ascii_dump, *p = NULL;
@@ -62,7 +61,7 @@ int netcat_fhexdump(FILE *stream, char c, const unsigned char *data,
 #endif
     }
 
-    x = (unsigned char) *(data + pos);
+    x = *((unsigned char *)((unsigned char *)data + pos));
 #ifndef USE_OLD_HEXDUMP
     p += sprintf(p, "%02hhX ", x);
 #else
@@ -248,7 +247,8 @@ void netcat_printhelp(char *argv0)
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
-"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
+"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"));
+  printf(_(""
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"

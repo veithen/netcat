@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.12 2002-05-28 20:53:50 themnemonic Exp $
+ * $Id: core.c,v 1.13 2002-05-31 13:42:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -119,7 +119,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     if (FD_ISSET(sock, &ins)) {
       int recv_ret, write_ret;
       struct msghdr my_hdr;
-      char buf[1024], anc_buf[512];
+      unsigned char buf[1024], anc_buf[512];
       struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
       struct sockaddr_in local_addr;
@@ -177,11 +177,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
       }
 
       if (local_fetch) {
-	char buf[127];
+	char tmpbuf[127];
 
-	strncpy(buf, netcat_inet_ntop(&rem_addr.sin_addr), sizeof(buf));
+	strncpy(tmpbuf, netcat_inet_ntop(&rem_addr.sin_addr), sizeof(tmpbuf));
 	ncprint(NCPRINT_VERB1, _("Received packet from %s:%d -> %s:%d (local)"),
-		buf, ntohs(rem_addr.sin_port), netcat_inet_ntop(&local_addr.sin_addr),
+		tmpbuf, ntohs(rem_addr.sin_port), netcat_inet_ntop(&local_addr.sin_addr),
 		ntohs(local_addr.sin_port));
       }
       else
@@ -264,7 +264,8 @@ static int core_tcp_connect(nc_sock_t *ncsock)
 
   ret = select(sock + 1, NULL, &outs, NULL, (timeout > 0 ? &timest : NULL));
   if (ret > 0) {
-    int ret, get_ret, get_len = sizeof(get_ret);
+    int ret, get_ret;
+    unsigned int get_len = sizeof(get_ret);	/* socklen_t */
 
     /* ok, select([single]), so sock must have triggered this */
     assert(FD_ISSET(sock, &outs));
@@ -415,7 +416,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_tunnel)
 {
   int fd_stdin, fd_stdout, fd_sock, fd_max;
   int read_ret, write_ret, pbuf_len = 0;
-  char buf[1024], *pbuf = NULL, *ptmp = NULL;
+  unsigned char buf[1024], *pbuf = NULL, *ptmp = NULL;
   fd_set ins;
   bool inloop = TRUE;
   struct timeval delayer;

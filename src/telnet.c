@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: telnet.c,v 1.7 2002-05-15 20:21:20 themnemonic Exp $
+ * $Id: telnet.c,v 1.8 2002-05-31 13:42:15 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -73,7 +73,7 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
 {
   static unsigned char getrq[4];
   static int l = 0;
-  char putrq[4];
+  unsigned char putrq[4];
   int i, eat_chars = 0, ref_size = *size;
   debug_v("netcat_telnet_parse(sock=%d, buf=%p, size=%d", sock, (void *)buf,
 	  *size);
@@ -155,7 +155,7 @@ void netcat_telnet_parse(int sock, unsigned char *buf, int *size)
 
 #ifndef USE_OLD_TELNET
     if (eat_chars > 0) {
-      char *from, *to;
+      unsigned char *from, *to;
 
       debug("(telnet) ate %d chars\n", eat_chars);
 
