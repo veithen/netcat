@@ -1,5 +1,5 @@
 
-[*] Sun May  5 2002 - netcat (cvs)
+[*] Mon May  6 2002 - netcat (cvs)
 
   o Fixed netcat_resolvehost() to be more library function.
   o Added function netcat_socket_new() to network.c
@@ -19,6 +19,10 @@
   o Changed copyrighter name
   o Added command line switch `-L', activates the tunnel mode to
     the host and port specified on the command line.
+  o Added function netcat_inet_pton() to network.c
+  o Added function ncprint() to misc.c, this allows a more powerful
+    output management and a more readability of the source code.
+  o Lots of fixes and improvements for portability
 
 
 [*] Wed May  1 2002 - netcat v0.2.2
