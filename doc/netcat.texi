@@ -1,6 +1,6 @@
 \input texinfo   @c -*-texinfo-*-
 
-@c $Id: netcat.texi,v 1.3 2002-05-05 09:05:58 themnemonic Exp $
+@c $Id: netcat.texi,v 1.4 2002-05-31 13:16:25 themnemonic Exp $
 
 @c %**start of header
 @setfilename netcat.info
@@ -16,8 +16,7 @@
 @afourpaper
 @end iftex
 
-@c This should really be generated automatically, possibly by including
-@c an auto-generated file.
+@c Include the auto-generated version and package information
 @include version.texi
 
 @dircategory Net Utilities
@@ -26,8 +25,7 @@
 @end direntry
 
 @ifinfo
-This file documents the the Netcat utility for network operations
-data.
+This file documents the Netcat utility for network operations data.
 
 @c man begin COPYRIGHT
 Copyright @copyright{} 2002  Giovanni Giacobbi
@@ -66,6 +64,7 @@ GNU Info entry for @file{netcat}.
 @c man end
 @end ignore
 
+@c The following two commands start the copyright page.
 @page
 @vskip 0pt plus 1filll
 Copyright @copyright{} 1996, 1997, 1998, 2000, 2001 Free Software
@@ -80,6 +79,7 @@ Back-Cover Texts.  A copy of the license is included in the section
 entitled ``GNU Free Documentation License''.
 @end titlepage
 
+@c really use ifinfo here? i would ifinfo only those 4 lines below
 @ifinfo
 @node Top, Overview, (dir), (dir)
 @top Netcat @value{VERSION}
@@ -119,12 +119,107 @@ standard Unix tools.
 @chapter Invoking
 @cindex invoking
 
-This is still in progress!
+@c man begin DESCRIPTION
+Netcat has three main modes of functionality.  These are the connect mode,
+the listen mode, and the tunnel mode.
+
+The most common mode is the connect mode, which for example allows the output
+of a locally called command to be redirected for example to a remote Netcat
+listening or to any other kind of daemon waiting for a connection.
+
+On the other hand, the listen mode can be used to obtain some kind of stream
+of data from a remote site.
+
+The most new feature is the tunnel mode, which is a powerful and reliable
+mode that allows tunneling a remote site towards any other remote site,
+allowing to specify for example from which interface create the connection
+and from which port.
+
+@c man end
+
+@menu
+* Basic Startup Options::
+* Protocol and Interface Options::
+* Common Behaviour Options::
+@end menu
+
+@c man begin OPTIONS
+
+@node Basic Startup Options, Protocol and Interface Options, Invoking, Invoking
+@section Basic Startup Options
+
+@table @samp
+@item -V
+@itemx --version
+Display the version of Netcat and exit.
+
+@item -h
+@itemx --help
+Print a help message describing most common Netcat's command-line switches and
+a short description.
+@end table
+
+@node Protocol and Interface Options, Common Behaviour Options, Basic Startup Options, Invoking
+@section Protocol and Interface Options
+
+@table @samp
+@item -t
+@itemx --tcp
+Use the TCP protocol. this is the default.  It may be useful (see Tunnel Mode)
+to specify this option after for example the UDP option in order to allow a
+cross-tunneling between TCP and UDP.
+
+@item -u
+@itemx --udp
+Use the UDP protocol. see TCP.
+
+@item -p NUM
+@itemx --local-port=NUM
+under writing ...
+
+@item -s ADDRESS
+@itemx --source=ADDRESS
+under writing ...
+
+@item -P NUM
+@itemx --tunnel-port=NUM
+under writing ...
+
+@item -S ADDRESS
+@itemx --tunnel-source=ADDRESS
+under writing ...
+
+@end table
+
+@node Common Behaviour Options,  , Protocol and Interface Options, Invoking
+@section Common Behaviour Options
+
+@table @samp
+@item -i SECS
+@itemx --interval SECS
+sets the buffering output delay time. This affects all the current modes and
+makes the connection sock to buffer outgoing data. this means that in tunnel
+mode everything received from the listening socket is buffered for the connect
+socket.
+
+@item -r
+@itemx --randomize
+randomizes the target remote ports ranges.  If more than one range is
+specified it will randomize the ports in the whole range.
+@end table
+
+@c man end
 
 @node Examples,  , Invoking, Top
 @chapter Examples
 @cindex examples
 
-blablabla
+under writing ...
+
+@c man begin SYNOPSIS
+netcat [options] hostname port [port] @dots{}
+
+netcat -l -p port [options] [hostname] [port] @dots{}
+@c man end
 
 @bye
