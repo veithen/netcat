@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.18 2002-06-12 23:09:27 themnemonic Exp $
+ * $Id: core.c,v 1.19 2002-06-13 23:09:22 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -368,9 +368,8 @@ static int core_tcp_listen(nc_sock_t *ncsock)
     netcat_getport(&ncsock->local_port, NULL, ntohs(myaddr.sin_port));
   }
 
-  ncprint(NCPRINT_VERB2, _("Listening on %s %d"),
-	(ncsock->local_host.iaddrs[0].s_addr ? ncsock->local_host.addrs[0] : "any"),
-	ncsock->local_port.num);
+  ncprint(NCPRINT_VERB2, _("Listening on %s"),
+	netcat_strid(&ncsock->local_host, ncsock->local_port.num));
   while (TRUE) {
     struct sockaddr_in my_addr;
     unsigned int my_len = sizeof(my_addr);	/* this *IS* socklen_t */
@@ -537,7 +536,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	   after it got an eof.. in fact in some circumstances after the initial
 	   eof it won't be recovered and will keep triggering select() for nothing. */
 	/* anyway, kill everything if this is a tunnel */
-	if (opt_tunnel)
+	if (netcat_mode == NETCAT_TUNNEL)
 	  inloop = FALSE;
       }
       else {

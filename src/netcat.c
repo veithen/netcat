@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.44 2002-06-12 23:08:13 themnemonic Exp $
+ * $Id: netcat.c,v 1.45 2002-06-13 23:09:23 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,7 +27,6 @@
 #endif
 
 #include "netcat.h"
-#include <arpa/nameser.h>
 #include <resolv.h>
 #include <signal.h>
 #include <getopt.h>
@@ -40,8 +39,7 @@ FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
 bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
 
 /* global options flags */
-bool opt_listen = FALSE;		/* listen mode */
-bool opt_tunnel = FALSE;		/* tunnel mode */
+nc_mode_t netcat_mode = 0;	/* Netcat working modality */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;		/* use random ports */
 bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
@@ -205,13 +203,13 @@ int main(int argc, char *argv[])
 		_("Invalid interval time \"%s\""), optarg);
       break;
     case 'l':			/* listen mode */
-      if (opt_tunnel)
+      if (netcat_mode == NETCAT_TUNNEL)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-L' and `-l' options are incompatible"));
-      opt_listen = TRUE;
+      netcat_mode = NETCAT_LISTEN;
       break;
     case 'L':			/* tunnel mode */
-      if (opt_listen)
+      if (netcat_mode == NETCAT_LISTEN)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-L' and `-l' options are incompatible"));
       if (opt_zero)
@@ -236,7 +234,7 @@ int main(int argc, char *argv[])
 
 	connect_sock.proto = opt_proto;
 	connect_sock.timeout = opt_wait;
-	opt_tunnel = TRUE;
+	netcat_mode = NETCAT_TUNNEL;
       } while (FALSE);
       break;
     case 'n':			/* numeric-only, no DNS lookups */
@@ -301,7 +299,7 @@ int main(int argc, char *argv[])
       opt_hexdump = TRUE;
       break;
     case 'z':			/* little or no data xfer */
-      if (opt_tunnel)
+      if (netcat_mode == NETCAT_TUNNEL)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-L' and `-z' options are incompatible"));
       opt_zero = TRUE;
@@ -395,8 +393,8 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  /* Handle listen mode and tunnel mode */
-  if (opt_listen || opt_tunnel) {
+  /* Handle listen mode and tunnel mode (whose index number is higher) */
+  if (netcat_mode > NETCAT_CONNECT) {
     /* in tunnel mode the opt_zero flag is illegal, while on listen mode it
        means that no connections should be accepted.  For UDP it means that
        no remote addresses should be used as default endpoint, which means
@@ -431,15 +429,14 @@ int main(int argc, char *argv[])
     /* if we are in listen mode, run the core loop and exit when it returns.
        otherwise now it's the time to connect to the target host and tunnel
        them together (which means passing to the next section. */
-    if (opt_listen) {
+    if (netcat_mode == NETCAT_LISTEN) {
       core_readwrite(&listen_sock, &stdio_sock);
-
       debug_dv("Listen: EXIT");
-      exit(EXIT_SUCCESS);
     }
-    if (opt_tunnel) {
-      /* ok we are in tunnel mode.  The connect_sock var was already
+    else {
+      /* otherwise we are in tunnel mode.  The connect_sock var was already
          initialized by the command line arguments. */
+      assert(netcat_mode == NETCAT_TUNNEL);
       sock_connect = core_connect(&connect_sock);
 
       /* connection failure? (we cannot get this in UDP mode) */
@@ -450,9 +447,10 @@ int main(int argc, char *argv[])
       }
       core_readwrite(&listen_sock, &connect_sock);
       debug_dv("Tunnel: EXIT");
-      exit(EXIT_SUCCESS);
     }
-    abort();			/* should never reach this */
+
+    /* all jobs should be ok */
+    exit(EXIT_SUCCESS);
   }				/* end of listen and tunnel mode handling */
 
   /* we need to connect outside, this is the connect mode */
@@ -493,9 +491,7 @@ int main(int argc, char *argv[])
       continue;			/* go with next port */
     }
 
-    if (opt_tunnel)
-      core_readwrite(&connect_sock, &listen_sock);
-    else if (opt_zero) {
+    if (opt_zero) {
       /* if we are not in tunnel mode, sock_accept must be untouched */
       assert(sock_accept == -1);
       shutdown(sock_connect, 2);

@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.23 2002-06-09 08:56:50 themnemonic Exp $
+ * $Id: netcat.h,v 1.24 2002-06-13 23:09:23 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>		/* needed for reading/writing vectors */
+#include <sys/param.h>		/* defines MAXHOSTNAMELEN and other stuff */
 #include <netinet/in.h>
 #include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
 
@@ -88,6 +89,8 @@
 #ifndef INADDR_NONE
 # define INADDR_NONE 0xffffffff
 #endif
+
+/* FIXME: shall we really change this define? prolly not. */
 #ifdef MAXHOSTNAMELEN
 # undef MAXHOSTNAMELEN		/* might be too small on aix, so fix it */
 #endif
@@ -115,15 +118,22 @@ typedef struct {
 } nc_buffer_t;
 
 typedef enum {
+  NETCAT_UNSPEC,
+  NETCAT_CONNECT,
+  NETCAT_LISTEN,
+  NETCAT_TUNNEL
+} nc_mode_t;
+
+typedef enum {
   NETCAT_PROTO_UNSPEC,
   NETCAT_PROTO_TCP,
   NETCAT_PROTO_UDP
 } nc_proto_t;
 
 typedef struct {
-  char name[MAXHOSTNAMELEN];		/* dns name */
-  char addrs[MAXINETADDRS][24];		/* ascii-format IP addresses */
-  struct in_addr iaddrs[MAXINETADDRS];	/* real addresses: in_addr.s_addr: ulong */
+  char name[MAXHOSTNAMELEN];			/* dns name */
+  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/* ascii-format IP addresses */
+  struct in_addr iaddrs[MAXINETADDRS];		/* real addresses */
 } nc_host_t;
 
 typedef struct {
