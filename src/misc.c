@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.20 2002-05-06 20:37:44 themnemonic Exp $
+ * $Id: misc.c,v 1.21 2002-05-07 18:50:18 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -118,9 +118,10 @@ void ncprint(int type, const char *fmt, ...)
 {
   int flags = type & 0xFF;
   char buf[1024], newline = '\n';
-  FILE *fstream = NULL;
+  FILE *fstream = stderr;		/* output stream */
   va_list args;
 
+  /* clear the flags section so we obtain the pure command */
   type &= ~0xFF;
 
 #ifndef DEBUG
@@ -133,31 +134,29 @@ void ncprint(int type, const char *fmt, ...)
 #endif
 
   /* known flags */
-  if (flags & NCPRINT_STDERR)
-    fstream = stderr;
-  else if (flags & NCPRINT_STDOUT)
+  if (flags & NCPRINT_STDOUT)
     fstream = stdout;
   else if (flags & NCPRINT_NONEWLINE)
     newline = '\0';
 
-  /* from now on, we are sure that we need the string formatted */
+  /* from now on, we are sure that we will need the string formatted */
   va_start(args, fmt);
   vsnprintf(buf, sizeof(buf), fmt, args);
 
   switch (type) {
   case NCPRINT_NORMAL:
-    fprintf((fstream ? fstream : stdout), "%s%c", buf, newline);
+    fprintf(fstream, "%s%c", buf, newline);
     break;
 #ifdef DEBUG
   case NCPRINT_DEBUG:
-    fprintf((fstream ? fstream : stdout), "(debug) %s%c", buf, newline);
+    fprintf(fstream, "(debug) %s%c", buf, newline);
     break;
 #endif
   case NCPRINT_ERROR:
-    fprintf((fstream ? fstream : stderr), "%s %s%c", _("Error:"), buf, newline);
+    fprintf(fstream, "%s %s%c", _("Error:"), buf, newline);
     break;
   case NCPRINT_WARNING:
-    fprintf((fstream ? fstream : stderr), "%s %s%c", _("Warning:"), buf, newline);
+    fprintf(fstream, "%s %s%c", _("Warning:"), buf, newline);
     break;
   }
   /* discard unknown types */
@@ -166,6 +165,7 @@ void ncprint(int type, const char *fmt, ...)
   if (flags & NCPRINT_DELAY)
     usleep(NCPRINT_WAITTIME);
 
+  /* of course assume that this is a failure exit */
   if (flags & NCPRINT_EXIT)
     exit(EXIT_FAILURE);
 }
@@ -197,8 +197,10 @@ void netcat_commandline_read(int *argc, char ***argv)
   char *saved_argv0 = my_argv[0];
   char buf[4096], *p, *rest;
 
-  fprintf(stderr, _("Cmd line: "));
-  fflush(stderr);
+  /* using this output style makes sure that a careless translator can't take
+     down everything while playing with c-format */
+  fprintf(stderr, "%s ", _("Cmd line:"));
+  fflush(stderr);			/* this isn't needed, but on ALL OS? */
   p = fgets(buf, sizeof(buf), stdin);
   my_argv = malloc(128 * sizeof(char *));
   my_argv[0] = saved_argv0;		/* leave the program name intact */

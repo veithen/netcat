@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.h,v 1.2 2002-05-06 18:42:02 themnemonic Exp $
+ * $Id: misc.h,v 1.3 2002-05-07 18:49:24 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -26,13 +26,12 @@
 #define NCPRINT_WAITTIME 500000
 
 /* flags */
-#define NCPRINT_STDERR		0x01	/* force output to stderr */
-#define NCPRINT_STDOUT		0x02	/* force output to stderr */
-#define NCPRINT_NONEWLINE	0x04	/* don't print a newline at the end */
-#define NCPRINT_DELAY		0x08	/* delay WAITTIME before returning */
-#define NCPRINT_EXIT		0x10	/* exit() after printing the string */
-#define NCPRINT_VERB1		0x20	/* require verbosity level 1 */
-#define NCPRINT_VERB2		0x40	/* require verbosity level 2 */
+#define NCPRINT_STDOUT		0x01	/* force output to stdout */
+#define NCPRINT_NONEWLINE	0x02	/* don't print a newline at the end */
+#define NCPRINT_DELAY		0x04	/* delay WAITTIME before returning */
+#define NCPRINT_EXIT		0x08	/* exit() after printing the string */
+#define NCPRINT_VERB1		0x10	/* require verbosity level 1 */
+#define NCPRINT_VERB2		0x20	/* require verbosity level 2 */
 
 /* commands */
 /* normal message to stdout */
