@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.31 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: netcat.h,v 1.32 2002-12-06 17:29:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -59,11 +59,11 @@
 #endif
 
 /* find a random routine */
-#if defined HAVE_RANDOM && defined HAVE_SRANDOM
+#if defined(HAVE_RANDOM) && defined(HAVE_SRANDOM)
 # define USE_RANDOM		/* try with most modern random routines */
 # define SRAND srandom
 # define RAND random
-#elif defined HAVE_RAND && defined HAVE_SRAND
+#elif defined(HAVE_RAND) && defined(HAVE_SRAND)
 # define USE_RANDOM		/* otherwise fallback to the older rand() */
 # define SRAND srand
 # define RAND rand
@@ -80,7 +80,7 @@
 /* Find out whether we can use the RFC 2292 extensions on this machine
    (I've found out only linux supporting this feature so far) */
 #ifdef HAVE_STRUCT_IN_PKTINFO
-# if defined SOL_IP && defined IP_PKTINFO
+# if defined(SOL_IP) && defined(IP_PKTINFO)
 #  define USE_PKTINFO
 # endif
 #endif
@@ -115,6 +115,7 @@
 #  define bool unsigned char
 # endif
 #endif
+#define BOOL_TO_STR(__var__) (__var__ ? "TRUE" : "FALSE")
 
 /* there are some OS that still doesn't support POSIX standards */
 #ifndef HAVE_IN_PORT_T
