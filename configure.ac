@@ -23,7 +23,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat,0.4.0+cvs)
+AM_INIT_AUTOMAKE(netcat,0.4.0)
 AC_PREREQ(2.52)
 
 dnl without this order in this file, automake will be confused!
