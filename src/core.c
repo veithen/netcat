@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.9 2002-05-23 20:59:46 themnemonic Exp $
+ * $Id: core.c,v 1.10 2002-05-24 18:06:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -28,7 +28,7 @@
 
 #include "netcat.h"
 
-static int core_udp_connect(netcat_sock *ncsock)
+static int core_udp_connect(nc_sock_t *ncsock)
 {
   int ret, sock;
   struct sockaddr_in myaddr;
@@ -64,12 +64,11 @@ static int core_udp_connect(netcat_sock *ncsock)
   return -1;
 }				/* end of core_udp_connect() */
 
-static int core_udp_listen(netcat_sock *ncsock)
+static int core_udp_listen(nc_sock_t *ncsock)
 {
   int ret, sock, timeout = ncsock->timeout;
   struct sockaddr_in myaddr;
-  fd_set ins;			/* needed by the select() call */
-  struct timeval tt;
+  struct timeval tt;		/* needed by the select() call */
   debug_v("core_udp_listen(ncsock=%p)", (void *)ncsock);
 
   sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
@@ -87,28 +86,67 @@ static int core_udp_listen(netcat_sock *ncsock)
       goto err;
   }
 
-  /* we now need to know what is the remote address. keep the process hanging
-     here until any packet is received: the sender of the packet will be our
-     other end */
+  /* since this protocol is connectionless, we need a special handling here.
+     We want to simulate a two-ends connection but in order to do this we need
+     a remote address.  Wait here until a packet is received, and use its
+     source address as default remote address.  If we have the zero-I/O option
+     we just eat the packet and will never return (if a timeout is not set) */
   tt.tv_usec = 0;
   tt.tv_sec = timeout;
-  FD_ZERO(&ins);
-  FD_SET(sock, &ins);
 
-  select(sock + 1, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
-  if (FD_ISSET(sock, &ins)) {
-    char buf[1];
-    struct sockaddr_in ix;
-    int slen = sizeof(ix);
+  while (TRUE) {
+    fd_set ins;
 
-    ret = recvfrom(sock, buf, sizeof(buf), MSG_PEEK, (struct sockaddr *)&ix, &slen);
-    debug_v("received packet from %s:%d, using as default dest",
-	    netcat_inet_ntop(&ix.sin_addr), ntohs(ix.sin_port));
-    connect(sock, (struct sockaddr *)&ix, slen);
+    FD_ZERO(&ins);
+    FD_SET(sock, &ins);
+    select(sock + 1, &ins, NULL, NULL, (timeout > 0 ? &tt : NULL));
 
-    /* connect and all */
-    return sock;
-  }
+    if (FD_ISSET(sock, &ins)) {
+      int recv_ret, write_ret;
+      char buf[1024];
+      struct sockaddr_in rem_addr;
+      int addr_len = sizeof(rem_addr);
+
+      /* now check the remote address.  If we are simulating a routing then
+         use the MSG_PEEK flag, which leaves the received packet untouched */
+      recv_ret = recvfrom(sock, buf, sizeof(buf), (opt_zero ? 0 : MSG_PEEK),
+		     (struct sockaddr *)&rem_addr, &addr_len);
+
+      debug_v("received packet from %s:%d%s", netcat_inet_ntop(&rem_addr.sin_addr),
+		ntohs(rem_addr.sin_port), (opt_zero ? "" : ", using as default dest"));
+
+      if (opt_zero) {
+	/* FIXME: why don't allow -z with -L? but only for udp! (?) */
+	write_ret = write(STDOUT_FILENO, buf, recv_ret);
+	bytes_recv += write_ret;
+	debug_dv("write_u(stdout) = %d", write_ret);
+
+	if (write_ret < 0) {
+	  perror("write_u(stdout)");
+	  exit(EXIT_FAILURE);
+	}
+
+	/* FIXME: handle write_ret != read_ret */
+
+	/* if the hexdump option is set, hexdump the received data */
+	if (opt_hexdump) {
+#ifndef USE_OLD_HEXDUMP
+	  fprintf(output_fd, "Received %d bytes from %s:%d\n", recv_ret,
+		netcat_inet_ntop(&rem_addr.sin_addr), ntohs(rem_addr.sin_port));
+#endif
+	  netcat_fhexdump(output_fd, '<', buf, write_ret);
+	}
+      }
+      else {
+	connect(sock, (struct sockaddr *)&rem_addr, addr_len);
+
+        /* this is all we want from this function */
+        return sock;
+      }
+    }
+    else			/* select() timed out! */
+      break;
+  }				/* end of packet receiving loop */
 
   /* no packets until timeout, set errno and proceed to general error handling */
   errno = ETIMEDOUT;
@@ -118,7 +156,7 @@ static int core_udp_listen(netcat_sock *ncsock)
   return -1;
 }				/* end of core_udp_listen() */
 
-static int core_tcp_connect(netcat_sock *ncsock)
+static int core_tcp_connect(nc_sock_t *ncsock)
 {
   int ret, sock, timeout = ncsock->timeout;
   struct timeval timest;
@@ -194,7 +232,7 @@ static int core_tcp_connect(netcat_sock *ncsock)
    forever.
    Returns: The new socket descriptor for the fetched connection */
 
-static int core_tcp_listen(netcat_sock *ncsock)
+static int core_tcp_listen(nc_sock_t *ncsock)
 {
   int sock_listen, sock_accept, timeout = ncsock->timeout;
   debug_v("core_tcp_listen(ncsock=%p)", (void *)ncsock);
@@ -258,13 +296,13 @@ static int core_tcp_listen(netcat_sock *ncsock)
 
 /* ... */
 
-int core_connect(netcat_sock *ncsock)
+int core_connect(nc_sock_t *ncsock)
 {
   assert(ncsock);
 
-  if (ncsock->proto == SOCK_STREAM)
+  if (ncsock->proto == NETCAT_PROTO_TCP)
     return ncsock->fd = core_tcp_connect(ncsock);
-  else if (ncsock->proto == SOCK_DGRAM)
+  else if (ncsock->proto == NETCAT_PROTO_UDP)
     return ncsock->fd = core_udp_connect(ncsock);
   else
     abort();
@@ -274,13 +312,13 @@ int core_connect(netcat_sock *ncsock)
 
 /* ... */
 
-int core_listen(netcat_sock *ncsock)
+int core_listen(nc_sock_t *ncsock)
 {
   assert(ncsock);
 
-  if (ncsock->proto == SOCK_STREAM)
+  if (ncsock->proto == NETCAT_PROTO_TCP)
     return ncsock->fd = core_tcp_listen(ncsock);
-  else if (ncsock->proto == SOCK_DGRAM)
+  else if (ncsock->proto == NETCAT_PROTO_UDP)
     return ncsock->fd = core_udp_listen(ncsock);
   else
     abort();
@@ -290,7 +328,7 @@ int core_listen(netcat_sock *ncsock)
 
 /* handle stdin/stdout/network I/O. */
 
-int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
+int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_tunnel)
 {
   int fd_stdin, fd_stdout, fd_sock, fd_max;
   int read_ret, write_ret, pbuf_len = 0;
@@ -312,7 +350,7 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
     assert(fd_stdin >= 0);
   }
   else {
-    fd_stdin = STDIN_FILENO;
+    fd_stdin = (use_stdin ? STDIN_FILENO : -1);
     fd_stdout = STDOUT_FILENO;
   }
   fd_max = 1 + (fd_stdin > fd_sock ? fd_stdin : fd_sock);
@@ -329,8 +367,8 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
       if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0))
 	delayer.tv_sec = opt_interval;
     }
-    else /* if (!opt_udpmode || core_initialized) */
-      FD_SET(fd_stdin, &ins);	/* if (opt_udpmode -> core_initialized) */
+    else if (fd_stdin >= 0)
+      FD_SET(fd_stdin, &ins);
 
     debug_v("entering select()...");
     select(fd_max, &ins, NULL, NULL,
@@ -353,7 +391,9 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
 	/* FIXME: So, it seems that nc110 stops from setting 0 in the &ins
 	   after it got an eof.. in fact in some circumstances after the initial
 	   eof it won't be recovered and will keep triggering select() for nothing. */
-	/* inloop = FALSE; */
+	/* anyway, kill everything if this is a tunnel */
+	if (opt_tunnel)
+	  inloop = FALSE;
       }
       else {
 	if (opt_interval) {
@@ -400,7 +440,7 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
       struct sockaddr_in recv_addr;	/* only used by UDP proto */
       unsigned int recv_len = sizeof(recv_addr);
 
-      if (nc_main->proto == SOCK_DGRAM) {
+      if (nc_main->proto == NETCAT_PROTO_UDP) {
 	/* this allows us to fetch packets from different addresses */
 	read_ret = recvfrom(fd_sock, buf, sizeof(buf), 0,
 			    (struct sockaddr *)&recv_addr, &recv_len);
@@ -443,7 +483,7 @@ int core_readwrite(netcat_sock *nc_main, netcat_sock *nc_tunnel)
 	  /* if option is set, hexdump the received data */
 	  if (opt_hexdump) {
 #ifndef USE_OLD_HEXDUMP
-	    if (nc_main->proto == SOCK_DGRAM)
+	    if (nc_main->proto == NETCAT_PROTO_UDP)
 	      fprintf(output_fd, "Received %d bytes from %s:%d\n", write_ret,
 		netcat_inet_ntop(&recv_addr.sin_addr), ntohs(recv_addr.sin_port));
 	    else

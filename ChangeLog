@@ -1,5 +1,5 @@
 
-[*] Thu May 23 2002 - netcat (cvs)
+[*] Fri May 24 2002 - netcat (cvs)
 
   o Fixed the udp mode listen, which didn't allow any kind of safe read from
     stdin.
@@ -13,6 +13,10 @@
   o Cleaned up the global namespace
   o Now the -x option hexdumps also the source ip address in the introducing
     message.
+  o Changed all the netcat defined types names.
+  o Restore the tunnel mode functionality.  Now it is even able to tunnel from
+    tcp to udp and vice-versa.
+  o The udp listening mode now recognizes the `-z' command line switch.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0

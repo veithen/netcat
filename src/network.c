@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.20 2002-05-15 20:20:00 themnemonic Exp $
+ * $Id: network.c,v 1.21 2002-05-24 18:06:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -36,7 +36,7 @@
    TODO: this function requires much testings
 */
 
-bool netcat_resolvehost(netcat_host *dst, char *name)
+bool netcat_resolvehost(nc_host_t *dst, char *name)
 {
   struct hostent *hostent;
   struct in_addr res_addr;
@@ -128,10 +128,10 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
    If `port_string' is NULL then `port_num' is used to identify the port
    and the port name is looked up reversely. */
 
-bool netcat_getport(netcat_port *dst, const char *port_string,
+bool netcat_getport(nc_port_t *dst, const char *port_string,
 		    unsigned short port_num)
 {
-  const char *get_proto = (opt_udpmode ? "udp" : "tcp");
+  const char *get_proto = (opt_proto == NETCAT_PROTO_UDP ? "udp" : "tcp");
   struct servent *servent;
 
   debug_v("netcat_getport(dst=%p, port_string=\"%s\", port_num=%hu)",

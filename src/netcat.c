@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.38 2002-05-23 20:59:47 themnemonic Exp $
+ * $Id: netcat.c,v 1.39 2002-05-24 18:06:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -34,11 +34,12 @@
 
 /* int gatesidx = 0; */		/* LSRR hop count */
 /* int gatesptr = 4; */		/* initial LSRR pointer, settable */
-/* netcat_host **gates = NULL; */	/* LSRR hop hostpoop */
+/* nc_host_t **gates = NULL; */	/* LSRR hop hostpoop */
 unsigned long bytes_sent = 0;	/* total bytes received (statistics) */
 unsigned long bytes_recv = 0;	/* total bytes sent (statistics) */
 char *optbuf = NULL;		/* LSRR or sockopts */
 FILE *output_fd = NULL;		/* output fd (FIXME: i don't like this) */
+bool use_stdin = TRUE;		/* tells wether stdin was closed or not */
 
 /* global options flags */
 bool opt_listen = FALSE;		/* listen mode */
@@ -54,9 +55,7 @@ int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
-
-netcat_sock listen_sock;
-netcat_sock connect_sock;
+nc_proto_t opt_proto = NETCAT_PROTO_TCP;	/* protocol to use for connections */
 
 /* prints statistics to stderr with the right verbosity level */
 
@@ -70,7 +69,7 @@ static void printstats(void)
 /* returns a pointer to a static buffer containing a description of the remote
    host in the best form available (using hostnames and portnames) */
 
-static char *netcat_strid(netcat_host *host, unsigned short port)
+static char *netcat_strid(nc_host_t *host, unsigned short port)
 {
   static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
 
@@ -124,14 +123,19 @@ static void ncexec(int fd)
 int main(int argc, char *argv[])
 {
   int c, total_ports, sock_accept = -1, sock_connect = -1;
-  struct in_addr *ouraddr;
   struct sigaction sv;
-  netcat_port local_port;		/* local port specified with -p option */
-  netcat_host local_host;		/* local host for bind()ing operations */
-  netcat_host remote_host;
+  nc_port_t local_port;		/* local port specified with -p option */
+  nc_host_t local_host;		/* local host for bind()ing operations */
+  nc_host_t remote_host;
+  nc_sock_t listen_sock;
+  nc_sock_t connect_sock;
 
   memset(&local_host, 0, sizeof(local_host));
   memset(&remote_host, 0, sizeof(remote_host));
+  memset(&listen_sock, 0, sizeof(listen_sock));
+  memset(&connect_sock, 0, sizeof(listen_sock));
+  listen_sock.domain = PF_INET;
+  connect_sock.domain = PF_INET;
 
 #ifdef ENABLE_NLS
   setlocale(LC_MESSAGES, "");
@@ -213,18 +217,37 @@ int main(int argc, char *argv[])
     case 'l':			/* listen mode */
       if (opt_tunnel)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		_("`-L' and '-l' options are incompatible"));
+		_("`-L' and `-l' options are incompatible"));
       opt_listen = TRUE;
       break;
     case 'L':			/* tunnel mode */
       if (opt_listen)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		_("`-L' and '-l' options are incompatible"));
+		_("`-L' and `-l' options are incompatible"));
       if (opt_zero)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		_("`-L' and '-z' options are incompatible"));
-      /* FIXME! add the optarg parsing address:port (or address/port?) */
-      opt_tunnel = TRUE;
+		_("`-L' and `-z' options are incompatible"));
+      do {
+	char *div = strchr(optarg, ':');
+
+	if (div && *(div + 1))
+	  *div++ = '\0';
+	else
+	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+		_("Invalid target string for `-L' option"));
+
+	/* lookup the remote address and the remote port for tunneling */
+	if (!netcat_resolvehost(&connect_sock.host, optarg))
+	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve tunnel target host: %s"),
+		  optarg);
+	if (!netcat_getport(&connect_sock.port, div, 0))
+	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Invalid tunnel target port: %s"),
+		  div);
+
+	connect_sock.proto = opt_proto;
+	connect_sock.timeout = opt_wait;
+	opt_tunnel = TRUE;
+      } while (FALSE);
       break;
     case 'n':			/* numeric-only, no DNS lookups */
       opt_numeric = TRUE;
@@ -240,7 +263,7 @@ int main(int argc, char *argv[])
       break;
     case 'P':			/* used only in tunnel mode (source port) */
       if (!netcat_getport(&connect_sock.local_port, optarg, 0))
-	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Invalid local port: %s"),
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Invalid tunnel connect port: %s"),
 		optarg);
       break;
     case 'r':			/* randomize various things */
@@ -251,15 +274,17 @@ int main(int argc, char *argv[])
       if (!netcat_resolvehost(&local_host, optarg))
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve local host: %s"),
 		optarg);
-      ouraddr = &local_host.iaddrs[0];
       break;
     case 'S':			/* used only in tunnel mode (source ip) */
+      if (!netcat_resolvehost(&connect_sock.local_host, optarg))
+	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve tunnel local host: %s"),
+		optarg);
       break;
     case 't':			/* do telnet fakeout */
       opt_telnet = TRUE;
       break;
     case 'u':			/* use UDP protocol */
-      opt_udpmode = TRUE;
+      opt_proto = NETCAT_PROTO_UDP;
       break;
     case 'v':			/* be verbose (twice=more verbose) */
       opt_verbose++;
@@ -279,7 +304,7 @@ int main(int argc, char *argv[])
     case 'z':			/* little or no data xfer */
       if (opt_tunnel)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		_("`-L' and '-z' options are incompatible"));
+		_("`-L' and `-z' options are incompatible"));
       opt_zero = TRUE;
       break;
     default:
@@ -321,7 +346,7 @@ int main(int argc, char *argv[])
     const char *get_argv = argv[optind++];
     char *q, *parse = strdup(get_argv);
     int port_lo = 0, port_hi = 65535;
-    netcat_port port_tmp;
+    nc_port_t port_tmp;
 
     if (!(q = strchr(parse, '-')))		/* simple number? */
       q = strchr(parse, ':');			/* try with the other separator */
@@ -364,7 +389,6 @@ int main(int argc, char *argv[])
   }
 
   debug_dv("Arguments parsing complete! Total ports=%d", netcat_flag_count());
-
 #if 0
   c = 0;
   while ((c = netcat_flag_next(c))) {
@@ -372,19 +396,20 @@ int main(int argc, char *argv[])
   }
 #endif
 
-  /* since ports are the second argument, checking ports might be enough */
-  /* FIXME: i don't like this check here but we must do that in order to make
-     sure it doesn't fail after we accepted a connection for the tunnel mode */
-  if ((netcat_flag_count() == 0) && !opt_listen)
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-	_("No ports specified for connection"));
-
   /* Handle listen mode and tunnel mode */
-
   if (opt_listen || opt_tunnel) {
+    /* in tunnel mode the opt_zero flag is illegal, while on listen mode it
+       means that no connections should be accepted.  For UDP it means that
+       no remote addresses should be used as default endpoint, which means
+       that we can't send anything.  In both situations, stdin is no longer
+       useful, so close it. */
+    if (opt_zero) {
+      close(STDIN_FILENO);
+      use_stdin = FALSE;
+    }
+
     /* prepare the socket var */
-    /* FIXME: use internal enum to define udp/tcp ? */
-    listen_sock.proto = (opt_udpmode ? SOCK_DGRAM : SOCK_STREAM);
+    listen_sock.proto = opt_proto;
     listen_sock.timeout = opt_wait;
     memcpy(&listen_sock.local_host, &local_host, sizeof(listen_sock.local_host));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
@@ -395,6 +420,9 @@ int main(int argc, char *argv[])
     /* in zero I/O mode the core_tcp_listen() call will always return -1
        (ETIMEDOUT) since no connections are accepted, because of this our job
        is completed now. */
+    /* FIXME: *FIRST* handle sock_accept < 0 and THEN sort out the "REASON"
+       that caused this error to happen. i'm planning to make -z compatible
+       with -L, so this is broken. */
     if (opt_zero)
       exit(0);
 
@@ -409,11 +437,32 @@ int main(int argc, char *argv[])
       core_readwrite(&listen_sock, NULL);
 
       debug_dv("Listen: EXIT");
-      exit(0);
+      exit(EXIT_SUCCESS);
     }
-  }				/* end of listen mode handling */
+    if (opt_tunnel) {
+      /* ok we are in tunnel mode.  The connect_sock var was already
+         initialized by the command line arguments. */
+      sock_connect = core_connect(&connect_sock);
+
+      /* connection failure? (we cannot get this in UDP mode) */
+      if (sock_connect < 0) {
+	assert(opt_proto != NETCAT_PROTO_UDP);
+	ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
+	strerror(errno));
+      }
+      core_readwrite(&listen_sock, &connect_sock);
+      debug_dv("Tunnel: EXIT");
+      exit(EXIT_SUCCESS);
+    }
+    abort();
+  }				/* end of listen and tunnel mode handling */
 
   /* we need to connect outside */
+
+  /* since ports are the second argument, checking ports might be enough */
+  if (netcat_flag_count() == 0)
+    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+	_("No ports specified for connection"));
 
   total_ports = netcat_flag_count();
   c = 0;	/* must be set to 0 for netcat_flag_next() */
@@ -429,23 +478,24 @@ int main(int argc, char *argv[])
 
     /* since we are nonblocking now, we can start as many connections as we want
        but it's not a great idea connecting more than one host at time */
-    connect_sock.proto = (opt_udpmode ? SOCK_DGRAM : SOCK_STREAM);
+    connect_sock.proto = opt_proto;
     connect_sock.timeout = opt_wait;
     memcpy(&connect_sock.local_host, &local_host, sizeof(connect_sock.local_host));
     memcpy(&connect_sock.local_port, &local_port, sizeof(connect_sock.local_port));
     memcpy(&connect_sock.host, &remote_host, sizeof(connect_sock.host));
+    connect_sock.port.num = c;
 
     sock_connect = core_connect(&connect_sock);
 
     /* connection failure? (we cannot get this in UDP mode) */
     if (sock_connect < 0) {
-      assert(!opt_udpmode);
+      assert(opt_proto != NETCAT_PROTO_TCP);
       ncprint(NCPRINT_VERB1, "%s: %s", netcat_strid(&remote_host, c),
 	      strerror(errno));
       continue;			/* go with next port */
     }
 
-    if (!opt_udpmode)
+    if (connect_sock.proto == NETCAT_PROTO_TCP)	/* FIXME: move this to core? */
       ncprint(NCPRINT_VERB1, _("%s open"), netcat_strid(&remote_host, c));
 
     if (opt_tunnel)

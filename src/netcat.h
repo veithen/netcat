@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.18 2002-05-23 18:30:15 themnemonic Exp $
+ * $Id: netcat.h,v 1.19 2002-05-24 18:06:47 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -99,23 +99,30 @@
 # endif
 #endif
 
+typedef enum {
+  NETCAT_PROTO_UNSPEC,
+  NETCAT_PROTO_TCP,
+  NETCAT_PROTO_UDP,
+} nc_proto_t;
+
 typedef struct {
   char name[MAXHOSTNAMELEN];		/* dns name */
   char addrs[MAXINETADDRS][24];		/* ascii-format IP addresses */
   struct in_addr iaddrs[MAXINETADDRS];	/* real addresses: in_addr.s_addr: ulong */
-} netcat_host;
+} nc_host_t;
 
 typedef struct {
   char name[64];
   char ascnum[8];
   unsigned short num;
-} netcat_port;
+} nc_port_t;
 
 typedef struct {
-  int fd, domain, proto, timeout;
-  netcat_host local_host, host;
-  netcat_port local_port, port;
-} netcat_sock;
+  int fd, domain, timeout;
+  nc_proto_t proto;
+  nc_host_t local_host, host;
+  nc_port_t local_port, port;
+} nc_sock_t;
 
 /* Netcat includes */
 
