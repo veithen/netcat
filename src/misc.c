@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.5 2002-04-29 10:32:28 themnemonic Exp $
+ * $Id: misc.c,v 1.6 2002-04-29 14:51:48 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -27,6 +27,62 @@
 #endif
 
 #include "netcat.h"
+
+/* netcat_fhexdump :
+   Hexdump `datalen' bytes starting at `data' to the file pointed to by `stream'.
+   If the given block generates a partial line it's rounded up with blank spaces.
+   This function was written by Johnny Mnemonic for the netcat project,
+   credits must be given for any use of this code outside this project */
+int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
+{
+  size_t pos;
+  char buf[80], *ascii_dump, *p;
+  int flag = 0;
+
+  buf[78] = 0;
+  ascii_dump = &buf[62];
+
+  for (pos = 0; pos < datalen; pos++) {
+    unsigned char x;
+
+    /* save the offset */
+    if ((flag = pos % 16) == 0) {
+      /* we are at the beginning of the line, reset output buffer */
+      p = buf;
+      p += sprintf(p, "%08X  ", pos);
+    }
+
+    x = (unsigned char) *(data + pos);
+    p += sprintf(p, "%02hhX ", x);
+
+    if ((x < 32) || (x > 126))
+      ascii_dump[flag] = '.';
+    else
+      ascii_dump[flag] = x;
+
+    if ((pos + 1) % 4 == 0)
+      *p++ = ' ';
+
+    /* if the offset is 15 then we go for the newline */
+    if (flag == 15)
+      fprintf(stream, "%s\n", buf);
+  }
+
+  /* if last line was incomplete (len % 16) != 0, complete it */
+  for (pos = datalen; (flag = pos % 16); pos++) {
+    ascii_dump[flag] = ' ';
+    strcpy(p, "   ");
+    p += 3;
+
+    if ((pos + 1) % 4 == 0)
+      *p++ = ' ';
+
+    if (flag == 15)
+      fprintf(stream, "%s\n", buf);
+  }
+
+  return 0;
+}
 
 /* ... */
 void debug_output(bool wrap, const char *fmt, ...)
@@ -109,17 +165,17 @@ void netcat_printhelp(char *argv0)
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
-"  -o, --output=FILE          hex dump traffic on FILE\n"
+"  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
 "  -t, --telnet               answer using TELNET negotiation\n"
 "  -u, --udp                  UDP mode\n"
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
+"  -x, --hexdump              hexdump incoming and outgoing traffic\n"
 "  -z, --zero                 zero-I/O mode (used for scanning)\n\n");
 }
 
  /* "	-e prog			program to exec after connect [dangerous!!]\n"
 "	-s addr			local source address\n"
-"	-t			answer TELNET negotiation"
 "	-w secs			timeout for connects and final net reads\n"
 "port numbers can be individual or ranges: lo-hi [inclusive]"); */
