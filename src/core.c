@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.1 2002-05-11 19:06:15 themnemonic Exp $
+ * $Id: core.c,v 1.2 2002-05-11 19:47:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -80,7 +80,7 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
   struct timeval timest;
   fd_set ins;
   fd_set outs;
-  debug_v("core_udp_connect(host=%p, port=%hu, timeout=%d)", (void *)host,
+  debug_v("core_tcp_connect(host=%p, port=%hu, timeout=%d)", (void *)host,
 	  port, timeout);
 
   debug_dv("Trying TCP connection to %s[:%hu]", netcat_inet_ntop(host), port);
@@ -129,10 +129,15 @@ int core_tcp_connect(struct in_addr *host, unsigned short port, int timeout)
 
   /* FIXME: i don't remember what is this and WHY this is here */
   if (!FD_ISSET(sock, &ins) && !FD_ISSET(sock, &outs)) {
+    /* aborts the connection try, sets the proper errno and returns */
+    shutdown(sock, 2);
+    close(sock);
     errno = ETIMEDOUT;
     return -1;
   }
 
+  /* connection failed, errno was set by the connect() call, so we can return
+     safely our error code */
   return -1;
 }
 
