@@ -18,15 +18,15 @@
 
   1.  Introduction to the migration from nc110 to GNU Netcat
   2.  Main differences with nc110
-  2.1.  Important uncompatibilities and possible solutions
-  2.2.  Fixes and additions
+  2.1.  Important incompatibilities and possible solutions
+  2.2.  Fixes and additions to the project design
   3.  What's new in the new core 0.3.0
 
 
 
 * 1.  Introduction to the migration from nc110 to GNU Netcat
 
-  ...
+  ...TODO...
 
 
 
@@ -34,7 +34,7 @@
 
 
 
-* 2.1.  Important uncompatibilities and possible solutions
+* 2.1.  Important incompatibilities and possible solutions
 
    o The hexdump output style (the option activated with -o filename), is
      different.  My new style has a better readability and it is more
@@ -44,14 +44,14 @@
 
    o The command line switch `-t', which enables incoming telnet codes parsing
      and acknowledgment, rewrites the buffer with those codes stripped out,
-     which means that they won't be showed in the standard output nor in the
+     which means that they won't be seen in the standard output nor in the
      hexdump (if active).  This behaviour differs from nc110.
 
    o The source routing hops support (`-g' and `-G' command line switches are
      not supported yet.  Anyway they will be hopefully implemented as soon as
      possible and before any stable release.
 
-   o The telnet code command line switch is not `-T' instead of the original
+   o The telnet code enabler command line switch is `-T' instead of the original
      implementation's `-t'.  The `-t' switch now means "tcp" because of the
      tunnel feature of GNU Netcat.  The configure option `--enable-compat'
      restores the old command line option overriding the tcp option that
@@ -59,21 +59,21 @@
 
 
 
-* 2.2.  Fixes and additions
+* 2.2.  Fixes and additions to the project design
 
    o Now the command line switch `-n' (numeric) applies only for DNS hostname
      lookups and portnames are still resolved normally even if a `-n' is given.
      There is no backward compatibility for this issue, and that is because
-     there are actually no reasons to disallow port names lookups.
+     there are actually no reasons to disallow direct port names lookups.
 
    o Source (local) port is no longer randomly-generated while connecting or
      listening without port specification (-p), but rather it is
      randomly-assigned by the OS (actually the OS assigns the ports
      sequentially but we don't care, there are no reasons for randomizing
-     source ports.  If you really need to use a random port then force it
+     source ports.  If you really need to use a random port then enforce it
      with the `-p' option.
 
-   o The random (-r) option issued with different ranges now randomizes each
+   o The random (`-r') option issued with different ranges now randomizes each
      port in the whole space instead of randomizing inside each given range.
      There is no backward compatibility support for this.
 
@@ -92,6 +92,9 @@
 
 
 * 3. What's new in the new core 0.3.0
+
+   o The socket timeouts are now implemented with asynchronous sockets rather
+     than with the alarm(2) method, which is a really weak implementation.
 
    o Fixed the delayed sending not displaying incoming data immediately (there
      was no reason to hold the data in the socket while buffering outgoing
