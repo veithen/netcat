@@ -3,6 +3,8 @@
 
   o Various fixes to the Makefiles for the clean targets
   o Fixed --enable-debug configure parameter
+  o Added configure option `--enable-oldhexdump', causes netcat to use the
+    old hexdump style rather than my new style.
 
 
 [*] Mon Apr 29 2002 - netcat v0.2.0
@@ -32,3 +34,4 @@
   o Rewrote command line reader from stdin (dynamically rebuilds argv based on
     the input string.
   o Added functions netcat_string_split() and netcat_commandline().
+

@@ -95,7 +95,7 @@ AC_ARG_ENABLE(debug, AC_HELP_STRING([--enable-debug],
 
 AC_ARG_ENABLE(oldhexdump, AC_HELP_STRING([--enable-oldhexdump],
 	[use the old style hexdump format (default: no)]),
-	AC_DEFINE(OLD_HEXDUMP,  , use the old style hexdump format))
+	AC_DEFINE(USE_OLD_HEXDUMP,  , use the old style hexdump format))
 	
 dnl add here all your Makefiles. These will be created by configure.
 dnl

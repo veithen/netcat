@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.7 2002-04-29 15:09:32 themnemonic Exp $
+ * $Id: misc.c,v 1.8 2002-04-29 20:23:02 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -39,8 +39,13 @@ int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
   char buf[80], *ascii_dump, *p;
   int flag = 0;
 
+#ifndef USE_OLD_HEXDUMP
   buf[78] = 0;
   ascii_dump = &buf[62];
+#else
+  buf[77] = 0;
+  ascii_dump = &buf[61];
+#endif
 
   for (pos = 0; pos < datalen; pos++) {
     unsigned char x;
@@ -49,23 +54,38 @@ int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
     if ((flag = pos % 16) == 0) {
       /* we are at the beginning of the line, reset output buffer */
       p = buf;
+#ifndef USE_OLD_HEXDUMP
       p += sprintf(p, "%08X  ", pos);
+#else
+      p += sprintf(p, "? %08X ", pos);
+#endif
     }
 
     x = (unsigned char) *(data + pos);
+#ifndef USE_OLD_HEXDUMP
     p += sprintf(p, "%02hhX ", x);
+#else
+    p += sprintf(p, "%02hhx ", x);
+#endif
 
     if ((x < 32) || (x > 126))
       ascii_dump[flag] = '.';
     else
       ascii_dump[flag] = x;
 
+#ifndef USE_OLD_HEXDUMP
     if ((pos + 1) % 4 == 0)
       *p++ = ' ';
+#endif
 
     /* if the offset is 15 then we go for the newline */
-    if (flag == 15)
+    if (flag == 15) {
+#ifdef USE_OLD_HEXDUMP
+      *p++ = '#';
+      *p++ = ' ';
+#endif
       fprintf(stream, "%s\n", buf);
+    }
   }
 
   /* if last line was incomplete (len % 16) != 0, complete it */
@@ -74,11 +94,18 @@ int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
     strcpy(p, "   ");
     p += 3;
 
+#ifndef USE_OLD_HEXDUMP
     if ((pos + 1) % 4 == 0)
       *p++ = ' ';
+#endif
 
-    if (flag == 15)
+    if (flag == 15) {
+#ifdef USE_OLD_HEXDUMP
+      *p++ = '#';
+      *p++ = ' ';
+#endif
       fprintf(stream, "%s\n", buf);
+    }
   }
 
   return 0;
