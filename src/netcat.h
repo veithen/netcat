@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.h,v 1.8 2002-04-28 17:33:30 themnemonic Exp $
+ * $Id: netcat.h,v 1.9 2002-04-29 14:46:33 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -68,6 +68,7 @@
 #include <errno.h>
 #include <signal.h>
 #include <fcntl.h>		/* O_WRONLY et al */
+#include <unistd.h>
 
 /* handy stuff: */
 #define SA struct sockaddr	/* socket overgeneralization braindeath */
