@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.35 2003-08-19 12:15:16 themnemonic Exp $
+ * $Id: core.c,v 1.36 2003-08-21 15:24:14 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -525,7 +525,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   int read_ret, write_ret;
   unsigned char buf[1024];
   bool inloop = TRUE;
-  fd_set ins;
+  fd_set ins, outs;
   struct timeval delayer;
   assert(nc_main && nc_slave);
 
@@ -566,8 +566,9 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     if (got_sigterm)
       break;
 
-    /* reset the ins events watch because some changes could happen */
+    /* reset the ins and outs events watch because some changes could happen */
     FD_ZERO(&ins);
+    FD_ZERO(&outs);
 
     /* if the receiving queue is not empty it means that something bad is
        happening (for example the target sending queue is delaying the output
@@ -589,11 +590,25 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
     else
       call_select = FALSE;
 
+    /* now the send queue. There are two cases in which the main sendq is not
+       empty.  The first one is when we have a delayed output (-i), in which
+       case the delayer is not null, and the socket is writable.  The second
+       case is when the socket buffer is full, so the socket is not writable
+       and the delayer is either null or set, depending on the opt_interval
+       variable. */
+    if (nc_main->sendq.len > 0) {
+      if ((delayer.tv_sec == 0) && (delayer.tv_usec == 0)) {
+	debug_v(("watching main sock for outgoing availability (there is pending data)"));
+	FD_SET(fd_sock, &outs);
+	call_select = TRUE;
+      }
+    }
+
     if (call_select || delayer.tv_sec || delayer.tv_usec) {
       int ret;
 
       debug_v(("entering with timeout=%d:%d select() ...", delayer.tv_sec, delayer.tv_usec));
-      ret = select(fd_max, &ins, NULL, NULL,
+      ret = select(fd_max, &ins, &outs, NULL,
 		   (delayer.tv_sec || delayer.tv_usec ? &delayer : NULL));
       if (ret < 0) {
 	if (errno == EINTR)
@@ -620,7 +635,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       else if (read_ret == 0) {
 	/* when we receive EOF and this is a tunnel say goodbye, otherwise
 	   it means that stdin has finished its input. */
-	if ((netcat_mode == NETCAT_TUNNEL) || (opt_eofclose)) {
+	if ((netcat_mode == NETCAT_TUNNEL) || opt_eofclose) {
 	  debug_v(("EOF Received from stdin! (exiting from loop..)"));
 	  inloop = FALSE;
 	}
@@ -661,10 +676,10 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       }
     }
 
-    /* now handle the nc_slave sendq because of the same previous reason. There
+    /* now handle the nc_slave sendq because of the same reason as above. There
        could be a common buffer that moves around the queues, so if this is the case
        handle it so that it can be reused. If we must delay it some more, copy it
-       in an allocated space. */
+       in a dynamically allocated space. */
     if (nc_main->sendq.len > 0) {
       unsigned char *data = nc_main->sendq.pos;
       int data_len = nc_main->sendq.len;
@@ -679,7 +694,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	int i = 0;
 
 	if (delayer.tv_sec || delayer.tv_usec)
-	  goto skip_sect;
+	  goto skip_sect;		/* the delay is not yet over! */
 
 	/* find the newline character.  We are going to output the first line
 	   immediately while we allocate and safe the rest of the data for a
@@ -693,16 +708,23 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
       }
 
       write_ret = write(fd_sock, data, data_len);
-      bytes_sent += write_ret;		/* update statistics */
-      debug_dv(("write(net) = %d (buf=%p)", write_ret, (void *)data));
-
       if (write_ret < 0) {
-	perror("write(net)");
-	exit(EXIT_FAILURE);
+	if (errno == EAGAIN)
+	  write_ret = 0;	/* write would block, append it to select */
+	else {
+	  perror("write(net)");
+	  exit(EXIT_FAILURE);
+	}
       }
 
-      /* FIXME: unhandled exception */
-      assert((write_ret > 0) && (write_ret <= data_len));
+      /* FIXME: fix the below unhandled exception, and find a way to delay the
+       * tries to call write(2) in case of EAGAIN, i think 100ms would be fine
+       * for most systems. A too high value would not use all the bandwidth on
+       * bigger installations, while a too small value would eat cpu with
+       * kernel overhead. */
+
+      bytes_sent += write_ret;		/* update statistics */
+      debug_dv(("write(net) = %d (buf=%p)", write_ret, (void *)data));
 
       if (write_ret < data_len) {
 	debug_v(("Damn! I wanted to send to sock %d bytes but it only sent %d",
