@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.10 2002-05-04 10:35:45 themnemonic Exp $
+ * $Id: network.c,v 1.11 2002-05-04 15:13:43 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -192,10 +192,28 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
 
 /* ... */
 
+int netcat_socket_new()
+{
+  int sock, ret, sockopt = 0;
+
+  sock = socket(PF_INET, SOCK_STREAM, 0);
+  if (sock < 0)
+    return -1;
+
+  /* fix the socket options */
+  ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
+  if (ret < 0)
+    return -2;
+
+  return sock;
+}
+
+/* ... */
+
 int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
 		const struct in_addr *local_addr, unsigned short local_port)
 {
-  int sock, ret, sockopt = 0;
+  int sock, ret;
   struct sockaddr_in rem_addr;
 
   debug_dv("netcat_create_server(addr=%p, port=%hu, local_addr=%p, local_port=%hu)",
@@ -205,15 +223,10 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
   rem_addr.sin_port = htons(port);
   memcpy(&rem_addr.sin_addr, addr, sizeof(rem_addr.sin_addr));
 
-  /* create the socket */
-  sock = socket(PF_INET, SOCK_STREAM, 0);
+  /* create the socket and fix the options */
+  sock = netcat_socket_new();
   if (sock < 0)
-    return -1;
-
-  /* fix the socket options */
-  ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
-  if (ret < 0)
-    return -2;
+    return sock;
 
   /* only if needed, bind it to a local address */
   if (local_addr || local_port) {
@@ -242,9 +255,11 @@ int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
   return sock;
 }
 
+/* ... */
+
 int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
 {
-  int sock, ret, sockopt = 0;
+  int sock, ret;
   struct sockaddr_in my_addr;
 
   debug_dv("netcat_create_server(addr=%p, port=%hu)", (void *)addr, port);
@@ -254,15 +269,10 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
   my_addr.sin_port = htons(port);
   memcpy(&my_addr.sin_addr, addr, sizeof(my_addr.sin_addr));
 
-  /* create the socket */
-  sock = socket(PF_INET, SOCK_STREAM, 0);
+  /* create the socket and fix the options */
+  sock = netcat_socket_new();
   if (sock < 0)
-    return -1;
-
-  /* fix the socket options */
-  ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
-  if (ret < 0)
-    return -2;
+    return sock;
 
   /* bind it to the specified address (could be INADDY_ANY as well) */
   ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
@@ -277,32 +287,38 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
   return sock;
 }
 
-/* ... */
+/* This function is much like the accept(2) call, but implements also the
+   parameter `timeout', which specifies the time (in seconds) after which
+   the function returns.
+   Returns -1 on error, setting the errno variable.  If it succeeds, it
+   returns a non-negative integer that is the descriptor for the accepted
+   socket. */
 
-int netcat_socket_accept(int fd, int timeout)
+int netcat_socket_accept(int s, int timeout)
 {
   fd_set in;
   struct timeval timest;
 
-  debug_v("netcat_accept(fd=%d, timeout=%d)", fd, timeout);
+  debug_v("netcat_accept(s=%d, timeout=%d)", s, timeout);
 
+  /* initialize the select() variables */
+  FD_ZERO(&in);
+  FD_SET(s, &in);
   timest.tv_sec = timeout;
   timest.tv_usec = 0;
 
-  FD_ZERO(&in);
-  FD_SET(fd, &in);
+  /* now go into select. use the timeout only if it is valid */
+  select(s + 1, &in, NULL, NULL, (timeout > 0 ? &timest : NULL));
 
-  /* now go into select, and use the timeout only if it is valid */
-  select(fd + 1, &in, NULL, NULL, (timeout > 0 ? &timest : NULL));
-
-  if (FD_ISSET(fd, &in)) {
+  if (FD_ISSET(s, &in)) {
     int new_sock;
-    debug_v("connection received");
 
-    new_sock = accept(fd, NULL, NULL);
+    new_sock = accept(s, NULL, NULL);
+    debug_v("Connection received (new fd=%d)", new_sock);
 
     return new_sock;
   }
 
+  errno = ETIMEDOUT;
   return -1;
 }

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: proto.h,v 1.9 2002-05-04 10:38:05 themnemonic Exp $
+ * $Id: proto.h,v 1.10 2002-05-04 15:13:43 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -49,10 +49,13 @@ extern int netfd;
 bool netcat_resolvehost(netcat_host *dst, char *name);
 bool netcat_getport(netcat_port *dst, const char *port_string,
 		    unsigned short port_num);
-int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
-int netcat_socket_accept(int fd, int timeout);
+int netcat_socket_new();
 int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
 		const struct in_addr *local_addr, unsigned short local_port);
+int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port);
+int netcat_socket_accept(int fd, int timeout);
+
+
 
 /* telnet.c */
 void atelnet(unsigned char *buf, unsigned int size);
