@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.33 2003-01-03 22:48:10 themnemonic Exp $
+ * $Id: network.c,v 1.34 2003-01-11 22:46:49 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -72,7 +72,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
        ips for the reverse lookup. */
     debug("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
 	  hostent->h_name);
-    strncpy(dst->name, name, MAXHOSTNAMELEN - 2);
+    strncpy(dst->name, name, MAXHOSTNAMELEN - 1);
 
     /* now save all the available ip addresses (no more than MAXINETADDRS) */
     for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++) {
@@ -93,7 +93,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 
       if (!hostent || !hostent->h_name) {
 	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("inverse host lookup failed for %s"), dst->addrs[i]);
+		_("Inverse host lookup failed for %s"), dst->addrs[i]);
 	continue;
       }
 
@@ -112,7 +112,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 	savedhost[sizeof(savedhost) - 1] = 0;
 
 	/* ok actually the given host and the reverse-resolved address doesn't
-	   match, so try to see if we find the real machine name.  In order to
+	   match, so try to see if we can find the real machine name.  In order to
 	   this to happen the originally found address must match with the newly
 	   found hostname directly resolved.  If this doesn't, or if this resolve
 	   fails, then fall back to the original warning message: they have a DNS
@@ -158,7 +158,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
     hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
     if (!hostent)
       ncprint(NCPRINT_VERB2 | NCPRINT_WARNING,
-	      _("inverse name lookup failed for `%s'"), name);
+	      _("Inverse name lookup failed for `%s'"), name);
     else {
       strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
       /* now do the direct lookup to see if the PTR was authoritative */
@@ -327,7 +327,7 @@ const char *netcat_inet_ntop(const void *src)
   debug_v("netcat_inet_ntop(src=%p)", src);
 
 #ifdef HAVE_INET_NTOP
-  /* FIXME: Since inet_ntop breaks on IPV6-mapped IPv4 addresses i'll need to
+  /* FIXME: Since inet_ntop breaks on IPv6-mapped IPv4 addresses i'll need to
    * sort it out by myself. */
   ret = inet_ntop(AF_INET, src, my_buf, sizeof(my_buf));
 #else
@@ -358,7 +358,7 @@ int netcat_socket_new(int domain, int type)
   fix_ling.l_linger = 0;
   ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
   if (ret < 0) {
-    close(sock);
+    close(sock);		/* anyway the socket was created */
     return -2;
   }
 
@@ -378,7 +378,7 @@ int netcat_socket_new(int domain, int type)
    originated using the optionally specified `local_addr' and `local_port'.
    If `local_addr' is NULL and `local_port' is 0 the bind(2) call is skipped.
    Returns the descriptor referencing the new socket on success, otherwise
-   returns -1 or -2 if the socket(2) call failed (see netcat_socket_new()),
+   returns -1 or -2 if socket creation failed (see netcat_socket_new()),
    or -3 if the bind(2) call failed, -4 if the fcntl(2) call failed, or -5
    if the connect(2) call failed. */
 
@@ -386,14 +386,22 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
 		in_port_t port, const struct in_addr *local_addr,
 		in_port_t local_port)
 {
-  int sock, ret;
+  int sock, ret, my_family = AF_UNSPEC;
   struct sockaddr_in rem_addr;
+  assert(addr);
 
   debug_dv("netcat_socket_new_connect(addr=%p, port=%hu, local_addr=%p, local_"
 	   "port=%hu)", (void *)addr, ntohs(port), (void *)local_addr,
 	   ntohs(local_port));
 
-  rem_addr.sin_family = AF_INET;			/* FIXME */
+  /* selects the currently supported domains */
+  if (domain == PF_INET)
+    my_family = AF_INET;
+  else
+    return -1;		/* assumes as the socket(2) call failed */
+
+  memset(&rem_addr, 0, sizeof(rem_addr));
+  rem_addr.sin_family = my_family;
   rem_addr.sin_port = port;
   memcpy(&rem_addr.sin_addr, addr, sizeof(rem_addr.sin_addr));
 
@@ -406,14 +414,15 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
   if (local_addr || local_port) {
     struct sockaddr_in my_addr;
 
-    my_addr.sin_family = AF_INET;
+    memset(&my_addr, 0, sizeof(my_addr));
+    my_addr.sin_family = my_family;
     my_addr.sin_port = local_port;
+
     /* local_addr may not be specified because the user may want to only
        enforce the local source port */
     if (local_addr)
       memcpy(&my_addr.sin_addr, local_addr, sizeof(my_addr.sin_addr));
-    else
-      memset(&my_addr.sin_addr, 0, sizeof(my_addr.sin_addr));
+
     ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
     if (ret < 0) {
       ret = -3;
@@ -438,14 +447,15 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
     goto err;
   }
 
-  /* everything went fine, return the (maybe connecting) socket */
+  /* everything went fine, return the (connected or connecting) socket */
   return sock;
 
  err:
+  /* the if () statement is unuseful, but I need to for declaring vars */
   if (ret < 0) {
     int tmpret, saved_errno = errno;
 
-    /* the close() call MUST NOT fail */
+    /* the close() calls MUST NOT fail */
     tmpret = close(sock);
     assert(tmpret >= 0);
 
@@ -455,33 +465,53 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
   return ret;
 }
 
-/* ... */
+/* Creates a listening TCP (stream) socket already bound and in listening
+   state in the specified `domain', ready for accept(2) or select(2).  The
+   `addr' parameter is optional and specifies the local interface at which
+   socket should be bound to.  If `addr' is NULL, it defaults to INADDR_ANY,
+   which is a valid value as well.
+   Returns the descriptor referencing the listening socket on success,
+   otherwise returns -1 or -2 if socket creation failed (see
+   netcat_socket_new()), -3 if the bind(2) call failed, or -4 if the listen(2)
+   call failed. */
 
-int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port)
+int netcat_socket_new_listen(int domain, const struct in_addr *addr,
+			     in_port_t port)
 {
-  int sock, ret;
+  int sock, ret, my_family;
   struct sockaddr_in my_addr;
 
   debug_dv("netcat_socket_new_listen(addr=%p, port=%hu)", (void *)addr, port);
 
+  /* selects the currently supported domains */
+  if (domain == PF_INET)
+    my_family = AF_INET;
+  else
+    return -1;		/* assumes as the socket(2) call failed */
+
   /* Reset the sockaddr structure */
-  my_addr.sin_family = AF_INET;				/* FIXME */
-  my_addr.sin_port = htons(port);
-  memcpy(&my_addr.sin_addr, addr, sizeof(my_addr.sin_addr));
+  memset(&my_addr, 0, sizeof(my_addr));
+  my_addr.sin_family = my_family;
+  my_addr.sin_port = port;
+
+  /* this parameter is not mandatory.  if it's not present, it's assumed as
+     INADDR_ANY, and the behaviour is the same */
+  if (addr)
+    memcpy(&my_addr.sin_addr, addr, sizeof(my_addr.sin_addr));
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new(PF_INET, SOCK_STREAM);
+  sock = netcat_socket_new(domain, SOCK_STREAM);
   if (sock < 0)
-    return sock;		/* just forward the error code */
+    return sock;		/* forward the error code */
 
-  /* bind it to the specified address (could be INADDY_ANY as well) */
+  /* bind it to the specified address (can be INADDY_ANY) */
   ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
   if (ret < 0) {
     ret = -3;
     goto err;
   }
 
-  /* actually make it listening, with a reasonable backlog value */
+  /* now make it listening, with a reasonable backlog value */
   ret = listen(sock, 4);
   if (ret < 0) {
     ret = -4;
@@ -491,12 +521,13 @@ int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port)
   return sock;
 
  err:
+  /* the if () statement is unuseful, but I need to for declaring vars */
   if (ret < 0) {
-    int saved_errno = errno;
+    int tmpret, saved_errno = errno;
 
-    /* the close() call SHOULD NOT fail, but don't risk losing the original
-       errno caused by some previous syscall. */
-    close(sock);
+    /* the close() calls MUST NOT fail */
+    tmpret = close(sock);
+    assert(tmpret >= 0);
 
     /* restore the original errno */
     errno = saved_errno;
@@ -508,7 +539,7 @@ int netcat_socket_new_listen(const struct in_addr *addr, in_port_t port)
    parameter `timeout', which specifies the time (in seconds) after which the
    function returns.  If `timeout' is negative, the remaining of the last
    valid timeout specified is used.  If it reached zero, or if the timeout
-   haven't been initialized already, this function will wait forever.
+   hasn't been initialized already, this function waits forever.
    Returns -1 on error, setting the errno variable.  If it succeeds, it
    returns a non-negative integer that is the file descriptor for the accepted
    socket. */
