@@ -14,6 +14,7 @@
   o Added function netcat_fhexdump() which substitutes the old oprint()
     function.  Removed some unused global variables.
   o Added command line switch `-x' (hexdump). Switch `-o' implies `-x'.
+  o Added command line switch `-V' (version).
 
 
 [*] Sun Apr 28 2002 - netcat v0.1.0

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.6 2002-04-29 14:51:48 themnemonic Exp $
+ * $Id: misc.c,v 1.7 2002-04-29 15:09:32 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -171,9 +171,24 @@ void netcat_printhelp(char *argv0)
 "  -t, --telnet               answer using TELNET negotiation\n"
 "  -u, --udp                  UDP mode\n"
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
+"  -V, --version              output version information and exit\n"
 "  -x, --hexdump              hexdump incoming and outgoing traffic\n"
 "  -z, --zero                 zero-I/O mode (used for scanning)\n\n");
 }
+
+/* ... */
+void netcat_printversion(void)
+{
+  printf("netcat (The GNU Netcat) %s\n", VERSION);
+  printf("Copyright (c) 2002 Johnny Mnemonic\n\n"
+"This program comes with NO WARRANTY, to the extent permitted by law.\n"
+"You may redistribute copies of this program under the terms of\n"
+"the GNU General Public License.\n"
+"For more information about these matters, see the file named COPYING.\n\n"
+"Original design by Avian Research,\n"
+"Written by Johnny Mnemonic.\n");
+}
+
 
  /* "	-e prog			program to exec after connect [dangerous!!]\n"
 "	-s addr			local source address\n"

@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: netcat.c,v 1.12 2002-04-29 14:53:13 themnemonic Exp $
+ * $Id: netcat.c,v 1.13 2002-04-29 15:09:32 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -1006,6 +1006,7 @@ int main(int argc, char *argv[])
 	{ "telnet",	no_argument,		NULL, 't' },
 	{ "udp",		no_argument,		NULL, 'u' },
 	{ "verbose",	no_argument,		NULL, 'v' },
+	{ "version",	no_argument,		NULL, 'V' },
 	{ "hexdump",	no_argument,		NULL, 'x' },
 	{ "zero",	no_argument,		NULL, 'z' },
 	{ 0, 0, 0, 0 }
@@ -1080,6 +1081,9 @@ int main(int argc, char *argv[])
     case 'v':			/* verbose */
       opt_verbose++;
       break;
+    case 'V':			/* display version and exit */
+      netcat_printversion();
+      exit(EXIT_SUCCESS);
     case 'w':			/* wait time */
       o_wait = atoi(optarg);
       if (o_wait <= 0)
