@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: network.c,v 1.9 2002-05-03 23:25:13 themnemonic Exp $
+ * $Id: network.c,v 1.10 2002-05-04 10:35:45 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -49,13 +49,18 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
 
   ret = inet_pton(AF_INET, name, &res_addr);
   if (!ret) {			/* couldn't translate: it must be a name! */
+
+    /* if the opt_numeric option is set, we must not use DNS in any kind */
     if (opt_numeric)
       return FALSE;
     hostent = gethostbyname(name);
-    /* failure to look up a name is fatal, since we can't do anything with it */
+
+    /* failures to look up a name are reported to the calling function */
     if (!hostent)
       return FALSE;
+
     strncpy(dst->name, hostent->h_name, MAXHOSTNAMELEN - 2);
+
     /* FIXME: what do I do with other hosts? */
     for (i = 0; hostent->h_addr_list[i] && (i < 8); i++) {
       memcpy(&dst->iaddrs[i], hostent->h_addr_list[i], sizeof(struct in_addr));
@@ -81,12 +86,13 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
     }				/* for x -> addrs, part B */
   }
   else {			/* `name' is a numeric address */
-    memcpy(dst->iaddrs, &res_addr, sizeof(struct in_addr));
+    memcpy(&dst->iaddrs[0], &res_addr, sizeof(struct in_addr));
     strncpy(dst->addrs[0], inet_ntoa(res_addr), sizeof(dst->addrs));
-    if (opt_numeric)		/* if numeric-only, we're done */
+
+    /* if opt_numeric is set or we don't require verbosity, we are done */
+    if (opt_numeric || !opt_verbose)
       return TRUE;
-    if (!opt_verbose)		/* likewise if we don't want */
-      return TRUE;		/* the full DNS hair (FIXME?) */
+
     hostent = gethostbyaddr((char *) &res_addr, sizeof(struct in_addr), AF_INET);
     /* numeric or not, failure to look up a PTR is *not* considered fatal */
     if (!hostent)
@@ -96,7 +102,7 @@ bool netcat_resolvehost(netcat_host *dst, char *name)
       /* now do the direct lookup to see if the IP was auth */
       hostent = gethostbyname(dst->name);
       if (!hostent || !hostent->h_addr_list[0]) {
-	fprintf(stderr, _("Warning: direct host lookup failed for %s: "),
+	fprintf(stderr, _("Warning: direct host lookup failed for %s: \n"),
 		dst->name);
       }
       else if (strcasecmp(dst->name, hostent->h_name)) {
@@ -182,6 +188,58 @@ bool netcat_getport(netcat_port *dst, const char *port_string,
  end:
   snprintf(dst->ascnum, sizeof(dst->ascnum), "%hu", dst->num);
   return TRUE;
+}
+
+/* ... */
+
+int netcat_socket_new_connect(const struct in_addr *addr, unsigned short port,
+		const struct in_addr *local_addr, unsigned short local_port)
+{
+  int sock, ret, sockopt = 0;
+  struct sockaddr_in rem_addr;
+
+  debug_dv("netcat_create_server(addr=%p, port=%hu, local_addr=%p, local_port=%hu)",
+	(void *)addr, port, (void *)local_addr, local_port);
+
+  rem_addr.sin_family = AF_INET;
+  rem_addr.sin_port = htons(port);
+  memcpy(&rem_addr.sin_addr, addr, sizeof(rem_addr.sin_addr));
+
+  /* create the socket */
+  sock = socket(PF_INET, SOCK_STREAM, 0);
+  if (sock < 0)
+    return -1;
+
+  /* fix the socket options */
+  ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
+  if (ret < 0)
+    return -2;
+
+  /* only if needed, bind it to a local address */
+  if (local_addr || local_port) {
+    struct sockaddr_in my_addr;
+
+    my_addr.sin_family = AF_INET;
+    my_addr.sin_port = htons(local_port);
+    memcpy(&my_addr.sin_addr, local_addr, sizeof(my_addr.sin_addr));
+    bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
+    if (ret < 0)
+      return -3;
+  }
+
+  /* add the non-blocking flag to this socket */
+  ret = fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
+  if (ret < 0)
+    return -4;
+
+  /* now launch the real connection. Since we are in non-blocking mode, this
+     call will return -1 in MOST cases (on some systems, a connect() to a local
+     address may immediately return successfully) */
+  ret = connect(sock, (struct sockaddr *)&rem_addr, sizeof(rem_addr));
+  if ((ret < 0) && (errno != EINPROGRESS))
+    return -5;
+
+  return sock;
 }
 
 int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
