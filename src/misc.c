@@ -5,7 +5,7 @@
  * Author: Johnny Mnemonic <johnny@themnemonic.org>
  * Copyright (c) 2002 by Johnny Mnemonic
  *
- * $Id: misc.c,v 1.9 2002-04-29 23:41:00 themnemonic Exp $
+ * $Id: misc.c,v 1.10 2002-04-30 17:50:27 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -36,7 +36,7 @@
 int netcat_fhexdump(FILE *stream, const unsigned char *data, size_t datalen)
 {
   size_t pos;
-  char buf[80], *ascii_dump, *p;
+  char buf[80], *ascii_dump, *p = NULL;
   int flag = 0;
 
 #ifndef USE_OLD_HEXDUMP
