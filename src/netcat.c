@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.39 2002-05-24 18:06:47 themnemonic Exp $
+ * $Id: netcat.c,v 1.40 2002-05-27 20:43:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -180,7 +180,13 @@ int main(int argc, char *argv[])
 	{ "randomize",	no_argument,		NULL, 'r' },
 	{ "source",	required_argument,	NULL, 's' },
 	{ "tunnel-source", required_argument,	NULL, 'S' },
+#ifndef USE_OLD_COMPAT
+	{ "tcp",		no_argument,		NULL, 't' },
+	{ "telnet",	no_argument,		NULL, 'T' },
+#else
+	{ "tcp",		no_argument,		NULL, 1 },
 	{ "telnet",	no_argument,		NULL, 't' },
+#endif
 	{ "udp",		no_argument,		NULL, 'u' },
 	{ "verbose",	no_argument,		NULL, 'v' },
 	{ "version",	no_argument,		NULL, 'V' },
@@ -190,7 +196,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "e:g:G:hi:lL:no:p:P:rs:S:tuvxw:z", long_options,
+    c = getopt_long(argc, argv, "e:g:G:hi:lL:no:p:P:rs:S:tTuvxw:z", long_options,
 		    &option_index);
     if (c == -1)
       break;
@@ -280,7 +286,16 @@ int main(int argc, char *argv[])
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't resolve tunnel local host: %s"),
 		optarg);
       break;
-    case 't':			/* do telnet fakeout */
+    case 1:			/* use TCP protocol (default) */
+#ifndef USE_OLD_COMPAT
+    case 't':
+#endif
+      opt_proto = NETCAT_PROTO_TCP;
+      break;
+#ifdef USE_OLD_COMPAT
+    case 't':
+#endif
+    case 'T':			/* answer telnet codes */
       opt_telnet = TRUE;
       break;
     case 'u':			/* use UDP protocol */

@@ -51,6 +51,12 @@
      not supported yet.  Anyway they will be hopefully implemented as soon as
      possible and before any stable release.
 
+   o The telnet code command line switch is not `-T' instead of the original
+     implementation's `-t'.  The `-t' switch now means "tcp" because of the
+     tunnel feature of GNU Netcat.  The configure option `--enable-compat'
+     restores the old command line option overriding the tcp option that
+     will only be available in the long form (`--tcp').
+
 
 
 * 2.2.  Fixes and additions

@@ -1,5 +1,5 @@
 
-[*] Fri May 24 2002 - netcat (cvs)
+[*] Mon May 27 2002 - netcat (cvs)
 
   o Fixed the udp mode listen, which didn't allow any kind of safe read from
     stdin.
@@ -17,6 +17,8 @@
   o Restore the tunnel mode functionality.  Now it is even able to tunnel from
     tcp to udp and vice-versa.
   o The udp listening mode now recognizes the `-z' command line switch.
+  o Changed telnet command line switch from `-t' to `-T', added the change
+    notify to doc/migration.
 
 
 [*] Wed May 15 2002 - netcat v0.4.0

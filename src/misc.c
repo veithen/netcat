@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: misc.c,v 1.22 2002-05-23 17:40:17 themnemonic Exp $
+ * $Id: misc.c,v 1.23 2002-05-27 20:43:50 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -248,13 +248,23 @@ void netcat_printhelp(char *argv0)
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"
 "  -l, --listen               listen mode, for inbound connects\n"
-"  -L, --tunnel               forward local port to remote address\n"
+"  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
 "  -o, --output=FILE          output hexdump traffic to FILE (implies -x)\n"
 "  -p, --local-port=NUM       local port number\n"
 "  -r, --randomize            randomize local and remote ports\n"
-"  -s, --source=ADDRESS       local source address (ip or hostname)\n"
+"  -s, --source=ADDRESS       local source address (ip or hostname)\n"));
+#ifndef USE_OLD_COMPAT
+  printf(_(""
+"  -t, --tcp                  TCP mode (default)\n"
+"  -T, --telnet               answer using TELNET negotiation\n"));
+#else
+  printf(_(""
+"      --tcp                  TCP mode (default)\n"
 "  -t, --telnet               answer using TELNET negotiation\n"
+"  -T                         same as --telnet (compat)\n"));
+#endif
+  printf(_(""
 "  -u, --udp                  UDP mode\n"
 "  -v, --verbose              verbose (use twice to be more verbose)\n"
 "  -V, --version              output version information and exit\n"
