@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: core.c,v 1.29 2002-10-03 10:25:16 themnemonic Exp $
+ * $Id: core.c,v 1.30 2002-10-13 17:24:19 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -103,7 +103,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
 #ifdef USE_PKTINFO
   /* prepare myaddr for the bind() call */
   myaddr.sin_family = AF_INET;
-  myaddr.sin_port = ncsock->local_port.num;
+  myaddr.sin_port = ncsock->local_port.netnum;
   memcpy(&myaddr.sin_addr, &ncsock->local_host.iaddrs[0],
 	sizeof(myaddr.sin_addr));
   /* bind() MUST be called in this function, since it's the final call for this
