@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: proto.h,v 1.27 2002-06-15 12:54:07 themnemonic Exp $
+ * $Id: proto.h,v 1.28 2002-06-16 09:50:06 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -57,7 +57,7 @@ extern bool use_stdin;
 bool netcat_resolvehost(nc_host_t *dst, const char *name);
 bool netcat_getport(nc_port_t *dst, const char *port_string,
 		    unsigned short port_num);
-const char *netcat_strid(const nc_host_t *host, unsigned short port);
+const char *netcat_strid(const nc_host_t *host, const nc_port_t *port);
 int netcat_inet_pton(const char *src, void *dst);
 const char *netcat_inet_ntop(const void *src);
 int netcat_socket_new(int domain, int type);

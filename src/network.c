@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.23 2002-06-15 12:54:07 themnemonic Exp $
+ * $Id: network.c,v 1.24 2002-06-16 09:50:06 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -161,10 +161,10 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 
 /* Identifies a port and fills in the netcat_port structure pointed to by
    `dst'.  If `port_string' is not NULL, it is used to identify the port
-   (either by port name, listed in /etc/services, or by a string number).
-   In this case `port_num' is discarded.
-   If `port_string' is NULL then `port_num' is used to identify the port
-   and the port name is looked up reversely. */
+   (either by port name, listed in /etc/services, or by a string number).  In
+   this case `port_num' is discarded.
+   If `port_string' is NULL then `port_num' is used to identify the port and
+   if opt_numeric is not TRUE, the port name is looked up reversely. */
 
 bool netcat_getport(nc_port_t *dst, const char *port_string,
 		    unsigned short port_num)
@@ -181,19 +181,17 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
    getservbyport to work.  Manpages generally aren't clear on all this, but
    there are plenty of examples in which it is just quietly done. -hobbit */
 
-  /* reset the dst struct for debugging cleanup purposes */
+  /* reset all fields of the dst struct */
   memset(dst, 0, sizeof(*dst));
-  strcpy(dst->name, "(unknown)");
 
   if (!port_string) {
     if (port_num == 0)
       return FALSE;
-    servent = getservbyport((int) htons(port_num), get_proto);
+    servent = getservbyport((int)htons(port_num), get_proto);
     if (servent) {
       assert(port_num == ntohs(servent->s_port));
       strncpy(dst->name, servent->s_name, sizeof(dst->name));
     }
-    /* always load any numeric specs! (what?) */
     dst->num = port_num;
     goto end;
   }
@@ -236,16 +234,27 @@ bool netcat_getport(nc_port_t *dst, const char *port_string,
 /* returns a pointer to a static buffer containing a description of the remote
    host in the best form available (using hostnames and portnames) */
 
-const char *netcat_strid(const nc_host_t *host, unsigned short port)
-{
-  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + 10];
+/* "my.very.long.hostname [255.255.255.255] 65535 (my_very_long_port_name)" */
+/* "MAXHOSTNAMELEN        [  ADDRSTRLEN  ]      5     ( 64 )" */
 
-  /* FIXME: this should use the portnames also */
-  /* FIXME: this is broken, cause they fill in (unknown) */
-  if (host->name[0])
-    snprintf(buf, sizeof(buf), "%s [%s] %hu", host->name, host->addrs[0], port);
+const char *netcat_strid(const nc_host_t *host, const nc_port_t *port)
+{
+  static char buf[MAXHOSTNAMELEN + NETCAT_ADDRSTRLEN + NETCAT_MAXPORTNAMELEN + 10];
+  char *p = buf;
+  assert(host && port);
+
+  if (host->iaddrs[0].s_addr) {
+    if (host->name[0])
+      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->name, host->addrs[0]);
+    else
+      p += snprintf(p, sizeof(buf) + buf - p, "%s", host->addrs[0]);
+  }
   else
-    snprintf(buf, sizeof(buf), "%s %hu", host->addrs[0], port);
+    p += snprintf(p, sizeof(buf) + buf - p, "any address");
+
+  p += snprintf(p, sizeof(buf) + buf - p, " %s", port->ascnum);
+  if (port->name[0])
+    p += snprintf(p, sizeof(buf) + buf - p, " (%s)", port->name);
 
   return buf;
 }
