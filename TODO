@@ -26,3 +26,6 @@ to mail me if you need any further information.
  o I need to fetch information about the history of this tool,
    so I can give credits to the right people for the design and
    the original code.
+
+ o It would be nice to add IPv6 support, maybe a command line
+   switch like `-6'.
