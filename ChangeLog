@@ -1,8 +1,10 @@
 
-[*] Sun Sep  1 2002 - netcat (cvs)
+[*] Sat Sep  7 2002 - netcat (cvs)
 
   o Fixed a compilation error in the "doc/" subdirectory when using virtual
     paths.
+  o Fixed the socket creation function not setting the right sockopts.  This
+    caused netcat to fail opening sockets in some situations.
 
 
 [*] Thu Aug 22 2002 - netcat v0.6.0

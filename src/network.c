@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.28 2002-08-21 00:45:48 themnemonic Exp $
+ * $Id: network.c,v 1.29 2002-09-07 01:31:51 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -311,7 +311,7 @@ const char *netcat_inet_ntop(const void *src)
 
 int netcat_socket_new(int domain, int type)
 {
-  int sock, ret, sockopt = 0;
+  int sock, ret, sockopt;
   struct linger fix_ling;
 
   sock = socket(domain, type, 0);
@@ -328,6 +328,7 @@ int netcat_socket_new(int domain, int type)
   }
 
   /* fix the socket options */
+  sockopt = 1;
   ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
   if (ret < 0) {
     close(sock);		/* anyway the socket was created */
