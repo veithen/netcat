@@ -57,3 +57,7 @@ to mail me if you need any further information.
  o Add command line switch -X, --input-hexdump so that read from
    stdin some valid hexdump-style data, and accepts it in some
    standard forms (more than one)
+
+ o I'd like to add support for the OpenSSL library. I will first
+   need to solve license issues and then the implementation
+   issues.
