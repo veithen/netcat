@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <johnny@themnemonic.org>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.17 2002-05-11 19:02:40 themnemonic Exp $
+ * $Id: network.c,v 1.18 2002-05-11 20:07:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -235,7 +235,11 @@ const char *netcat_inet_ntop(const void *src)
   return ret;
 }			/* end of netcat_inet_ntop() */
 
-/* ... */
+/* Backend for the socket(2) system call.  This function wraps the creation of
+   new sockets and sets the common SO_REUSEADDR SOL_SOCKET option, handling
+   eventual errors.
+   Returns -1 if the socket(2) call failed, -2 if the setsockopt() call failed;
+   otherwise the return value is a descriptor referencing the new socket. */
 
 int netcat_socket_new(int domain, int type)
 {
@@ -247,8 +251,10 @@ int netcat_socket_new(int domain, int type)
 
   /* fix the socket options */
   ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
-  if (ret < 0)
+  if (ret < 0) {
+    close(sock);		/* anyway the socket was created */
     return -2;
+  }
 
   return sock;
 }
@@ -272,7 +278,7 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
   /* create the socket and fix the options */
   sock = netcat_socket_new(domain, type);
   if (sock < 0)
-    return sock;
+    return sock;		/* just forward the error code */
 
   /* only if needed, bind it to a local address */
   if (local_addr || local_port) {
@@ -287,23 +293,43 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
     else
       memset(&my_addr.sin_addr, 0, sizeof(my_addr.sin_addr));
     ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
-    if (ret < 0)
-      return -3;
+    if (ret < 0) {
+      ret = -3;
+      goto err;
+    }
   }
 
   /* add the non-blocking flag to this socket */
   ret = fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK);
-  if (ret < 0)
-    return -4;
+  if (ret < 0) {
+    ret = -4;
+    goto err;
+  }
 
   /* now launch the real connection. Since we are in non-blocking mode, this
      call will return -1 in MOST cases (on some systems, a connect() to a local
      address may immediately return successfully) */
   ret = connect(sock, (struct sockaddr *)&rem_addr, sizeof(rem_addr));
-  if ((ret < 0) && (errno != EINPROGRESS))
-    return -5;
+  if ((ret < 0) && (errno != EINPROGRESS)) {
+    ret = -5;
+    goto err;
+  }
 
+  /* everything went fine, return the (maybe connecting) socket */
   return sock;
+
+ err:
+  if (ret < 0) {
+    int tmpret, saved_errno = errno;
+
+    /* the close() call MUST NOT fail */
+    tmpret = close(sock);
+    assert(tmpret >= 0);
+
+    /* restore the original errno */
+    errno = saved_errno;
+  }
+  return ret;
 }
 
 /* ... */
@@ -323,19 +349,36 @@ int netcat_socket_new_listen(const struct in_addr *addr, unsigned short port)
   /* create the socket and fix the options */
   sock = netcat_socket_new(PF_INET, SOCK_STREAM);
   if (sock < 0)
-    return sock;
+    return sock;		/* just forward the error code */
 
   /* bind it to the specified address (could be INADDY_ANY as well) */
   ret = bind(sock, (struct sockaddr *)&my_addr, sizeof(my_addr));
-  if (ret < 0)
-    return -3;
+  if (ret < 0) {
+    ret = -3;
+    goto err;
+  }
 
   /* actually make it listening, with a reasonable backlog value */
   ret = listen(sock, 4);
-  if (ret < 0)
-    return -4;
+  if (ret < 0) {
+    ret = -4;
+    goto err;
+  }
 
   return sock;
+
+ err:
+  if (ret < 0) {
+    int tmpret, saved_errno = errno;
+
+    /* the close() call MUST NOT fail */
+    tmpret = close(sock);
+    assert(tmpret >= 0);
+
+    /* restore the original errno */
+    errno = saved_errno;
+  }
+  return ret;
 }
 
 /* This function is much like the accept(2) call, but implements also the
