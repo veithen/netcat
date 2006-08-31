@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: netcat.h,v 1.36 2004-10-24 11:54:27 themnemonic Exp $
+ * $Id: netcat.h,v 1.37 2006-08-31 15:23:00 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -52,7 +52,7 @@
 # define STDERR_FILENO 2
 #endif
 
-/* find a random routine */
+/* Find a random routine */
 #if defined(HAVE_RANDOM) && defined(HAVE_SRANDOM)
 # define USE_RANDOM		/* try with most modern random routines */
 # define SRAND srandom
@@ -75,7 +75,7 @@
 #endif
 
 /* FIXME: I should search more about this portnames standards.  At the moment
-   i'll fix my own size for this */
+   I'll fix my own size for this */
 #define NETCAT_MAXPORTNAMELEN 64
 
 /* Find out whether we can use the RFC 2292 extensions on this machine
@@ -103,7 +103,7 @@
 #endif
 #define MAXHOSTNAMELEN 256
 
-/* TRUE and FALSE values for logical type `bool' */
+/** TRUE and FALSE values for logical type `bool' */
 #ifndef TRUE
 # define TRUE 1
 #endif
@@ -111,7 +111,7 @@
 # define FALSE 0
 #endif
 
-/* this is just a logical type, but helps a lot */
+/** This is just a logical type, but helps a lot. */
 #ifndef __cplusplus
 # ifndef bool
 #  define bool unsigned char
@@ -120,7 +120,7 @@
 #define BOOL_TO_STR(__var__) (__var__ ? "TRUE" : "FALSE")
 #define NULL_STR(__var__) (__var__ ? __var__ : "(null)")
 
-/* redefine MAX functions as it's non-standard */
+/* Redefine MAX functions as it's non-standard */
 #ifdef MAX
 # undef MAX
 #endif
@@ -131,73 +131,113 @@
 typedef unsigned short in_port_t;
 #endif
 
-/* Netcat basic operating modes */
+/**
+ * Netcat basic operating modes
+ *
+ * This special enumeration is used as global specification of the Netcat
+ * operating mode, used only in the main execution flux.
+ */
 
 typedef enum {
-  NETCAT_UNSPEC,
-  NETCAT_CONNECT,
-  NETCAT_LISTEN,
-  NETCAT_TUNNEL
+  NETCAT_UNSPEC,	/**< Netcat mode not specified yet. */
+  NETCAT_CONNECT,	/**< Netcat is in Connect mode (the default). */
+  NETCAT_LISTEN,	/**< Listen mode */
+  NETCAT_TUNNEL		/**< Tunnel mode, embeds Connect and Listen modes. */
 } nc_mode_t;
 
-/* Supported internet protocols */
+/**
+ * Supported Internet protocols
+ *
+ * This enumeration specifies the domain used by a specified socket. Note that
+ * different sockets (e.g. Input/Output) may work with different domains.
+ */
 
 typedef enum {
-  NETCAT_DOMAIN_UNSPEC,
-  NETCAT_DOMAIN_IPV4,
-  NETCAT_DOMAIN_IPV6
+  NETCAT_DOMAIN_UNSPEC,	/**< Domain not specified yet. */
+  NETCAT_DOMAIN_IPV4,	/**< Socket uses IPv4. */
+  NETCAT_DOMAIN_IPV6	/**< Socket uses IPv6. */
 } nc_domain_t;
 
-/* Supported protocols */
+/**
+ * Supported protocols
+ */
 
 typedef enum {
-  NETCAT_PROTO_UNSPEC,
-  NETCAT_PROTO_TCP,
-  NETCAT_PROTO_UDP
+  NETCAT_PROTO_UNSPEC,	/**< Protocol not specified yet. */
+  NETCAT_PROTO_TCP,	/**< Socket uses TCP protocol. */
+  NETCAT_PROTO_UDP	/**< Socket uses UDP protocol. */
 } nc_proto_t;
 
-/* ASCII conversion targets */
+/**
+ * ASCII conversion targets
+ *
+ * This enumeration specifies the ASCII conversion that is to be performed
+ * from an input stream while forwarding it to the output stream.
+ *
+ * The conversion is performed regardeless the format of the input stream.
+ * Any known format is recognized and translated to the target format.
+ */
 
 typedef enum {
-  NETCAT_CONVERT_NONE,
-  NETCAT_CONVERT_CRLF,
-  NETCAT_CONVERT_CR,
-  NETCAT_CONVERT_LF
+  NETCAT_CONVERT_NONE,	/**< Means that no conversion is performed, i.e. good
+			 * for binary data. */
+  NETCAT_CONVERT_CRLF,	/**< All data is converted to CRLF. */
+  NETCAT_CONVERT_CR,	/**< All data is converted to CR. */
+  NETCAT_CONVERT_LF	/**< All data is converted to LF. */
 } nc_convert_t;
 
-/* used for queues buffering and data tracking purposes.  The `head' field is
-   a pointer to the begin of the buffer segment, while `pos' indicates the
-   actual position of the data stream.  If `head' is NULL, it means that there
-   is no dynamically-allocated data in this buffer, *BUT* it MAY still contain
-   some local data segment (for example allocated inside the stack).
-   `len' indicates the length of the buffer starting from `pos'. */
+/**
+ * Standard buffer struct
+ *
+ * This is used for queues buffering and data tracking purposes.  The `head'
+ * field is a pointer to the begin of the buffer segment, while `pos'
+ * indicates the actual position of the data stream.  If `head' is NULL, it
+ * means that there is no dynamically-allocated data in this buffer, *BUT* it
+ * MAY still contain some local data segment (for example allocated inside
+ * the stack).  `len' indicates the length of the buffer starting from `pos'.
+ */
+
 /* FIXME: how do i recover original len? */
 
 typedef struct {
-  unsigned char *head;
-  unsigned char *pos;
-  int len;
+  unsigned char *head;		/**< Head of the buffer */
+  unsigned char *pos;		/**< Position in the stream */
+  int len;			/**< Length from `pos' to the end of the buffer */
 } nc_buffer_t;
 
-/* this is the standard netcat hosts record.  It contains an "authoritative"
-   `name' field, which may be empty, and a list of IP addresses in the network
-   notation and in the dotted string notation. */
+/**
+ * Standard Netcat hosts record.
+ *
+ * This is the standard netcat hosts record.  It contains an "authoritative"
+ * `name' field, which may be empty, and a list of IP addresses in the network
+ * notation and in the dotted string notation.
+ */
 
 typedef struct {
-  char name[MAXHOSTNAMELEN];			/* dns name */
-  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/* ascii-format IP addresses */
-  struct in_addr iaddrs[MAXINETADDRS];		/* real addresses */
+  char name[MAXHOSTNAMELEN];			/**< Dns name. */
+  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/**< Ascii-format IP
+						 * addresses. */
+  struct in_addr iaddrs[MAXINETADDRS];		/**< Real addresses. */
 } nc_host4_t;
 
-typedef struct {
-  char name[MAXHOSTNAMELEN];			/* dns name */
-  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/* ascii-format IP addresses */
 #ifdef USE_IPV6
-  struct in6_addr iaddrs[MAXINETADDRS];		/* real addresses */
-#else
-  char nullbuf[32];				/* keep consistent size */
-#endif
+
+/**
+ * Standard Netcat hosts record for IPv6 domain.
+ *
+ * This is the host record for IPv6 hosts, which have a slightly different
+ * structure.  For example they are 128 bits long while IPv4 addresses are
+ * just 32 bits long.
+ */
+
+typedef struct {
+  char name[MAXHOSTNAMELEN];			/**< Dns name. */
+  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/**< Ascii-format IP
+						 * addresses. */
+  struct in6_addr iaddrs[MAXINETADDRS];		/**< Real addresses. */
 } nc_host6_t;
+
+#endif
 
 typedef struct { /* FIXME: shouldn't become an union??? */
   nc_host4_t host;
@@ -206,33 +246,51 @@ typedef struct { /* FIXME: shouldn't become an union??? */
 #endif
 } nc_host_t;
 
-/* standard netcat port record.  It contains the port `name', which may be
-   empty, and the port number both as number and as string. */
+/**
+ * Standard Netcat port record.
+ *
+ * It contains the port `name', which can be empty, and the port number both
+ * as number and as string.
+ */
 
 typedef struct {
-  char name[NETCAT_MAXPORTNAMELEN];	/* canonical port name */
-  char ascnum[8];			/* ascii port number */
-  unsigned short num;			/* port number */
+  char name[NETCAT_MAXPORTNAMELEN];	/**< Canonical port name. */
+  char ascnum[8];			/**< Ascii port number. */
+  unsigned short num;			/**< Port number. */
   /* FIXME: this is just a test -- update: looks good, but maybe not */
-  in_port_t netnum;			/* port number in network byte order */
+  in_port_t netnum;			/**< Port number in network byte order. */
 } nc_port_t;
 
-/* Private struct definition for the new ports range manager module */
+/**
+ * Declare a private object that represents a ports set
+ *
+ * The definition and handling of this object is delegated to the ports range
+ * manager module.
+ */
 
 typedef struct nc_ports_st *nc_ports_t;
 
-/* This is a more complex struct that holds socket records. [...] */
+/**
+ * \brief This is the main socket object.
+ *
+ * This is a more complex struct that holds socket records.
+ */
 
 typedef struct {
-  int fd, timeout;
-  nc_convert_t conversion;
-  nc_domain_t domain;
-  nc_proto_t proto;
-  nc_host_t local;
-  nc_port_t local_port;
-  nc_host_t remote;
-  nc_port_t port;
-  nc_buffer_t sendq, recvq;
+  int fd;		/**< The Unix socket descriptor. */
+  int timeout;		/**< Timeout, in seconds, before giving up any
+			 *   operation on the socket. */
+  nc_convert_t conversion; /**< Specifies the type of EOL conversion to
+			 * perform on the socket. */
+  nc_domain_t domain;	/**< Specifies the level 3 domain of the socket */
+  nc_proto_t proto;	/**< Specifies the level 4 protocol used by the
+			 * socket */
+  nc_host_t local;	/**< Local host information */
+  nc_port_t local_port;	/**< Local port information */
+  nc_host_t remote;	/**< Remote host information */
+  nc_port_t port;	/**< Remote port information */
+  nc_buffer_t sendq;	/**< Queue for outgoing data */
+  nc_buffer_t recvq;	/**< Queue for incoming data */
 } nc_sock_t;
 
 /* Netcat includes */
