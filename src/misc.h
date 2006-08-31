@@ -3,9 +3,9 @@
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
- * Copyright (C) 2002 - 2003  Giovanni Giacobbi
+ * Copyright (C) 2002 - 2006  Giovanni Giacobbi
  *
- * $Id: misc.h,v 1.8 2003-03-06 00:20:07 themnemonic Exp $
+ * $Id: misc.h,v 1.9 2006-08-31 22:57:03 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -22,38 +22,38 @@
  *                                                                         *
  ***************************************************************************/
 
-/* time to wait (in microseconds) when DELAY is requested (debug mode) */
+/** Time to wait (in microseconds) when DELAY is requested (debug mode). */
 #define NCPRINT_WAITTIME 500000
 
-/* NCPRINT flags */
-#define NCPRINT_STDOUT		0x0001	/* force output to stdout */
-#define NCPRINT_NONEWLINE	0x0002	/* don't print a newline at the end */
-#define NCPRINT_DELAY		0x0004	/* delay WAITTIME before returning */
-#define NCPRINT_EXIT		0x0008	/* exit() after printing the string */
-#define NCPRINT_VERB1		0x0010	/* require verbosity level 1 */
-#define NCPRINT_VERB2		0x0020	/* require verbosity level 2 */
-#define NCPRINT_NOFMT		0x0040	/* do not interpret format strings */
+/** @name NCPRINT flags */
+#define NCPRINT_STDOUT		0x0001	/**< Force output to stdout. */
+#define NCPRINT_NONEWLINE	0x0002	/**< Do not print newline at end. */
+#define NCPRINT_DELAY		0x0004	/**< Delay WAITTIME before returning. */
+#define NCPRINT_EXIT		0x0008	/**< Call exit() after printing. */
+#define NCPRINT_VERB1		0x0010	/**< Require level 1 verbosity. */
+#define NCPRINT_VERB2		0x0020	/**< Require level 2 verbosity. */
+#define NCPRINT_NOFMT		0x0040	/**< Do not interpret format strings. */
 
-/* NCPRINT commands */
-/* normal message printed to stderr by default */
+/** @name NCPRINT commands */
+/** Normal message printed to stderr by default. */
 #define NCPRINT_NORMAL		0x0000
 
-/* debug message.  This type of message is only printed if `opt_debug' is true */
+/** Debug message. This type of message is only printed if `opt_debug' is true. */
 #define NCPRINT_DEBUG		0x1000
 
-/* special debug message.  Prepends "(debug)" before the actual string */
+/** Special debug message. Same as DEBUG but prepends "(debug)". */
 #define NCPRINT_DEBUG_V		0x1100
 
-/* prepends "Error:" and flags the message as ERROR */
+/** Prepends "Error:" and marks the message as <b>ERROR</b>. */
 #define NCPRINT_ERROR		0x1200
 
-/* prepends "Warning:" and flags the message as WARNING */
+/** Prepends "Warning:" and marks the message as <b>WARNING</b>. */
 #define NCPRINT_WARNING		0x1300
 
-/* prepends "Notice:" and flags the message as NOTICE */
+/** Prepends "Notice:" and marks the message as <b>NOTICE</b>. */
 #define NCPRINT_NOTICE		0x1400
 
-/* Debugging output routines */
+/** @name Debugging output macros */
 #ifdef DEBUG
 # define debug(fmtstring) \
   ncprint(NCPRINT_NOFMT | NCPRINT_NONEWLINE | NCPRINT_DEBUG, debug_fmt fmtstring)
@@ -64,8 +64,12 @@
 # define debug_dv(fmtstring) \
   ncprint(NCPRINT_NOFMT | NCPRINT_DEBUG_V | NCPRINT_DELAY, debug_fmt fmtstring)
 #else
+/** Simple debug format string message. No newline is appended. */
 # define debug(fmtstring)
+/** Same as simple debug, but forces a delay after output. */
 # define debug_d(fmtstring)
+/** Debug message that includes label prefix. */
 # define debug_v(fmtstring)
+/** Debug message with label prefix and delay after output. */
 # define debug_dv(fmtstring)
 #endif
