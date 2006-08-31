@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2004  Giovanni Giacobbi
  *
- * $Id: network.c,v 1.39 2004-10-24 11:54:27 themnemonic Exp $
+ * $Id: network.c,v 1.40 2006-08-31 01:43:59 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -40,9 +40,12 @@
 
 bool netcat_resolvehost(nc_host_t *dst, const char *name)
 {
-  int i, ret;
+  int i;
   struct hostent *hostent;
   struct in_addr res_addr;
+#ifdef USE_IPV6
+  struct in6_addr res6_addr;
+#endif
 
   assert(name && name[0]);
   debug_v(("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name));
@@ -50,8 +53,62 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
   /* reset all fields of the dst struct */
   memset(dst, 0, sizeof(*dst));
 
-  ret = netcat_inet_pton(AF_INET, name, &res_addr);
-  if (!ret) {			/* couldn't translate: it must be a name! */
+  /* try to see if `name' is a numeric address, in case try reverse lookup */
+  if (netcat_inet_pton(AF_INET, name, &res_addr)) {
+    memcpy(&dst->host.iaddrs[0], &res_addr, sizeof(dst->host.iaddrs[0]));
+    strncpy(dst->host.addrs[0], netcat_inet_ntop(AF_INET, &res_addr), sizeof(dst->host.addrs[0]));
+
+    /* if opt_numeric is set or we don't require verbosity, we are done */
+    if (opt_numeric)
+      return TRUE;
+
+    /* failures to look up a PTR record are *not* considered fatal */
+    hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
+    if (!hostent)
+      ncprint(NCPRINT_VERB2 | NCPRINT_WARNING,
+	      _("Inverse name lookup failed for `%s'"), name);
+    else {
+      strncpy(dst->host.name, hostent->h_name, MAXHOSTNAMELEN - 2);
+      /* now do the direct lookup to see if the PTR was authoritative */
+      hostent = gethostbyname(dst->host.name);
+
+      /* Any kind of failure in this section results in a host not auth
+         warning, and the dst->host.name field cleaned (I don't care if there is a
+         PTR, if it's unauthoritative). */
+      if (!hostent || !hostent->h_addr_list[0]) {
+	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+		_("Host %s isn't authoritative! (direct lookup failed)"),
+		dst->host.addrs[0]);
+	goto check_failed;
+      }
+      for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++)
+	if (!memcmp(&dst->host.iaddrs[0], hostent->h_addr_list[i],
+		    sizeof(dst->host.iaddrs[0])))
+	  return TRUE;		/* resolving verified, it's AUTH */
+
+      ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
+	      _("Host %s isn't authoritative! (direct lookup mismatch)"),
+	      dst->host.addrs[0]);
+      ncprint(NCPRINT_VERB1, _("  %s -> %s  BUT  %s -> %s"),
+	      dst->host.addrs[0], dst->host.name, dst->host.name,
+	      netcat_inet_ntop(AF_INET, hostent->h_addr_list[0]));
+
+ check_failed:
+      memset(dst->host.name, 0, sizeof(dst->host.name));
+    }				/* if hostent */
+  }
+#ifdef USE_IPV6
+  /* same as above, but check for an IPv6 address notation */
+  else if (netcat_inet_pton(AF_INET6, name, &res6_addr)) {
+    memcpy(&dst->host6.iaddrs[0], &res6_addr, sizeof(dst->host6.iaddrs[0]));
+    strncpy(dst->host6.addrs[0], netcat_inet_ntop(AF_INET6, &res_addr), sizeof(dst->host6.addrs[0]));
+
+    /* if opt_numeric is set or we don't require verbosity, we are done */
+    if (opt_numeric)
+      return TRUE;
+  }
+#endif
+  else {			/* couldn't translate: it must be a name! */
     bool host_auth_taken = FALSE;
 
     /* if the opt_numeric option is set, we must not use DNS in any way */
@@ -143,49 +200,6 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 	host_auth_taken = TRUE;
       }
     }				/* end of foreach addr, part B */
-  }
-  else {		/* `name' is a numeric address, try reverse lookup */
-    memcpy(&dst->host.iaddrs[0], &res_addr, sizeof(dst->host.iaddrs[0]));
-    strncpy(dst->host.addrs[0], netcat_inet_ntop(AF_INET,&res_addr), sizeof(dst->host.addrs[0]));
-
-    /* if opt_numeric is set or we don't require verbosity, we are done */
-    if (opt_numeric)
-      return TRUE;
-
-    /* numeric or not, failure to look up a PTR is *not* considered fatal */
-    hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
-    if (!hostent)
-      ncprint(NCPRINT_VERB2 | NCPRINT_WARNING,
-	      _("Inverse name lookup failed for `%s'"), name);
-    else {
-      strncpy(dst->host.name, hostent->h_name, MAXHOSTNAMELEN - 2);
-      /* now do the direct lookup to see if the PTR was authoritative */
-      hostent = gethostbyname(dst->host.name);
-
-      /* Any kind of failure in this section results in a host not auth
-         warning, and the dst->host.name field cleaned (I don't care if there is a
-         PTR, if it's unauthoritative). */
-      if (!hostent || !hostent->h_addr_list[0]) {
-	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("Host %s isn't authoritative! (direct lookup failed)"),
-		dst->host.addrs[0]);
-	goto check_failed;
-      }
-      for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++)
-	if (!memcmp(&dst->host.iaddrs[0], hostent->h_addr_list[i],
-		    sizeof(dst->host.iaddrs[0])))
-	  return TRUE;
-
-      ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-	      _("Host %s isn't authoritative! (direct lookup mismatch)"),
-	      dst->host.addrs[0]);
-      ncprint(NCPRINT_VERB1, _("  %s -> %s  BUT  %s -> %s"),
-	      dst->host.addrs[0], dst->host.name, dst->host.name,
-	      netcat_inet_ntop(AF_INET, hostent->h_addr_list[0]));
-
- check_failed:
-      memset(dst->host.name, 0, sizeof(dst->host.name));
-    }				/* if hostent */
   }
 
   return TRUE;
@@ -288,8 +302,8 @@ const char *netcat_strid(nc_domain_t domain, const nc_host_t *host,
       p += snprintf(p, sizeof(buf) + buf - p, "%s", host->host.addrs[0]);
   }
 #ifdef USE_IPV6
-  else if ((domain == NETCAT_DOMAIN_IPV6) && (host->host6.iaddrs[0].s_addr)) {
-    if (host->host6.name[0])
+  else if ((domain == NETCAT_DOMAIN_IPV6) && (host->host6.iaddrs[0].s6_addr32[0])) {
+    if (host->host6.name[0])  /* FIXME: s6_addr32[0] is only one part! not enough */
       p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->host6.name,
 		    host->host6.addrs[0]);
     else
@@ -478,13 +492,13 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
       my_addr_len = sizeof(*my6_addr);
 
       memset(my6_addr, 0, sizeof(*my6_addr));
-      my_addr->sin6_family = my_family;
-      my_addr->sin6_port = local_port->netnum;
+      my6_addr->sin6_family = my_family;
+      my6_addr->sin6_port = local_port->netnum;
 
       /* local_addr may not be specified because the user may want to only
          enforce the local source port */
       if (local_addr)
-        memcpy(&my6_addr->sin6_addr, local_addr->host6.iaddrs[0],
+        memcpy(&my6_addr->sin6_addr, &local_addr->host6.iaddrs[0],
 	       sizeof(my6_addr->sin6_addr));
     }
 #endif
@@ -619,13 +633,13 @@ int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
     my_addr_len = sizeof(*my6_addr);
 
     memset(my6_addr, 0, sizeof(*my6_addr));
-    my_addr->sin6_family = my_family;
-    my_addr->sin6_port = local_port->netnum;
+    my6_addr->sin6_family = my_family;
+    my6_addr->sin6_port = port->netnum;
 
     /* this parameter is not mandatory.  if it's not present, it's assumed to be
        INADDR_ANY, and the behaviour is the same */
     if (addr)
-        memcpy(&my6_addr->sin6_addr, addr->host6.iaddrs[0],
+        memcpy(&my6_addr->sin6_addr, &addr->host6.iaddrs[0],
 	       sizeof(my6_addr->sin6_addr));
   }
 #endif
