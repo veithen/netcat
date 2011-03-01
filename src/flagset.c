@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002  Giovanni Giacobbi
  *
- * $Id: flagset.c,v 1.7 2003-12-10 16:18:07 themnemonic Exp $
+ * $Id: flagset.c,v 1.7.2.1 2011-03-01 22:31:34 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -134,7 +134,7 @@ unsigned short netcat_flag_next(unsigned short port)
 
 int netcat_flag_count(void)
 {
-  register char c;
+  register unsigned char c;
   register int i;
   int ret = 0;
 
@@ -143,19 +143,9 @@ int netcat_flag_count(void)
   for (i = 0; i < flagset_len; i++) {
     c = flagset[i];		/* if c is 0, all these 8 bits are FALSE */
     while (c) {
-      /* FIXME Ok, here it comes the big trouble. We are in the following
-	 situation:
-		ret = 0
-		c   = 1234 5678
-
-	We will loop and shift bits away until the number `c' becomes 0 (and
-	it will of course become 0, soon or late).
-
-	Assumed that the bit number 1 is the sign, and that we will shift the
-	bit 1 (or the bit that takes its place later) until the the most right,
-	WHY it has to keep the wrong sign? */
-      ret -= (c >> 7);
-      c <<= 1;
+      /* as this is unsigned, it has to reach zero soon or late */
+      ret += (c & 1);
+      c >>= 1;
     }
   }
 
