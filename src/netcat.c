@@ -5,7 +5,7 @@
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
  * Copyright (C) 2002 - 2003  Giovanni Giacobbi
  *
- * $Id: netcat.c,v 1.63.2.2 2004-07-03 08:55:35 themnemonic Exp $
+ * $Id: netcat.c,v 1.63.2.3 2011-03-01 23:06:11 themnemonic Exp $
  */
 
 /***************************************************************************
@@ -124,9 +124,9 @@ static void ncexec(nc_sock_t *ncsock)
 
   /* replace this process with the new one */
 #ifndef USE_OLD_COMPAT
-  execl("/bin/sh", p, "-c", opt_exec, NULL);
+  execl("/bin/sh", p, "-c", opt_exec, (char *)NULL);
 #else
-  execl(opt_exec, p, NULL);
+  execl(opt_exec, p, (char *)NULL);
 #endif
   dup2(saved_stderr, STDERR_FILENO);
   ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Couldn't execute %s: %s"),
