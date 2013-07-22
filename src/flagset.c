@@ -40,7 +40,7 @@ bool netcat_flag_init(unsigned int len)
     return TRUE;
 
   /* calculates the block len needed */
-  len++;		/* the first bit is reserved (FIXME?) */
+  len++;    /* the first bit is reserved (FIXME?) */
   flagset_len = (size_t) (len / 8) + (len % 8 ? 1 : 0);
   if (flagset_len == 0) {
     free(flagset);
@@ -95,7 +95,7 @@ unsigned short netcat_flag_next(unsigned short port)
 
   assert(flagset);
   assert(port < (flagset_len * 8));
-  if (port == 0)			/* just invalid data */
+  if (port == 0)      /* just invalid data */
     return 0;
 
   /* the given port could be inside one byte, so we first need to check each
@@ -109,12 +109,12 @@ unsigned short netcat_flag_next(unsigned short port)
     port++;
   }
 
-  pos = (int) (port / 8);		/* update the byte position */
+  pos = (int) (port / 8);    /* update the byte position */
 
   /* fast checking. leaves the port variable set to the the beginning of the
      next block containing at least one bit set, OR to the beginning of the
      LAST block. */
-  while ((flagset[pos] == 0) && (port < 65528)) {	/* FIXME */
+  while ((flagset[pos] == 0) && (port < 65528)) {  /* FIXME */
     pos++;
     port += 8;
   }
@@ -125,7 +125,7 @@ unsigned short netcat_flag_next(unsigned short port)
   do {
     if ((flagset[pos] & (1 << offset++)))
       return port;
-  } while (port++ < 65535);			/* FIXME */
+  } while (port++ < 65535);      /* FIXME */
 
   return 0;
 }
@@ -141,19 +141,19 @@ int netcat_flag_count(void)
   assert(flagset);
   /* scan the flagset for set bits, if found, it counts them */
   for (i = 0; i < flagset_len; i++) {
-    c = flagset[i];		/* if c is 0, all these 8 bits are FALSE */
+    c = flagset[i];    /* if c is 0, all these 8 bits are FALSE */
     while (c) {
-      /* FIXME Ok, here it comes the big trouble. We are in the following
-	 situation:
-		ret = 0
-		c   = 1234 5678
+     /* FIXME Ok, here it comes the big trouble. We are in the following
+      situation:
+      ret = 0
+      c   = 1234 5678
 
-	We will loop and shift bits away until the number `c' becomes 0 (and
-	it will of course become 0, soon or late).
+      We will loop and shift bits away until the number `c' becomes 0 (and
+      it will of course become 0, soon or late).
 
-	Assumed that the bit number 1 is the sign, and that we will shift the
-	bit 1 (or the bit that takes its place later) until the the most right,
-	WHY it has to keep the wrong sign? */
+      Assumed that the bit number 1 is the sign, and that we will shift the
+      bit 1 (or the bit that takes its place later) until the the most right,
+      WHY it has to keep the wrong sign? */
       ret -= (c >> 7);
       c <<= 1;
     }
@@ -185,7 +185,7 @@ unsigned short netcat_flag_rand(void)
 # ifdef __GNUC__
 #  warning "random routines not found, removed random support"
 # endif
-  rand = 1;				/* simulates a random number */
+  rand = 1;        /* simulates a random number */
 #endif
 
   /* loop until we find the specified flag */

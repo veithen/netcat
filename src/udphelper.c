@@ -46,9 +46,9 @@
 
 #if !defined(SIOCGLIFADDR) || !defined(SIOCGLIFFLAGS)
 /* FIXME The following warning occurs on FreeBSD:
-    udphelper.c:48: warning: `SIOCGLIFADDR' redefined
-    /usr/include/sys/sockio.h:78: warning: this is the location of the previous definition
- */
+   udphelper.c:48: warning: `SIOCGLIFADDR' redefined
+   /usr/include/sys/sockio.h:78: warning: this is the location of the
+   previous definition */
 # define SIOCGLIFADDR SIOCGIFADDR
 # define SIOCGLIFFLAGS SIOCGIFFLAGS
 # define SIOCGLIFDSTADDR SIOCGIFDSTADDR
@@ -60,7 +60,7 @@
 # define ss_family sa_family
 # define lifreq ifreq
 #endif
-#endif	/* !USE_PKTINFO */
+#endif  /* !USE_PKTINFO */
 
 #ifdef USE_PKTINFO
 
@@ -69,7 +69,7 @@
    Returns 0 on success, a negative value otherwise. */
 
 int udphelper_ancillary_read(struct msghdr *my_hdr,
-			     struct sockaddr_in *get_addr)
+                             struct sockaddr_in *get_addr)
 {
   /* let's hope that there is some ancillary data! */
   if (my_hdr->msg_controllen > 0) {
@@ -79,17 +79,17 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
        know how many are there.  So I simply parse all of them until we find
        the right one, checking the index type. */
     for (get_cmsg = CMSG_FIRSTHDR(my_hdr); get_cmsg;
-	 get_cmsg = CMSG_NXTHDR(my_hdr, get_cmsg)) {
+         get_cmsg = CMSG_NXTHDR(my_hdr, get_cmsg)) {
       debug_v(("Analizing ancillary header (id=%d)", get_cmsg->cmsg_type));
 
       if (get_cmsg->cmsg_type == IP_PKTINFO) {
-	struct in_pktinfo *get_pktinfo;
+        struct in_pktinfo *get_pktinfo;
 
-	/* fetch the data and run away, we don't need to parse everything */
-	get_pktinfo = (struct in_pktinfo *) CMSG_DATA(get_cmsg);
-	memcpy(&get_addr->sin_addr, &get_pktinfo->ipi_spec_dst,
-	       sizeof(get_addr->sin_addr));
-	return 0;
+        /* fetch the data and run away, we don't need to parse everything */
+        get_pktinfo = (struct in_pktinfo *) CMSG_DATA(get_cmsg);
+        memcpy(&get_addr->sin_addr, &get_pktinfo->ipi_spec_dst,
+               sizeof(get_addr->sin_addr));
+        return 0;
       }
     }
   }
@@ -97,7 +97,7 @@ int udphelper_ancillary_read(struct msghdr *my_hdr,
   return -1;
 }
 
-#else	/* USE_PKTINFO */
+#else  /* USE_PKTINFO */
 
 /* This function opens an array of sockets (stored in `sockbuf'), one for each
    different interface in the current machine.  The purpose of this is to allow
@@ -140,7 +140,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
     /* like many other syscalls, ioctl() will adjust lifc_len to the REAL
        lifc_len, so try to allocate a larger buffer in order to determine
        the total interfaces number. */
-    free(nc_ifreq);	/* don't use realloc here, this way it is faster */
+    free(nc_ifreq);  /* don't use realloc here, this way it is faster */
     nc_ifreq = malloc(alloc_size);
     nc_ifconf.lifc_len = alloc_size;
     nc_ifconf.lifc_req = nc_ifreq;
@@ -200,7 +200,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
       continue;
 
     debug(("(udphelper) Found interface %s (IP address: %s)\n",
-	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr.sin_addr)));
+    nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr.sin_addr)));
 
     newsock = socket(PF_INET, SOCK_DGRAM, 0);
     if (newsock < 0)
@@ -237,7 +237,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
       nport = if_addr.sin_port;
       assert(nport != 0);
     }
-  }				/* end of while (all_interfaces) */
+  }        /* end of while (all_interfaces) */
 
   /* ok we don't need anymore the interfaces list and the dummy socket */
   free(nc_ifconf.lifc_req);
@@ -281,7 +281,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
   return -1;
 }
 
-#endif	/* USE_PKTINFO */
+#endif  /* USE_PKTINFO */
 
 /* Closes the `sockbuf' previously allocated with udphelper_sockets_open().
    The global errno is not altered by this function. */

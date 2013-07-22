@@ -29,7 +29,7 @@
 #include <locale.h>
 #else
 #error You must have locale.h in your system
-#endif	/* HAVE_LOCALE_H */
+#endif  /* HAVE_LOCALE_H */
 
 /* Our dear (and very common) gettext macros */
 #define _(String) gettext(String)
@@ -52,4 +52,4 @@
 #define N_(String) String
 #define PL_(String1, String2, n) ((n) == 1 ? (String1) : (String2))
 
-#endif	/* ENABLE_NLS */
+#endif  /* ENABLE_NLS */

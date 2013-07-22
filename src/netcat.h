@@ -33,13 +33,13 @@
 #include <unistd.h>
 #include <assert.h>
 #include <errno.h>
-#include <sys/types.h>		/* basic types definition */
-#include <sys/time.h>		/* timeval, time_t */
+#include <sys/types.h>    /* basic types definition */
+#include <sys/time.h>    /* timeval, time_t */
 #include <sys/socket.h>
-#include <sys/uio.h>		/* needed for reading/writing vectors */
-#include <sys/param.h>		/* defines MAXHOSTNAMELEN and other stuff */
+#include <sys/uio.h>    /* needed for reading/writing vectors */
+#include <sys/param.h>    /* defines MAXHOSTNAMELEN and other stuff */
 #include <netinet/in.h>
-#include <arpa/inet.h>		/* inet_ntop(), inet_pton() */
+#include <arpa/inet.h>    /* inet_ntop(), inet_pton() */
 
 /* These are useful to keep the source readable */
 #ifndef STDIN_FILENO
@@ -54,14 +54,14 @@
 
 /* Find a random routine */
 #if defined(HAVE_RANDOM) && defined(HAVE_SRANDOM)
-# define USE_RANDOM		/* try with most modern random routines */
+# define USE_RANDOM    /* try with most modern random routines */
 # define SRAND srandom
 # define RAND random
 #elif defined(HAVE_RAND) && defined(HAVE_SRAND)
-# define USE_RANDOM		/* otherwise fallback to the older rand() */
+# define USE_RANDOM    /* otherwise fallback to the older rand() */
 # define SRAND srand
 # define RAND rand
-#endif				/* if none of them are here, CHANGE OS! */
+#endif        /* if none of them are here, CHANGE OS! */
 
 /* This must be defined to the longest possible internet address length in
    string notation.
@@ -99,7 +99,7 @@
 
 /* FIXME: shall we really change this define? probably not. */
 #ifdef MAXHOSTNAMELEN
-# undef MAXHOSTNAMELEN		/* might be too small on aix, so fix it */
+# undef MAXHOSTNAMELEN    /* might be too small on aix, so fix it */
 #endif
 #define MAXHOSTNAMELEN 256
 
@@ -139,10 +139,10 @@ typedef unsigned short in_port_t;
  */
 
 typedef enum {
-  NETCAT_UNSPEC,	/**< Netcat mode not specified yet. */
-  NETCAT_CONNECT,	/**< Netcat is in Connect mode (the default). */
-  NETCAT_LISTEN,	/**< Listen mode */
-  NETCAT_TUNNEL		/**< Tunnel mode, embeds Connect and Listen modes. */
+  NETCAT_UNSPEC,  /**< Netcat mode not specified yet. */
+  NETCAT_CONNECT,  /**< Netcat is in Connect mode (the default). */
+  NETCAT_LISTEN,  /**< Listen mode */
+  NETCAT_TUNNEL    /**< Tunnel mode, embeds Connect and Listen modes. */
 } nc_mode_t;
 
 /**
@@ -153,9 +153,9 @@ typedef enum {
  */
 
 typedef enum {
-  NETCAT_DOMAIN_UNSPEC,	/**< Domain not specified yet. */
-  NETCAT_DOMAIN_IPV4,	/**< Socket uses IPv4. */
-  NETCAT_DOMAIN_IPV6	/**< Socket uses IPv6. */
+  NETCAT_DOMAIN_UNSPEC,  /**< Domain not specified yet. */
+  NETCAT_DOMAIN_IPV4,  /**< Socket uses IPv4. */
+  NETCAT_DOMAIN_IPV6  /**< Socket uses IPv6. */
 } nc_domain_t;
 
 /**
@@ -163,9 +163,9 @@ typedef enum {
  */
 
 typedef enum {
-  NETCAT_PROTO_UNSPEC,	/**< Protocol not specified yet. */
-  NETCAT_PROTO_TCP,	/**< Socket uses TCP protocol. */
-  NETCAT_PROTO_UDP	/**< Socket uses UDP protocol. */
+  NETCAT_PROTO_UNSPEC,  /**< Protocol not specified yet. */
+  NETCAT_PROTO_TCP,  /**< Socket uses TCP protocol. */
+  NETCAT_PROTO_UDP  /**< Socket uses UDP protocol. */
 } nc_proto_t;
 
 /**
@@ -179,11 +179,11 @@ typedef enum {
  */
 
 typedef enum {
-  NETCAT_CONVERT_NONE,	/**< Means that no conversion is performed, i.e. good
-			 * for binary data. */
-  NETCAT_CONVERT_CRLF,	/**< All data is converted to CRLF. */
-  NETCAT_CONVERT_CR,	/**< All data is converted to CR. */
-  NETCAT_CONVERT_LF	/**< All data is converted to LF. */
+  NETCAT_CONVERT_NONE,  /**< Means that no conversion is performed, i.e. good
+       * for binary data. */
+  NETCAT_CONVERT_CRLF,  /**< All data is converted to CRLF. */
+  NETCAT_CONVERT_CR,  /**< All data is converted to CR. */
+  NETCAT_CONVERT_LF  /**< All data is converted to LF. */
 } nc_convert_t;
 
 /**
@@ -200,9 +200,9 @@ typedef enum {
 /* FIXME: how do i recover original len? */
 
 typedef struct {
-  unsigned char *head;		/**< Head of the buffer */
-  unsigned char *pos;		/**< Position in the stream */
-  int len;			/**< Length from `pos' to the end of the buffer */
+  unsigned char *head;    /**< Head of the buffer */
+  unsigned char *pos;    /**< Position in the stream */
+  int len;      /**< Length from `pos' to the end of the buffer */
 } nc_buffer_t;
 
 /**
@@ -214,10 +214,10 @@ typedef struct {
  */
 
 typedef struct {
-  char name[MAXHOSTNAMELEN];			/**< Dns name. */
-  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/**< Ascii-format IP
-						 * addresses. */
-  struct in_addr iaddrs[MAXINETADDRS];		/**< Real addresses. */
+  char name[MAXHOSTNAMELEN];      /**< Dns name. */
+  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];  /**< Ascii-format IP
+             * addresses. */
+  struct in_addr iaddrs[MAXINETADDRS];    /**< Real addresses. */
 } nc_host4_t;
 
 #ifdef USE_IPV6
@@ -231,10 +231,10 @@ typedef struct {
  */
 
 typedef struct {
-  char name[MAXHOSTNAMELEN];			/**< Dns name. */
-  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/**< Ascii-format IP
-						 * addresses. */
-  struct in6_addr iaddrs[MAXINETADDRS];		/**< Real addresses. */
+  char name[MAXHOSTNAMELEN];      /**< Dns name. */
+  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];  /**< Ascii-format IP
+             * addresses. */
+  struct in6_addr iaddrs[MAXINETADDRS];    /**< Real addresses. */
 } nc_host6_t;
 
 #endif
@@ -254,11 +254,11 @@ typedef struct { /* FIXME: shouldn't become an union??? */
  */
 
 typedef struct {
-  char name[NETCAT_MAXPORTNAMELEN];	/**< Canonical port name. */
-  char ascnum[8];			/**< Ascii port number. */
-  unsigned short num;			/**< Port number. */
+  char name[NETCAT_MAXPORTNAMELEN];  /**< Canonical port name. */
+  char ascnum[8];      /**< Ascii port number. */
+  unsigned short num;      /**< Port number. */
   /* FIXME: this is just a test -- update: looks good, but maybe not */
-  in_port_t netnum;			/**< Port number in network byte order. */
+  in_port_t netnum;      /**< Port number in network byte order. */
 } nc_port_t;
 
 /**
@@ -277,20 +277,20 @@ typedef struct nc_ports_st *nc_ports_t;
  */
 
 typedef struct {
-  int fd;		/**< The Unix socket descriptor. */
-  int timeout;		/**< Timeout, in seconds, before giving up any
-			 *   operation on the socket. */
+  int fd;    /**< The Unix socket descriptor. */
+  int timeout;    /**< Timeout, in seconds, before giving up any
+                   *   operation on the socket. */
   nc_convert_t conversion; /**< Specifies the type of EOL conversion to
-			 * perform on the socket. */
-  nc_domain_t domain;	/**< Specifies the level 3 domain of the socket */
-  nc_proto_t proto;	/**< Specifies the level 4 protocol used by the
-			 * socket */
-  nc_host_t local;	/**< Local host information */
-  nc_port_t local_port;	/**< Local port information */
-  nc_host_t remote;	/**< Remote host information */
-  nc_port_t port;	/**< Remote port information */
-  nc_buffer_t sendq;	/**< Queue for outgoing data */
-  nc_buffer_t recvq;	/**< Queue for incoming data */
+                            * perform on the socket. */
+  nc_domain_t domain;  /**< Specifies the level 3 domain of the socket */
+  nc_proto_t proto;  /**< Specifies the level 4 protocol used by the
+                      * socket */
+  nc_host_t local;  /**< Local host information */
+  nc_port_t local_port;  /**< Local port information */
+  nc_host_t remote;  /**< Remote host information */
+  nc_port_t port;  /**< Remote port information */
+  nc_buffer_t sendq;  /**< Queue for outgoing data */
+  nc_buffer_t recvq;  /**< Queue for incoming data */
 } nc_sock_t;
 
 /* Netcat includes */
@@ -299,4 +299,4 @@ typedef struct {
 #include "intl.h"
 #include "misc.h"
 
-#endif	/* !NETCAT_H */
+#endif  /* !NETCAT_H */

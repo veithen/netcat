@@ -29,34 +29,34 @@
 #include "netcat.h"
 
 /* RFC0854 DEFINES */
-#define TELNET_SE	240	/* End of subnegotiation parameters. */
-#define TELNET_NOP	241	/* No operation. */
-#define TELNET_DM	242	/* (Data Mark) The data stream portion of a
-				 * Synch. This should always be accompanied
-				 * by a TCP Urgent notification. */
-#define TELNET_BRK	243	/* (Break) NVT character BRK. */
-#define TELNET_IP	244	/* (Interrupt Process) The function IP. */
-#define TELNET_AO	245	/* (Abort output) The function AO. */
-#define TELNET_AYT	246	/* (Are You There) The function AYT. */
-#define TELNET_EC	247	/* (Erase character) The function EC. */
-#define TELNET_EL	248	/* (Erase Line) The function EL. */
-#define TELNET_GA	249	/* (Go ahead) The GA signal. */
-#define TELNET_SB	250	/* Indicates that what follows is
-				 * subnegotiation of the indicated option. */
-#define TELNET_WILL	251	/* Indicates the desire to begin performing,
-				 * or confirmation that you are now performing,
-				 * the indicated option. */
-#define TELNET_WONT	252	/* Indicates the refusal to perform, or to
-				 * continue performing, the indicated option. */
-#define TELNET_DO	253	/* Indicates the request that the other party
-				 * perform, or confirmation that you are
-				 * expecting the other party to perform, the
-				 * indicated option. */
-#define TELNET_DONT	254	/* Indicates the demand that the other party
-				 * stop performing, or confirmation that you
-				 * are no longer expecting the other party
-				 * to perform, the indicated option. */
-#define TELNET_IAC	255	/* Data Byte 255. */
+#define TELNET_SE  240  /* End of subnegotiation parameters. */
+#define TELNET_NOP  241  /* No operation. */
+#define TELNET_DM  242  /* (Data Mark) The data stream portion of a
+                         * Synch. This should always be accompanied
+                         * by a TCP Urgent notification. */
+#define TELNET_BRK  243  /* (Break) NVT character BRK. */
+#define TELNET_IP  244  /* (Interrupt Process) The function IP. */
+#define TELNET_AO  245  /* (Abort output) The function AO. */
+#define TELNET_AYT  246  /* (Are You There) The function AYT. */
+#define TELNET_EC  247  /* (Erase character) The function EC. */
+#define TELNET_EL  248  /* (Erase Line) The function EL. */
+#define TELNET_GA  249  /* (Go ahead) The GA signal. */
+#define TELNET_SB  250  /* Indicates that what follows is
+                         * subnegotiation of the indicated option. */
+#define TELNET_WILL  251  /* Indicates the desire to begin performing,
+                           * or confirmation that you are now performing,
+                           * the indicated option. */
+#define TELNET_WONT  252  /* Indicates the refusal to perform, or to
+                           * continue performing, the indicated option. */
+#define TELNET_DO  253  /* Indicates the request that the other party
+                         * perform, or confirmation that you are
+                         * expecting the other party to perform, the
+                         * indicated option. */
+#define TELNET_DONT  254  /* Indicates the demand that the other party
+                           * stop performing, or confirmation that you
+                           * are no longer expecting the other party
+                           * to perform, the indicated option. */
+#define TELNET_IAC  255  /* Data Byte 255. */
 
 /* Handle the RFC0854 telnet codes found in the receiving buffer of the
    specified socket object.  This is a reliable implementation of the rfc,
@@ -131,7 +131,7 @@ void netcat_telnet_parse(nc_sock_t *ncsock)
       /* FIXME: the rfc seems not clean about what to do if the sending queue
          is not empty.  Since it's the simplest solution, just override the
          queue for now, but this must change in future. */
-      write(ncsock->fd, putrq, 3);		/* FIXME: handle failures */
+      write(ncsock->fd, putrq, 3);    /* FIXME: handle failures */
       goto do_eat_chars;
     case TELNET_DO:
     case TELNET_DONT:

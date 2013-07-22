@@ -49,7 +49,8 @@ nc_ports_t netcat_ports_init(void)
 
 /* Inserts a new range performing drop-down merging to avoid overlapping */
 
-void netcat_ports_insert(nc_ports_t portsrange, unsigned short first, unsigned short last)
+void netcat_ports_insert(nc_ports_t portsrange, unsigned short first,
+  unsigned short last)
 {
   nc_ports_t tmp_prev = portsrange, tmp = portsrange->next;
 
@@ -69,14 +70,14 @@ void netcat_ports_insert(nc_ports_t portsrange, unsigned short first, unsigned s
     tmp_prev->last = MAX(tmp_prev->last, last);
     tmp = tmp_prev;
   }
-  else {	/* we are fully after the previous range. add a new one */
+  else {  /* we are fully after the previous range. add a new one */
     nc_ports_t tmp_ins = malloc(sizeof(*tmp_ins));
 
     tmp_ins->first = first;
     tmp_ins->last = last;
     tmp_ins->next = tmp;
     tmp_prev->next = tmp_ins;
-    tmp = tmp_ins;	/* switch to the latest added */
+    tmp = tmp_ins;  /* switch to the latest added */
   }
 
   /* now, either we added a new range or recycled the previous one, we might
@@ -167,7 +168,7 @@ unsigned short netcat_ports_rand(nc_ports_t portsrange)
 # ifdef __GNUC__
 #  warning "random routines not found, removed random support"
 # endif
-  randnum = 1;				/* simulates a random number */
+  randnum = 1;        /* simulates a random number */
 #endif
 
   /* loop until we find the specified flag */

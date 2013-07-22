@@ -35,7 +35,7 @@
    returned string is using NUL char. */
 
 char *netcat_ascii_convert(const char *source, int source_len,
-			   nc_convert_t conversion, int *target_len)
+         nc_convert_t conversion, int *target_len)
 {
   int i, ret_len, ret_pos;
   int cnt = 0;
@@ -54,7 +54,7 @@ char *netcat_ascii_convert(const char *source, int source_len,
     }
     else if ((source[i] == '\r') || (source[i] == '\n')) {
       if (conversion == NETCAT_CONVERT_CRLF)
-	cnt++;
+  cnt++;
     }
   }
 
@@ -75,15 +75,15 @@ char *netcat_ascii_convert(const char *source, int source_len,
       fprintf(stderr, "here1 retpos=%d\n", ret_pos);
       switch (conversion) {
       case NETCAT_CONVERT_CRLF:
-	ret[ret_pos++] = '\r';
+  ret[ret_pos++] = '\r';
       case NETCAT_CONVERT_LF:
-	ret[ret_pos++] = '\n';
-	break;
+  ret[ret_pos++] = '\n';
+  break;
       case NETCAT_CONVERT_CR:
-	ret[ret_pos++] = '\r';
-	break;
+  ret[ret_pos++] = '\r';
+  break;
       default:
-	abort();
+  abort();
       }
 
       fprintf(stderr, "here1_! retpos=%d\n", ret_pos);
@@ -201,7 +201,7 @@ void ncprint(int type, const char *fmt, ...)
 {
   int flags = type & 0xFF;
   char buf[512], newline = '\n';
-  FILE *fstream = stderr;		/* output stream */
+  FILE *fstream = stderr;    /* output stream */
   va_list args;
 
   /* clear the flags section so we obtain the pure command */
@@ -243,13 +243,13 @@ void ncprint(int type, const char *fmt, ...)
     if (opt_debug)
       fprintf(fstream, "%s%c", buf, newline);
     else
-      return;		/* other flags has no effect with this flag */
+      return;    /* other flags has no effect with this flag */
     break;
   case NCPRINT_DEBUG_V:
     if (opt_debug)
       fprintf(fstream, "(debug) %s%c", buf, newline);
     else
-      return;		/* other flags has no effect with this flag */
+      return;    /* other flags has no effect with this flag */
     break;
 #endif
   case NCPRINT_ERROR:
@@ -286,19 +286,19 @@ void netcat_printstats(bool force)
   /* fill in the buffers but preserve the space for adding the label */
   netcat_snprintnum(str_recv, 32, bytes_recv);
   assert(str_recv[0]);
-  for (p = str_recv; *(p + 1); p++);	/* find the last char */
+  for (p = str_recv; *(p + 1); p++);  /* find the last char */
   if ((bytes_recv > 0) && !isdigit((int)*p))
     snprintf(++p, sizeof(str_recv) - 32, " (%lu)", bytes_recv);
 
   netcat_snprintnum(str_sent, 32, bytes_sent);
   assert(str_sent[0]);
-  for (p = str_sent; *(p + 1); p++);	/* find the last char */
+  for (p = str_sent; *(p + 1); p++);  /* find the last char */
   if ((bytes_sent > 0) && !isdigit((int)*p))
     snprintf(++p, sizeof(str_sent) - 32, " (%lu)", bytes_sent);
 
   ncprint(NCPRINT_NONEWLINE | (force ? 0 : NCPRINT_VERB2),
-	  _("Total received bytes: %s\nTotal sent bytes: %s\n"),
-	  str_recv, str_sent);
+    _("Total received bytes: %s\nTotal sent bytes: %s\n"),
+    str_recv, str_sent);
 }
 
 /* This is a safe string split function.  It will return a valid pointer
@@ -335,13 +335,13 @@ void netcat_commandline_read(int *argc, char ***argv)
   /* using this output style makes sure that a careless translator can't take
      down everything while playing with c-format */
   fprintf(stderr, "%s ", _("Cmd line:"));
-  fflush(stderr);			/* this isn't needed, but on ALL OS? */
-  commandline_need_newline = TRUE;	/* fancy output handling */
+  fflush(stderr);      /* this isn't needed, but on ALL OS? */
+  commandline_need_newline = TRUE;  /* fancy output handling */
   p = fgets(buf, sizeof(buf), stdin);
-  my_argv = malloc(128 * sizeof(char *));	/* FIXME: 128? */
+  my_argv = malloc(128 * sizeof(char *));  /* FIXME: 128? */
   memset(my_argv, 0, 128 * sizeof(char *));
-  my_argv[0] = saved_argv0;		/* leave the program name intact */
-  if (!buf[0])				/* there is no input (ctrl+d?) */
+  my_argv[0] = saved_argv0;    /* leave the program name intact */
+  if (!buf[0])        /* there is no input (ctrl+d?) */
     printf("\n");
   commandline_need_newline = FALSE;
 
@@ -416,7 +416,7 @@ void netcat_printhelp(char *argv0)
 "  -z, --zero                 zero-I/O mode (used for scanning)\n"));
   printf("\n");
   printf(_("Remote port number can also be specified as range.  "
-	   "Example: '1-1024'\n"));
+     "Example: '1-1024'\n"));
   printf("\n");
 }
 
@@ -459,17 +459,17 @@ const char *debug_fmt(const char *fmt, ...)
 #endif
 
 #ifndef USE_LINUX_SELECT
-#define TIMEVAL_DIFF(__t1, __t2) {			\
-    (__t1)->tv_usec -= (__t2)->tv_usec;			\
-    if ((__t1)->tv_usec < 0) {				\
-      (__t1)->tv_usec += 1000000L;			\
-      (__t1)->tv_sec -= 1;				\
-    }							\
-    (__t1)->tv_sec -= (__t2)->tv_sec;			\
-    if ((__t1)->tv_sec < 0) {				\
-      (__t1)->tv_sec = 0;				\
-      (__t1)->tv_usec = 0;				\
-    }							\
+#define TIMEVAL_DIFF(__t1, __t2) {      \
+    (__t1)->tv_usec -= (__t2)->tv_usec;      \
+    if ((__t1)->tv_usec < 0) {        \
+      (__t1)->tv_usec += 1000000L;      \
+      (__t1)->tv_sec -= 1;        \
+    }              \
+    (__t1)->tv_sec -= (__t2)->tv_sec;      \
+    if ((__t1)->tv_sec < 0) {        \
+      (__t1)->tv_sec = 0;        \
+      (__t1)->tv_usec = 0;        \
+    }              \
   }
 
 void update_timeval(struct timeval *target)
@@ -478,16 +478,16 @@ void update_timeval(struct timeval *target)
   struct timeval dd_end;
   struct timezone dd_zone;
 
-  if (target == NULL) {			/* just initialize the seed */
+  if (target == NULL) {      /* just initialize the seed */
     if (gettimeofday(&dd_start, &dd_zone))
-      return;				/* can't handle this type of error */
+      return;        /* can't handle this type of error */
   }
   else {
     if (gettimeofday(&dd_end, &dd_zone))
-      return;				/* can't handle this type of error */
+      return;        /* can't handle this type of error */
 
-    TIMEVAL_DIFF(&dd_end, &dd_start);	/* get the spent time */
-    TIMEVAL_DIFF(target, &dd_end);	/* and update the target struct */
+    TIMEVAL_DIFF(&dd_end, &dd_start);  /* get the spent time */
+    TIMEVAL_DIFF(target, &dd_end);  /* and update the target struct */
   }
 }
 #endif
