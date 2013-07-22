@@ -42,6 +42,7 @@ bool commandline_need_newline = FALSE;  /* fancy output handling */
 /* global options flags */
 nc_mode_t netcat_mode = 0;  /* Netcat working modality */
 bool opt_eofclose = FALSE;  /* close connection on EOF from stdin */
+bool opt_secure = FALSE;    /* enable SSL/TLS connection support */
 bool opt_debug = FALSE;    /* debugging output */
 bool opt_ipv6 = FALSE;    /* using IPv6 protocol */
 bool opt_numeric = FALSE;  /* don't resolve hostnames */
@@ -185,6 +186,7 @@ int main(int argc, char *argv[])
     int option_index = 0;
     static const struct option long_options[] = {
   { "close",  no_argument,    NULL, 'c' },
+  { "secure",  no_argument,    NULL, 'C' }, /* establish TLS/SSL connection */
   { "debug",  no_argument,    NULL, 'd' },
   { "exec",  required_argument,  NULL, 'e' },
   { "gateway",  required_argument,  NULL, 'g' },
@@ -219,7 +221,7 @@ int main(int argc, char *argv[])
   { 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "46cde:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
+    c = getopt_long(argc, argv, "46cCde:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
         long_options, &option_index);
     if (c == -1)
       break;
@@ -234,13 +236,17 @@ int main(int argc, char *argv[])
     case 'c':      /* close connection on EOF from stdin */
       opt_eofclose = TRUE;
       break;
+    case 'C':      /* close connection on EOF from stdin */
+      opt_secure = TRUE;
+      printf("TODO\n");
+      break;
     case 'd':      /* enable debugging */
       opt_debug = TRUE;
       break;
     case 'e':      /* prog to exec */
       if (opt_exec)
-  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-    _("Cannot specify `-e' option double"));
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+        _("Cannot specify `-e' option double"));
       opt_exec = strdup(optarg);
       break;
     case 'G':      /* srcrt gateways pointer val */
@@ -253,71 +259,72 @@ int main(int argc, char *argv[])
     case 'i':      /* line/ports interval time (seconds) */
       opt_interval = atoi(optarg);
       if (opt_interval < 0)
-  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-    _("Invalid interval time \"%s\""), optarg);
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+        _("Invalid interval time \"%s\""), optarg);
       break;
     case 'l':      /* mode flag: listen mode */
       if (netcat_mode != NETCAT_UNSPEC)
-  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-    _("You can specify mode flags (`-l' and `-L') only once"));
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+        _("You can specify mode flags (`-l' and `-L') only once"));
       netcat_mode = NETCAT_LISTEN;
       break;
     case 'L':      /* mode flag: tunnel mode */
       if (netcat_mode != NETCAT_UNSPEC)
-  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-    _("You can specify mode flags (`-l' and `-L') only once"));
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+          _("You can specify mode flags (`-l' and `-L') only once"));
       if (opt_zero)
-  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-    _("`-L' and `-z' options are incompatible"));
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+          _("`-L' and `-z' options are incompatible"));
       do {
-  char *div, *p, *pbuf = strdup(optarg);
+        char *div, *p, *pbuf = strdup(optarg);
 
-  div = p = pbuf;
-  /* if the address has '[' unbalanced, threat is as plain address */
-  if (div[0] == '[') {
-    div = strchr(div, ']');
-    if (div != NULL) {
-      *div++ = '\0';
-      p++;        /* skip the '[' */
-    }
-  }
-  div = strchr(div, ':');
+        div = p = pbuf;
+        /* if the address has '[' unbalanced, threat is as plain address */
+        if (div[0] == '[') {
+          div = strchr(div, ']');
+          if (div != NULL) {
+            *div++ = '\0';
+            p++;        /* skip the '[' */
+          }
+        }
+        div = strchr(div, ':');
 
-  if (div && *(div + 1))
-    *div++ = '\0';
-  else {
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-      _("Invalid target string for `-L' option"));
-  }
+        if (div && *(div + 1))
+          *div++ = '\0';
+        else {
+          ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+            _("Invalid target string for `-L' option"));
+        }
 
-  /* lookup the remote address and the remote port for tunneling */
-  if (!netcat_resolvehost(&connect_sock.remote, optarg))
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-      _("Couldn't resolve tunnel target host: %s"), optarg);
-  if (!netcat_getport(&connect_sock.port, div, 0))
-    ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-      _("Invalid tunnel target port: %s"), div);
+        /* lookup the remote address and the remote port for tunneling */
+        if (!netcat_resolvehost(&connect_sock.remote, optarg))
+          ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+            _("Couldn't resolve tunnel target host: %s"), optarg);
+        if (!netcat_getport(&connect_sock.port, div, 0))
+          ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+            _("Invalid tunnel target port: %s"), div);
 
-  /* takes the options configured so far as they may change */
-  connect_sock.domain = opt_domain;
-  connect_sock.proto = opt_proto;
-  connect_sock.timeout = opt_wait;
-  netcat_mode = NETCAT_TUNNEL;
+        /* takes the options configured so far as they may change */
+        connect_sock.domain = opt_domain;
+        connect_sock.proto = opt_proto;
+        connect_sock.timeout = opt_wait;
+        netcat_mode = NETCAT_TUNNEL;
       } while (FALSE);
       break;
     case 'N':      /* ascii line ends conversion, use with care */
       if (!strcasecmp(optarg, "none"))
-  opt_ascii_conversion = NETCAT_CONVERT_NONE;
+        opt_ascii_conversion = NETCAT_CONVERT_NONE;
       else if (!strcasecmp(optarg, "crlf"))
-  opt_ascii_conversion = NETCAT_CONVERT_CRLF;
+        opt_ascii_conversion = NETCAT_CONVERT_CRLF;
       else if (!strcasecmp(optarg, "cr"))
-  opt_ascii_conversion = NETCAT_CONVERT_CR;
+        opt_ascii_conversion = NETCAT_CONVERT_CR;
       else if (!strcasecmp(optarg, "lf"))
-  opt_ascii_conversion = NETCAT_CONVERT_LF;
+        opt_ascii_conversion = NETCAT_CONVERT_LF;
       else {
-  ncprint(NCPRINT_NORMAL, _("Conversion must be one of: none crlf cr lf"));
-  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-    _("Invalid conversion specified: %s"), optarg);
+        ncprint(NCPRINT_NORMAL,
+          _("Conversion must be one of: none crlf cr lf"));
+        ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+          _("Invalid conversion specified: %s"), optarg);
       }
       break;
     case 'n':      /* numeric-only, no DNS lookups */
@@ -420,7 +427,8 @@ int main(int argc, char *argv[])
   if (opt_outputfile) {
     output_fp = fopen(opt_outputfile, "w");
     if (!output_fp)
-      ncprint(NCPRINT_ERROR | NCPRINT_EXIT, _("Failed to open output file: %s (%s)"),
+      ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
+        _("Failed to open output file: %s (%s)"),
         opt_outputfile, strerror(errno));
   }
   else
@@ -451,26 +459,26 @@ int main(int argc, char *argv[])
 
     if (!q) {
       if (netcat_getport(&port_tmp, parse, 0))
-  netcat_ports_insert(old_flag, port_tmp.num, port_tmp.num);
-      else
-  goto got_err;
+        netcat_ports_insert(old_flag, port_tmp.num, port_tmp.num);
+            else
+        goto got_err;
     }
     else {    /* could be in the forms: N1-N2, -N2, N1- */
       *q++ = 0;
       if (*parse) {
-  if (netcat_getport(&port_tmp, parse, 0))
-    port_lo = port_tmp.num;
-  else
-    goto got_err;
+        if (netcat_getport(&port_tmp, parse, 0))
+          port_lo = port_tmp.num;
+        else
+          goto got_err;
       }
       if (*q) {
-  if (netcat_getport(&port_tmp, q, 0))
-    port_hi = port_tmp.num;
-  else
-    goto got_err;
+        if (netcat_getport(&port_tmp, q, 0))
+          port_hi = port_tmp.num;
+        else
+          goto got_err;
       }
       if (!*parse && !*q)    /* don't accept the form '-' */
-  goto got_err;
+        goto got_err;
 
       netcat_ports_insert(old_flag, port_lo, port_hi);
     }
@@ -521,7 +529,7 @@ int main(int argc, char *argv[])
       /* since i'm planning to make `-z' compatible with `-L' I need to check
          the exact error that caused this failure. */
       if (opt_zero && (errno == ETIMEDOUT))
-  exit(0);
+        exit(0);
 
       ncprint(NCPRINT_VERB1 | NCPRINT_EXIT, _("Listen mode failed: %s"),
         strerror(errno));
@@ -532,8 +540,8 @@ int main(int argc, char *argv[])
        them together (which means passing to the next section. */
     if (netcat_mode == NETCAT_LISTEN) {
       if (opt_exec) {
-  ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
-  ncexec(&listen_sock);    /* this won't return */
+        ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
+        ncexec(&listen_sock);    /* this won't return */
       }
       core_readwrite(&listen_sock, &stdio_sock);
       debug_dv(("Listen: EXIT"));
@@ -546,15 +554,16 @@ int main(int argc, char *argv[])
 
       /* connection failure? (we cannot get this in UDP mode) */
       if (connect_ret < 0) {
-  assert(connect_sock.proto != NETCAT_PROTO_UDP);
-  ncprint(NCPRINT_VERB1, "%s: %s",
-    netcat_strid(connect_sock.domain, &connect_sock.remote, &connect_sock.port),
-    strerror(errno));
+        assert(connect_sock.proto != NETCAT_PROTO_UDP);
+        ncprint(NCPRINT_VERB1, "%s: %s",
+          netcat_strid(connect_sock.domain, &connect_sock.remote,
+            &connect_sock.port),
+          strerror(errno));
       }
       else {
-  glob_ret = EXIT_SUCCESS;
-  core_readwrite(&listen_sock, &connect_sock);
-  debug_dv(("Tunnel: EXIT (ret=%d)", glob_ret));
+        glob_ret = EXIT_SUCCESS;
+        core_readwrite(&listen_sock, &connect_sock);
+        debug_dv(("Tunnel: EXIT (ret=%d)", glob_ret));
       }
     }
 
@@ -613,10 +622,11 @@ int main(int argc, char *argv[])
       /* if we are portscanning or multiple connecting show only open
          ports with verbosity level 1. */
       if (total_ports > 1)
-  ncprint_flags = NCPRINT_VERB2;
+        ncprint_flags = NCPRINT_VERB2;
 
       ncprint(ncprint_flags, "%s: %s",
-        netcat_strid(connect_sock.domain, &connect_sock.remote, &connect_sock.port),
+        netcat_strid(connect_sock.domain, &connect_sock.remote,
+          &connect_sock.port),
         strerror(errno));
       continue;      /* go with next port */
     }
@@ -631,8 +641,8 @@ int main(int argc, char *argv[])
     }
     else {
       if (opt_exec) {
-  ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
-  ncexec(&connect_sock);    /* this won't return */
+        ncprint(NCPRINT_VERB2, _("Passing control to the specified program"));
+        ncexec(&connect_sock);    /* this won't return */
       }
       core_readwrite(&connect_sock, &stdio_sock);
       /* FIXME: add a small delay */
@@ -643,7 +653,7 @@ int main(int argc, char *argv[])
          from outside that function, because of this that flag is not
          cleared. */
       if (got_sigterm)
-  break;
+        break;
     }
   }      /* end of while (left_ports > 0) */
 
