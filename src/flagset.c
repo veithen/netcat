@@ -21,6 +21,15 @@
  *   GNU General Public License for more details.                          *
  *                                                                         *
  ***************************************************************************/
+/***************************************************************************
+ * zosunix01: Listings of all changes for z/OS Unix.                       *
+ *            Search for '#ifdef __MVS__ ...' and/or 'zosunix01'           *
+ ***************************************************************************/
+/***************************************************************************
+ *   25.07.2011 zosunix01: changes the way of counting set flags in        *
+ *                         function 'netcat_flag_count', so that it returns*
+ *                         with a positive sign                            *
+ ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -154,7 +163,7 @@ int netcat_flag_count(void)
 	Assumed that the bit number 1 is the sign, and that we will shift the
 	bit 1 (or the bit that takes its place later) until the the most right,
 	WHY it has to keep the wrong sign? */
-      ret -= (c >> 7);
+      ret += (c >> 7); /* zosunix01 changes 'ret -= ...' to 'ret += ...' 25. Jul 2011 */ 
       c <<= 1;
     }
   }

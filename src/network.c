@@ -21,6 +21,20 @@
  *   GNU General Public License for more details.                          *
  *                                                                         *
  ***************************************************************************/
+/***************************************************************************
+ *  01.08.2011 zosunix01: The function 'netcat_socket_new_connect()' ends  *
+ *                        with the new retcode -6, if the destination host *
+ *                        rejects the connection (errno=ECONNREFUSED). This*
+ *                        prevents the caller to finish the main program   *
+ *                        in the case of port-scanning.                    *
+ ***************************************************************************/
+/***************************************************************************
+ *  03.08.2011 zosunix01: The timeout value for the option SO_LINGER in the*
+ *                        function 'netcat_socket_new()' is set greater    *
+ *                        than zero to prevent discarding of sending data. *
+ *                        This is the case, if the receiving netcat runs on*
+ *                        a slower system like z/OS Unix.                  *
+ ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -357,7 +371,19 @@ int netcat_socket_new(int domain, int type)
 
   /* don't leave the socket in a TIME_WAIT state if we close the connection */
   fix_ling.l_onoff = 1;
-  fix_ling.l_linger = 0;
+  #ifdef __MVS__           /* zosunix01 03.08.2011                                 */
+                           /* The timeout value is set greater than zero to        */
+                           /* prevent discarding of data in the sendbuffer, if     */
+                           /* the socket is shutdowned. This is neccessary, if     */
+                           /* the receiving netcat runs under a slower system      */
+                           /* like z/OS Unix. In the most cases the receiver       */
+                           /* ends with an errno 1121 (EDC8121I Connection reset.) */
+                           /* without receiving data, if the number of sended is   */
+                           /* small.                                               */
+   fix_ling.l_linger = 1;
+  #else
+   fix_ling.l_linger = 0;
+  #endif
   ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
   if (ret < 0) {
     close(sock);		/* anyway the socket was created */
@@ -434,7 +460,7 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
 
   /* add the non-blocking flag to this socket */
   if ((ret = fcntl(sock, F_GETFL, 0)) >= 0)
-    ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK);
+    ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK); 
   if (ret < 0) {
     ret = -4;
     goto err;
@@ -445,6 +471,20 @@ int netcat_socket_new_connect(int domain, int type, const struct in_addr *addr,
      address may immediately return successfully) */
   ret = connect(sock, (struct sockaddr *)&rem_addr, sizeof(rem_addr));
   if ((ret < 0) && (errno != EINPROGRESS)) {
+
+   #ifdef __MVS__   /* zosunix01 01.08.2011                              */
+                    /* In the most cases EINPROGRESS is the errno. So    */
+                    /* the retcode of the function is the socket-pointer.*/
+                    /* Sometimes the errno is ECONNREFUSED. The caller   */
+                    /* 'core_tcp_connect()' receives a retcode <0 and    */
+                    /* ends the main program. Because port-scanning will */
+                    /* be also interrupted, the new retcode -6 is set, if*/
+                    /* ECONNREFUSED is the errno.                        */
+    if (errno == ECONNREFUSED) {
+     return -6;
+    }
+   #endif
+
     ret = -5;
     goto err;
   }

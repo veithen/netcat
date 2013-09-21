@@ -21,6 +21,20 @@
  *   GNU General Public License for more details.                          *
  *                                                                         *
  ***************************************************************************/
+/***************************************************************************
+ * zosunix01 02.08.2011: The program now runs on z/OS Unix. This system is *
+ *                       an Unix V implementation, which is part of IBM's  *
+ *                       operating system z/OS (in the past "MVS"). It runs*
+ *                       under zSeries mainframes like z/10. Some changes  *
+ *                       and enhancements are necessary, that netcat       *
+ *                       correctly works. You find all the modifications   *
+ *                       under '#ifdef __MVS__ ...', so that this version  *
+ *                       is further compatible to all the other platforms, *
+ *                       that it supports ! Although some modifications    *
+ *                       could be generally, they only are effectively for *
+ *                       z/OS Unix at this time.                           *
+ ***************************************************************************/
+
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"

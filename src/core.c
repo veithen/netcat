@@ -21,6 +21,31 @@
  *   GNU General Public License for more details.                          *
  *                                                                         *
  ***************************************************************************/
+/***************************************************************************
+ *   26.07.2011 zosunix01: In the function 'core_readwrite' the errno of   *
+ *                         the function 'write' must addtionally be tested,*
+ *                         if it is EWOULDBLOCK. This is neccessary in the *
+ *                         case of older Unix Systems like Unix V          *
+ ***************************************************************************/
+/***************************************************************************
+ *   26.07.2011 zosunix01: Increasing the buffer-size for read/write from/ *
+ *                         into the stack of tcpip for z/OS Unix in the    * 
+ *                         functions 'core_udp_listen' and 'core_readwrite'*
+ *                         Setting it on 32K reduces the overhead and inc- *
+ *                         creases the speed up to 4x. 32K is the buffer-  *
+ *                         size for tcp/ip in this system.                 *
+ ***************************************************************************/
+/***************************************************************************
+ *   27.07.2011 zosunix01: In the function 'core_tcp_connect' the function *
+ *                         read() fails with ENOTCONN in the case of a fai-*
+ *                         ling to establish a connection.                 * 
+ ***************************************************************************/
+/***************************************************************************
+ *   01.08.2011 zosunix01: The function 'core_tcp_connect' doesn't finish  *
+ *                         the main program, if the subroutine             *
+ *                         'netcat_socket_new_connect' ends with the new   *
+ *                         retcode -6.                                     *
+ ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -182,7 +207,11 @@ static int core_udp_listen(nc_sock_t *ncsock)
     for (socks_loop = 1; socks_loop <= sockbuf[0]; socks_loop++) {
       int recv_ret, write_ret;
       struct msghdr my_hdr;
-      unsigned char buf[1024];
+      #ifdef  __MVS__             /* zosunix01 26.07.2011 */
+      unsigned char buf[32768];
+      #else
+      unsigned char buf[1024]; 
+      #endif 
       struct iovec my_hdr_vec;
       struct sockaddr_in rem_addr;
       struct sockaddr_in local_addr;
@@ -334,9 +363,19 @@ static int core_tcp_connect(nc_sock_t *ncsock)
 	(ncsock->local_host.iaddrs[0].s_addr ? &ncsock->local_host.iaddrs[0] :
 	NULL), ncsock->local_port.netnum);
 
+  #ifdef __MVS__   /* 01.08.2011 zosunix01                                */
+                   /* The new retcode shows, that the destination host has*/
+                   /* rejected the connect. The function doesn't finish   */
+                   /* the main program, but ends with the retcode -1 to   */ 
+                   /* indicate a failure.                                 */
+  if (sock == -6) {
+   return -1;
+  }
+  #endif
+
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
-	    sock, strerror(errno));
+	    sock, strerror(errno)); 
 
   /* initialize select()'s variables */
   FD_ZERO(&outs);
@@ -369,7 +408,15 @@ static int core_tcp_connect(nc_sock_t *ncsock)
       /* Ok, select() returned a write event for this socket AND getsockopt()
          said that some error happened.  This mean that EOF is expected. */
       ret = read(sock, &tmp, 1);
-      assert(ret == 0);
+      #ifdef __MVS__  /* zosunix01 27.07.2011                          */
+                      /* In z/OS Unix the socket is closed in the case */
+                      /* of a connection error                         */
+      if(!((ret == -1) && ((errno == EAGAIN) || (errno == ENOTCONN)))) {
+       assert(ret == 0);
+      }
+      #else
+      assert(ret == 0); /* for systems other than z/OS Unix */
+      #endif
       /* FIXME: see the TODO entry about false error detection */
 
       shutdown(sock, 2);
@@ -525,7 +572,11 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 {
   int fd_stdin, fd_stdout, fd_sock, fd_max;
   int read_ret, write_ret;
-  unsigned char buf[1024];
+  #ifdef  __MVS__             /* zosunix01 26.07.2011 */
+  unsigned char buf[32768];
+  #else
+  unsigned char buf[1024]; 
+  #endif 
   bool inloop = TRUE;
   fd_set ins, outs;
   struct timeval delayer;
@@ -731,7 +782,14 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 
       write_ret = write(fd_sock, data, data_len);
       if (write_ret < 0) {
-	if (errno == EAGAIN)
+        #ifdef  __MVS__          /* zosunix01 26.07.2011                   */ 
+                                 /* z/OS Unix is Unix V and here the errno */
+                                 /* EWOULBBLOCK appears, if the socket is  */
+                                 /* blocked.                               */
+	if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+        #else
+        if (errno == EAGAIN)
+        #endif
 	  write_ret = 0;	/* write would block, append it to select */
 	else {
 	  perror("write(net)");
@@ -887,6 +945,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	memcpy(my_sendq->head, my_sendq->pos, my_sendq->len);
 	my_sendq->pos = my_sendq->head;
       }
+      
     }				/* end of reading from the socket section */
 
  handle_signal:			/* FIXME: i'm not sure this is the right place */
@@ -899,7 +958,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   }				/* end of while (inloop) */
 
   /* we've got an EOF from the net, close the sockets */
-  shutdown(fd_sock, SHUT_RDWR);
+  shutdown(fd_sock, SHUT_RDWR);  
   close(fd_sock);
   nc_main->fd = -1;
 
