@@ -88,6 +88,9 @@ case "$host" in
 esac
     
 
+# check if we can support IPv6
+AC_CHECK_TYPES([struct in6_addr], AC_DEFINE(USE_IPV6, , [use IPv6]), , [#include <netinet/in.h>])
+
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
