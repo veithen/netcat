@@ -271,6 +271,13 @@ typedef struct {
 typedef struct nc_ports_st *nc_ports_t;
 
 /**
+ * Socket options.
+ */
+typedef struct {
+  bool keepalive;	/**< Enable TCP keepalive. */
+} nc_sockopts_t;
+
+/**
  * \brief This is the main socket object.
  *
  * This is a more complex struct that holds socket records.
@@ -285,6 +292,7 @@ typedef struct {
   nc_domain_t domain;	/**< Specifies the level 3 domain of the socket */
   nc_proto_t proto;	/**< Specifies the level 4 protocol used by the
 			 * socket */
+  nc_sockopts_t opts;	/**< Socket options */
   nc_host_t local;	/**< Local host information */
   nc_port_t local_port;	/**< Local port information */
   nc_host_t remote;	/**< Remote host information */

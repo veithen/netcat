@@ -381,7 +381,8 @@ const char *netcat_inet_ntop(int af, const void *src)
    Returns -1 if the socket(2) call failed, -2 if the setsockopt() call failed;
    otherwise the return value is a descriptor referencing the new socket. */
 
-int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
+int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
+		      const nc_sockopts_t *opts)
 {
   int sock, ret, sockdomain, socktype, sockopt;
   struct linger fix_ling;
@@ -423,6 +424,13 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
     return -2;
   }
 
+  sockopt = opts->keepalive;
+  ret = setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &sockopt, sizeof(sockopt));
+  if (ret < 0) {
+    close(sock);
+    return -2;
+  }
+
   return sock;
 }
 
@@ -437,7 +445,8 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
 
 int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 			      const nc_host_t *addr, const nc_port_t *port,
-			      const nc_host_t *local_addr, const nc_port_t *local_port)
+			      const nc_host_t *local_addr, const nc_port_t *local_port,
+			      const nc_sockopts_t *opts)
 {
   int sock, ret, my_family = AF_UNSPEC;
   struct sockaddr *rem_addr = NULL;
@@ -459,7 +468,7 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
     return -1;		/* unknown domain, assume socket(2) call failed */
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new(domain, proto);
+  sock = netcat_socket_new(domain, proto, opts);
   if (sock < 0)
     return sock;		/* just forward the error code */
 
@@ -585,7 +594,7 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
    call failed. */
 
 int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
-			     const nc_port_t *port)
+			     const nc_port_t *port, const nc_sockopts_t *opts)
 {
   int sock, ret, my_family;
   struct sockaddr *my_addr = NULL;
@@ -604,7 +613,7 @@ int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
     return -1;		/* unknown domain, assume socket(2) call failed */
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new(domain, NETCAT_PROTO_TCP);
+  sock = netcat_socket_new(domain, NETCAT_PROTO_TCP, opts);
   if (sock < 0)
     return sock;		/* forward the error code */
 
