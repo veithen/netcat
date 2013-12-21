@@ -389,6 +389,7 @@ void netcat_printhelp(char *argv0)
 "  -h, --help                 display this help and exit\n"
 "  -i, --interval=SECS        delay interval for lines sent, ports scanned\n"));
   printf(_(""
+"  -K, --keepalive            enable TCP keepalive\n"
 "  -l, --listen               listen mode, for inbound connects\n"
 "  -L, --tunnel=ADDRESS:PORT  forward local port to remote address\n"
 "  -n, --dont-resolve         numeric-only IP addresses, no DNS\n"
