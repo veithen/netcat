@@ -200,7 +200,7 @@ int udphelper_sockets_open(int **sockbuf, in_port_t nport)
       continue;
 
     debug(("(udphelper) Found interface %s (IP address: %s)\n",
-	  nc_ifreq->lifr_name, netcat_inet_ntop(&if_addr.sin_addr)));
+	  nc_ifreq->lifr_name, netcat_inet_ntop(AF_INET, &if_addr.sin_addr)));
 
     newsock = socket(PF_INET, SOCK_DGRAM, 0);
     if (newsock < 0)
