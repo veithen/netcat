@@ -220,6 +220,10 @@ source address for the connecting socket.
 @section Advanced Options
 
 @table @samp
+@item -K
+@itemx --keepalive
+Enable TCP keepalive.
+
 @item -i SECS
 @itemx --interval SECS
 sets the buffering output delay time.  This affects all the current modes and

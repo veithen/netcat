@@ -77,14 +77,16 @@ const char *netcat_strid(nc_domain_t domain, const nc_host_t *host,
 int netcat_inet_pton(int af, const char *src, void *dst);
 const char *netcat_inet_ntop(int af, const void *src);
 
-int netcat_socket_new(nc_domain_t domain, nc_proto_t proto);
+int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
+		      const nc_sockopts_t *opts);
 
 int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 			      const nc_host_t *addr, const nc_port_t *port,
-			      const nc_host_t *local_addr, const nc_port_t *local_port);
+			      const nc_host_t *local_addr, const nc_port_t *local_port,
+			      const nc_sockopts_t *opts);
 
 int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
-			     const nc_port_t *port);
+			     const nc_port_t *port, const nc_sockopts_t *opts);
 
 int netcat_socket_accept(int fd, int timeout);
 

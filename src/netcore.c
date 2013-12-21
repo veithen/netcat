@@ -43,7 +43,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   struct sockaddr_in myaddr;
   debug_v(("core_udp_connect(ncsock=%p)", (void *)ncsock));
 
-  sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP);
+  sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP, &ncsock->opts);
   if (sock < 0)
     return -1;
 
@@ -101,7 +101,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* simulates a udphelper_sockets_open() call */
     sockbuf = calloc(2, sizeof(int));
     sockbuf[0] = 1;
-    sockbuf[1] = sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP);
+    sockbuf[1] = sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP, &ncsock->opts);
   }
 #ifndef USE_PKTINFO
   else
@@ -332,7 +332,8 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   sock = netcat_socket_new_connect(ncsock->domain, ncsock->proto,
 	&ncsock->remote, &ncsock->port,
 	(ncsock->local.host.iaddrs[0].s_addr ? &ncsock->local : NULL),
-	&ncsock->local_port);
+	&ncsock->local_port,
+	&ncsock->opts);
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
@@ -412,7 +413,7 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   debug_v(("core_tcp_listen(ncsock=%p)", (void *)ncsock));
 
   sock_listen = netcat_socket_new_listen(ncsock->domain, &ncsock->local,
-			&ncsock->local_port);
+			&ncsock->local_port, &ncsock->opts);
   if (sock_listen < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 	    _("Couldn't setup listening socket (err=%d): %s"), sock_listen,
