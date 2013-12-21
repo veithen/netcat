@@ -93,7 +93,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
   need_udphelper = FALSE;
 #else
   /* if we need a specified source address then go straight to it */
-  if (ncsock->local_host.iaddrs[0].s_addr)
+  if (ncsock->local.host.iaddrs[0].s_addr)
     need_udphelper = FALSE;
 #endif
 
