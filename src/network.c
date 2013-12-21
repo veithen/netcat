@@ -386,30 +386,40 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
   int sock, ret, sockdomain, socktype, sockopt;
   struct linger fix_ling;
 
+  debug_v(("netcat_socket_new: (%d, %d)\n", domain, proto));
+
   if (domain == NETCAT_DOMAIN_IPV4)
     sockdomain = PF_INET;
 #ifdef USE_IPV6
   else if (domain == NETCAT_DOMAIN_IPV6)
     sockdomain = PF_INET6;
 #endif
-  else
+  else {
+    debug_v(("FATAL: Bad domain: domain=%d, sockdomain=%d; NETCAT_DOMAIN_IPV4=%d, NETCAT_DOMAIN_IPV6=%d, PF_INET=%d, PF_INET6=%d\n", domain, sockdomain, NETCAT_DOMAIN_IPV4, NETCAT_DOMAIN_IPV6, PF_INET, PF_INET6));
     abort();
+  }
 
   if (proto == NETCAT_PROTO_TCP)
     socktype = SOCK_STREAM;
   else if (proto == NETCAT_PROTO_UDP)
     socktype = SOCK_DGRAM;
-  else
+  else {
+    debug_v(("FATAL: Bad proto: proto=%d, socktype=%d; NETCAT_PROTO_TCP=%d, NETCAT_PROTO_UDP=%d, SOCK_STREA%d, SOCK_DGRAM=%d\n", proto, socktype, NETCAT_PROTO_TCP, NETCAT_PROTO_UDP, SOCK_STREAM, SOCK_DGRAM));
     abort();
+  }
 
+  debug_v(("netcat_socket_new: socket(%d, %d, 0)", sockdomain, socktype));
   sock = socket(sockdomain, socktype, 0);
+  debug_v((": sock=%d\n", sock));
   if (sock < 0)
     return -1;
 
   /* don't leave the socket in a TIME_WAIT state if we close the connection */
   fix_ling.l_onoff = 1;
   fix_ling.l_linger = 0;
+  debug_v(("netcat_socket_new: setsockopt SO_LINGER"));
   ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
+  debug_v((": ret=%d\n", ret));
   if (ret < 0 && socktype != SOCK_DGRAM) {
     /* Under (Open)Solaris it is enforced that lingering is undefined for UDP */
     close(sock);		/* anyway the socket was created */
@@ -418,12 +428,15 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
 
   /* fix the socket options */
   sockopt = 1;
+  debug_v(("netcat_socket_new: setsockopt SO_REUSEADDR"));
   ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));
+  debug_v((": ret=%d\n", ret));
   if (ret < 0) {
     close(sock);		/* anyway the socket was created */
     return -2;
   }
 
+  debug_v(("netcat_socket_new: return sock=%d\n", sock));
   return sock;
 }
 

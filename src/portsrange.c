@@ -104,6 +104,8 @@ int netcat_ports_count(nc_ports_t portsrange)
   while (tmp) {
     /* Discard the useless initial portrange entry (all zeroes) */
     if (tmp->first != 0 && tmp->last != 0) {
+      debug_v(("netcat_ports_count(): tmp->last=%d tmp->first=%d tmp->next=%p, incr=%d\n",
+	tmp->last, tmp->first, tmp->next, (tmp->last - tmp->first + 1) ));
       count += (tmp->last - tmp->first + 1);
     }
     tmp = tmp->next;
