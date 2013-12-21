@@ -407,13 +407,15 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
   if (sock < 0)
     return -1;
 
-  /* don't leave the socket in a TIME_WAIT state if we close the connection */
-  fix_ling.l_onoff = 1;
-  fix_ling.l_linger = 0;
-  ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
-  if (ret < 0) {
-    close(sock);		/* anyway the socket was created */
-    return -2;
+  if (proto == NETCAT_PROTO_TCP) {
+    /* don't leave the socket in a TIME_WAIT state if we close the connection */
+    fix_ling.l_onoff = 1;
+    fix_ling.l_linger = 0;
+    ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
+    if (ret < 0) {
+      close(sock);		/* anyway the socket was created */
+      return -2;
+    }
   }
 
   /* fix the socket options */
