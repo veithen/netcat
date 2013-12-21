@@ -43,7 +43,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   struct sockaddr_in myaddr;
   debug_v(("core_udp_connect(ncsock=%p)", (void *)ncsock));
 
-  sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
+  sock = netcat_socket_new(ncsock->domain, ncsock->proto);
   if (sock < 0)
     return -1;
 
@@ -101,7 +101,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* simulates a udphelper_sockets_open() call */
     sockbuf = calloc(2, sizeof(int));
     sockbuf[0] = 1;
-    sockbuf[1] = sock = netcat_socket_new(PF_INET, SOCK_DGRAM);
+    sockbuf[1] = sock = netcat_socket_new(ncsock->domain, ncsock->proto);
   }
 #ifndef USE_PKTINFO
   else
