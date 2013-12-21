@@ -102,7 +102,10 @@ int netcat_ports_count(nc_ports_t portsrange)
   debug_v(("netcat_ports_count(): p=%p", portsrange));
 
   while (tmp) {
-    count += (tmp->last - tmp->first + 1);
+    /* Discard the useless initial portrange entry (all zeroes) */
+    if (tmp->first != 0 && tmp->last != 0) {
+      count += (tmp->last - tmp->first + 1);
+    }
     tmp = tmp->next;
   }
 
@@ -130,14 +133,22 @@ bool netcat_ports_isset(nc_ports_t portsrange, unsigned short port)
 unsigned short netcat_ports_next(nc_ports_t portsrange, unsigned short port)
 {
   nc_ports_t tmp = portsrange;
+  unsigned short min = 0, max = 0;
 
   debug_v(("netcat_ports_next(): p=%p port=%hu", portsrange, port));
 
-  while (tmp && ((tmp->first > port) || (tmp->last < port)))
+  /* find the range inside which is our port, or don't find anything */
+  while (tmp && ((tmp->first > port) || (tmp->last < port))) {
+    if ( min > tmp->first || min == 0 ) { min = tmp->first; }
+    if ( max < tmp->last  || max == 0 ) { max = tmp->last; }
     tmp = tmp->next;
+  }
 
-  if (!tmp)
+  if (!tmp) {
+    if ( port == 0 )
+        return min;
     return 0;
+  }
 
   if (port != tmp->last)
     return (port + 1);
