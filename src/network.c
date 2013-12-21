@@ -410,7 +410,8 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
   fix_ling.l_onoff = 1;
   fix_ling.l_linger = 0;
   ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
-  if (ret < 0) {
+  if (ret < 0 && socktype != SOCK_DGRAM) {
+    /* Under (Open)Solaris it is enforced that lingering is undefined for UDP */
     close(sock);		/* anyway the socket was created */
     return -2;
   }
