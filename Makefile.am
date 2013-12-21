@@ -15,13 +15,13 @@
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
 
-# $Id: Makefile.am,v 1.6 2003-01-03 22:53:31 themnemonic Exp $
+# $Id: Makefile.am,v 1.7 2004-01-15 21:56:20 themnemonic Exp $
 
 AUTOMAKE_OPTIONS = no-dependencies foreign dist-bzip2
 
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = AUTHORS COPYING ChangeLog INSTALL README TODO 
+EXTRA_DIST = AUTHORS COPYING ChangeLog INSTALL README TODO mkinstalldirs
 
 ## Proceed to subdirs
 
