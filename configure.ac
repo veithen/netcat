@@ -75,6 +75,9 @@ dnl Check if it is available the RFC2292 IPv4 extension and in_port_t.
 AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <sys/types.h>
 #include <netinet/in.h>])
 
+dnl Check if ipi_spec_dst field is available.
+AC_CHECK_MEMBERS(struct in_pktinfo.ipi_spec_dst, , ,)
+
 # check if this compiler supports the common parameter `-Wall'
 if test -n "$GCC"; then
   CFLAGS="$CFLAGS -Wall"

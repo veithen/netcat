@@ -358,12 +358,22 @@ int netcat_socket_new(int domain, int type)
   /* don't leave the socket in a TIME_WAIT state if we close the connection */
   fix_ling.l_onoff = 1;
   fix_ling.l_linger = 0;
+  
+  /* SO_LINGER is not valid for SOCK_DGRAM on Windows */
+  #if defined(__CYGWIN__) || defined(_WIN32)
+  if (SOCK_DGRAM != type)
+  {
+  #endif
   ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
   if (ret < 0) {
+    ncprint(NCPRINT_WARNING | NCPRINT_VERB1, strerror(errno));
     close(sock);		/* anyway the socket was created */
     return -2;
   }
-
+  #if defined(__CYGWIN__) || defined(_WIN32)
+  }
+  #endif
+   
   /* fix the socket options */
   sockopt = 1;
   ret = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &sockopt, sizeof(sockopt));

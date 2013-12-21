@@ -90,8 +90,10 @@
 /* Find out whether we can use the RFC 2292 extensions on this machine
    (I've found out only linux supporting this feature so far) */
 #ifdef HAVE_STRUCT_IN_PKTINFO
-# if defined(SOL_IP) && defined(IP_PKTINFO)
-#  define USE_PKTINFO
+# ifdef HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST
+#  if defined(SOL_IP) && defined(IP_PKTINFO)
+#   define USE_PKTINFO
+#  endif
 # endif
 #endif
 
