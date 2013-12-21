@@ -543,6 +543,7 @@ int main(int argc, char *argv[])
 	ncexec(&listen_sock);		/* this won't return */
       }
       core_readwrite(&listen_sock, &stdio_sock);
+      glob_ret = EXIT_SUCCESS;
       debug_dv(("Listen: EXIT"));
     }
     else {
