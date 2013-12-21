@@ -297,9 +297,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* lookup the remote address and the remote port for tunneling */
-	if (!netcat_resolvehost(&connect_sock.remote, optarg))
+	if (!netcat_resolvehost(&connect_sock.remote, pbuf))
 	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		  _("Couldn't resolve tunnel target host: %s"), optarg);
+		  _("Couldn't resolve tunnel target host: %s"), pbuf);
 	if (!netcat_getport(&connect_sock.port, div, 0))
 	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		  _("Invalid tunnel target port: %s"), div);
