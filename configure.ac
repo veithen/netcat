@@ -22,7 +22,7 @@ AC_INIT(ChangeLog)
 dnl put any platform specific stuff here
 AC_CANONICAL_SYSTEM
 
-AM_INIT_AUTOMAKE(netcat, 0.7.1)
+AM_INIT_AUTOMAKE(netcat, 0.8-cvs)
 AC_PREREQ(2.53)
 
 dnl without this order in this file, automake will be confused!
@@ -75,6 +75,9 @@ dnl Check if it is available the RFC2292 IPv4 extension and in_port_t.
 AC_CHECK_TYPES([struct in_pktinfo, in_port_t], , , [#include <sys/types.h>
 #include <netinet/in.h>])
 
+dnl Check if ipi_spec_dst field is available.
+AC_CHECK_MEMBERS(struct in_pktinfo.ipi_spec_dst, , , [#include <netinet/in.h>])
+
 # check if this compiler supports the common parameter `-Wall'
 if test -n "$GCC"; then
   CFLAGS="$CFLAGS -Wall"
@@ -87,6 +90,9 @@ case "$host" in
     ;;
 esac
     
+
+# check if we can support IPv6
+AC_CHECK_TYPES([struct in6_addr], AC_DEFINE(USE_IPV6, , [use IPv6]), , [#include <netinet/in.h>])
 
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************

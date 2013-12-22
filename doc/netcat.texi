@@ -220,6 +220,10 @@ source address for the connecting socket.
 @section Advanced Options
 
 @table @samp
+@item -K
+@itemx --keepalive
+Enable TCP keepalive.
+
 @item -i SECS
 @itemx --interval SECS
 sets the buffering output delay time.  This affects all the current modes and
@@ -246,7 +250,7 @@ a VALID incoming connection (see listen mode).
 
 @item -T
 @itemx --telnet
-Answers the telnet codes as described in RFC0854.  This makes possible to use
+Answers the telnet codes as described in RFC0854.  This makes it possible to use
 netcat to script telnet sessions.  The incoming telnet codes are parsed
 inside the receiving queue and are stripped off before forwarding the data
 as they were never received, so the application doesn't have to parse the
