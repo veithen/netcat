@@ -307,6 +307,6 @@ typedef struct {
 
 #include "proto.h"
 #include "intl.h"
-#include "misc.h"
+#include "ncprint.h"
 
 #endif	/* !NETCAT_H */

@@ -27,6 +27,7 @@ endif
 bin_PROGRAMS = netcat
 netcat_SOURCES = \
 	misc.c \
+	ncprint.c \
 	netcat.c \
 	netcore.c \
 	network.c \

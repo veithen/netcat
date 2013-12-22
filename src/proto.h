@@ -35,7 +35,6 @@ char *netcat_ascii_convert(const char *source, int source_len,
 			   nc_convert_t conversion, int *target_len);
 int netcat_fhexdump(FILE *stream, char c, const void *data, size_t datalen);
 int netcat_snprintnum(char *str, size_t size, unsigned long number);
-void ncprint(int type, const char *fmt, ...);
 void netcat_printstats(bool force);
 char *netcat_string_split(char **buf);
 void netcat_commandline_read(int *argc, char ***argv);
@@ -50,9 +49,9 @@ void update_timeval(struct timeval *target);
 
 /* netcat.c */
 extern nc_mode_t netcat_mode;
-extern bool opt_eofclose, opt_debug, opt_numeric, opt_random, opt_hexdump,
+extern bool opt_eofclose, opt_numeric, opt_random, opt_hexdump,
 	opt_telnet, opt_zero;
-extern int opt_interval, opt_verbose, opt_wait;
+extern int opt_interval, opt_wait;
 extern char *opt_outputfile;
 extern nc_proto_t opt_proto;
 extern FILE *output_fp;

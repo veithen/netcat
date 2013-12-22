@@ -139,7 +139,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
     /* for speed purposes, skip the authoritative checking if we haven't got
        any verbosity level set.  note that this will cause invalid results
        in the dst struct, but we don't care at this point. (FIXME: ?) */
-    if (!opt_debug && (opt_verbose < 1))
+    if (!is_logging_enabled())
       return TRUE;
 
     /* do inverse lookups in a separated loop for each collected addresses */
