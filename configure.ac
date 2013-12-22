@@ -191,6 +191,9 @@ dnl this one is special, it needs the executable flag
 dnl
 AC_CONFIG_FILES(doc/texi2pod.pl, chmod +x doc/texi2pod.pl)
 
-AS_IF([test "$PYTHON" != :], [AC_CONFIG_FILES([tests/exec-with-close-after-write.py], [chmod +x tests/exec-with-close-after-write.py])])
+AS_IF([test "$PYTHON" != :], [
+    AC_CONFIG_FILES([tests/exec-with-close-after-write.py], [chmod +x tests/exec-with-close-after-write.py])
+    AC_CONFIG_FILES([tests/remote-port-range.py], [chmod +x tests/remote-port-range.py])
+])
 
 AC_OUTPUT

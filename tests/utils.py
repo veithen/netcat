@@ -16,6 +16,7 @@
 # 02111-1307, USA or point your web browser to http://www.gnu.org.
 
 import socket
+import errno
 import time
 
 def allocate_tcp_port():
@@ -25,17 +26,17 @@ def allocate_tcp_port():
   s.close()
   return port
 
-def safe_connect(port):
-  s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def __safe_connect(self, address):
   attempt = 0
   while True:
     attempt += 1
     try:
-      s.connect(("localhost", port))
-      return s
-    except socket.error as msg:
-      if attempt > 5:
-        s.close()
-        raise msg
+      self.connect(address)
+      return
+    except socket.error as e:
+      if e.errno != errno.ECONNREFUSED or attempt > 10:
+        raise e
       else:
         time.sleep(0.2)
+
+socket._socketobject.safe_connect = __safe_connect

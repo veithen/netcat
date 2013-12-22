@@ -517,6 +517,7 @@ int main(int argc, char *argv[])
     memcpy(&listen_sock.local, &local_host, sizeof(listen_sock.local));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
     memcpy(&listen_sock.remote, &remote_host, sizeof(listen_sock.remote));
+    listen_sock.remote_ports = old_flag;
     memcpy(&listen_sock.opts, &sockopts, sizeof(listen_sock.opts));
     accept_ret = core_listen(&listen_sock);
 

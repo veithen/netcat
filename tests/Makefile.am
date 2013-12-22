@@ -22,6 +22,6 @@ check_portsrange_LDADD = ../src/portsrange.o ../src/ncprint.o @CHECK_LIBS@
 endif
 
 if HAVE_PYTHON
-TESTS += exec-with-close-after-write.py
-check_SCRIPTS = exec-with-close-after-write.py
+TESTS += exec-with-close-after-write.py remote-port-range.py
+check_SCRIPTS = exec-with-close-after-write.py remote-port-range.py
 endif

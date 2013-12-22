@@ -23,7 +23,8 @@ import utils
 
 port = utils.allocate_tcp_port()
 p = subprocess.Popen(["../src/netcat", "-l", "-p", "%d" % port, "-e", "echo -n test"])
-s = utils.safe_connect(port)
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.safe_connect(("localhost", port))
 f = s.makefile()
 assert f.readline() == "test"
 f.close()

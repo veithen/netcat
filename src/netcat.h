@@ -299,6 +299,9 @@ typedef struct {
   nc_port_t local_port;	/**< Local port information */
   nc_host_t remote;	/**< Remote host information */
   nc_port_t port;	/**< Remote port information */
+  nc_ports_t remote_ports; /**< Specifies the remote ports from which
+			 * connections are allowed; NULL if all ports are
+			 * allowed. */
   nc_buffer_t sendq;	/**< Queue for outgoing data */
   nc_buffer_t recvq;	/**< Queue for incoming data */
 } nc_sock_t;
