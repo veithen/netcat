@@ -23,7 +23,7 @@ START_TEST(test_disjoint_ranges)
 {
   nc_ports_t ports = netcat_ports_init();
   netcat_ports_insert(ports, 2000, 2999);
-  netcat_ports_insert(ports, 4000, 3999);
+  netcat_ports_insert(ports, 4000, 4999);
   ck_assert_int_eq(netcat_ports_count(ports), 2000);
 }
 END_TEST
