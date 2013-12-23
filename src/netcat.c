@@ -403,10 +403,6 @@ int main(int argc, char *argv[])
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-e' and `-z' options are incompatible"));
 
-  /* initialize the flag buffer to keep track of the specified ports */
-  //netcat_flag_init(65535);
-  old_flag = netcat_ports_init();
-
 #ifndef DEBUG
   /* check for debugging support */
   if (opt_debug)
@@ -458,7 +454,7 @@ int main(int argc, char *argv[])
 
     if (!q) {
       if (netcat_getport(&port_tmp, parse, 0))
-	netcat_ports_insert(old_flag, port_tmp.num, port_tmp.num);
+	netcat_ports_insert(&old_flag, port_tmp.num, port_tmp.num);
       else
 	goto got_err;
     }
@@ -479,7 +475,7 @@ int main(int argc, char *argv[])
       if (!*parse && !*q)		/* don't accept the form '-' */
 	goto got_err;
 
-      netcat_ports_insert(old_flag, port_lo, port_hi);
+      netcat_ports_insert(&old_flag, port_lo, port_hi);
     }
 
     free(parse);

@@ -23,8 +23,7 @@
  ***************************************************************************/
 
 /* portsrange.c */
-nc_ports_t netcat_ports_init(void);
-void netcat_ports_insert(nc_ports_t portsrange, unsigned short first, unsigned short last);
+void netcat_ports_insert(nc_ports_t *portsrange, unsigned short first, unsigned short last);
 bool netcat_ports_isset(nc_ports_t portsrange, unsigned short port);
 int netcat_ports_count(nc_ports_t portsrange);
 unsigned short netcat_ports_next(nc_ports_t portsrange, unsigned short port);
