@@ -1,11 +1,11 @@
 /*
- * misc.h -- ncprint constants and debugging functions definition
+ * ncprint.h -- ncprint constants and debugging functions declarations
  * Part of the GNU netcat project
  *
  * Author: Giovanni Giacobbi <giovanni@giacobbi.net>
+ *         Andreas Veithen <andreas.veithen@gmail.com>
  * Copyright (C) 2002 - 2006  Giovanni Giacobbi
- *
- * $Id: misc.h,v 1.9 2006-08-31 22:57:03 themnemonic Exp $
+ *           (C) 2013 Andreas Veithen
  */
 
 /***************************************************************************
@@ -52,6 +52,17 @@
 
 /** Prepends "Notice:" and marks the message as <b>NOTICE</b>. */
 #define NCPRINT_NOTICE		0x1400
+
+#ifndef __cplusplus
+# ifndef bool
+#  define bool unsigned char
+# endif
+#endif
+
+void set_debug(bool debug);
+void set_verbose(int level);
+bool is_logging_enabled(void);
+void ncprint(int type, const char *fmt, ...);
 
 /** @name Debugging output macros */
 #ifdef DEBUG

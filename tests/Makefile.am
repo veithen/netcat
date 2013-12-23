@@ -1,9 +1,4 @@
-## Process this file with automake to create Makefile.in
-
-## Makefile for Netcat.
-
-## Copyright (C) 1995, 1996, 1997, 1998, 1999, 2001, 2002 Free
-## Software Foundation, Inc.
+## Copyright (C) 2013  Andreas Veithen <andreas.veithen@gmail.com>
 
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,14 +10,11 @@
 ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ## GNU General Public License for more details.
 
-# $Id: Makefile.am,v 1.7 2004-01-15 21:56:20 themnemonic Exp $
-
-AUTOMAKE_OPTIONS = no-dependencies foreign dist-bzip2
-
-ACLOCAL_AMFLAGS = -I m4
-
-EXTRA_DIST = AUTHORS COPYING ChangeLog INSTALL README TODO mkinstalldirs
-
-## Proceed to subdirs
-
-SUBDIRS = m4 lib src doc po tests
+if HAVE_CHECK
+TESTS = check_portsrange
+check_PROGRAMS = check_portsrange
+check_portsrange_SOURCES = check_portsrange.c ../src/netcat.h
+check_portsrange_CFLAGS = @CHECK_CFLAGS@
+# ncprint.o is required when configured with --enable-debug
+check_portsrange_LDADD = ../src/portsrange.o ../src/ncprint.o @CHECK_LIBS@
+endif

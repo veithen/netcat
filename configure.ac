@@ -94,6 +94,12 @@ esac
 # check if we can support IPv6
 AC_CHECK_TYPES([struct in6_addr], AC_DEFINE(USE_IPV6, , [use IPv6]), , [#include <netinet/in.h>])
 
+# Check that Check is installed
+PKG_CHECK_MODULES([CHECK], [check >= 0.8.2], AM_CONDITIONAL([HAVE_CHECK], [true]),
+  AC_MSG_WARN(['Check' unit testing framework not found. Unit tests can't be run!"])
+  AM_CONDITIONAL([HAVE_CHECK], [false]))
+
+
 dnl *********************************************************************
 dnl ** CONFIGURE SWITCHES ***********************************************
 dnl *********************************************************************
@@ -175,7 +181,8 @@ dnl *********************************************************************
 dnl add here all the Makefiles.  These will be created by configure.
 dnl
 AC_CONFIG_FILES(Makefile m4/Makefile lib/Makefile lib/contrib/Makefile
-	src/Makefile doc/Makefile doc/drafts/Makefile po/Makefile.in)
+	src/Makefile doc/Makefile doc/drafts/Makefile po/Makefile.in
+        tests/Makefile)
 
 dnl this one is special, it needs the executable flag
 dnl
