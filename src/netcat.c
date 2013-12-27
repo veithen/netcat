@@ -136,6 +136,7 @@ int main(int argc, char *argv[])
 {
   int c, glob_ret = EXIT_FAILURE;
   int total_ports, left_ports, accept_ret = -1, connect_ret = -1;
+  bool opt_debug = FALSE;
   int opt_verbose = 0;
   struct sigaction sv;
   nc_port_t local_port;		/* local port specified with -p option */
@@ -237,7 +238,7 @@ int main(int argc, char *argv[])
       opt_eofclose = TRUE;
       break;
     case 'd':			/* enable debugging */
-      set_debug(TRUE);
+      opt_debug = TRUE;
       break;
     case 'e':			/* prog to exec */
       if (opt_exec)
@@ -397,6 +398,7 @@ int main(int argc, char *argv[])
     }
   }
 
+  set_debug(opt_debug);
   set_verbose(opt_verbose);
 
   if (opt_zero && opt_exec)
