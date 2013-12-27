@@ -588,7 +588,7 @@ int main(int argc, char *argv[])
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 	    _("No ports specified for connection"));
 
-  c = 0;			/* must be set to 0 for netcat_flag_next() */
+  c = 0;			/* must be set to 0 for netcat_ports_next() */
   left_ports = total_ports;
   while (left_ports > 0) {
     /* `c' is the port number independently of the sorting method (linear
