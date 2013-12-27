@@ -376,8 +376,7 @@ const char *netcat_inet_ntop(int af, const void *src)
 }			/* end of netcat_inet_ntop() */
 
 /* Backend for the socket(2) system call.  This function wraps the creation of
-   new sockets and sets the common SO_REUSEADDR socket option, and the useful
-   SO_LINGER option (if system available) handling eventual errors.
+   new sockets and sets the common SO_REUSEADDR socket option, handling eventual errors.
    Returns -1 if the socket(2) call failed, -2 if the setsockopt() call failed;
    otherwise the return value is a descriptor referencing the new socket. */
 
@@ -405,20 +404,6 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
   sock = socket(sockdomain, socktype, 0);
   if (sock < 0)
     return -1;
-
-// TODO: SO_LINGER causes problems if the connection is closed right after data has been written;
-//       this is commented out until we decide what to do with it
-//  if (proto == NETCAT_PROTO_TCP) {
-//    /* don't leave the socket in a TIME_WAIT state if we close the connection */
-//    struct linger fix_ling;
-//    fix_ling.l_onoff = 1;
-//    fix_ling.l_linger = 0;
-//    ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
-//    if (ret < 0) {
-//      close(sock);		/* anyway the socket was created */
-//      return -2;
-//    }
-//  }
 
   /* fix the socket options */
   sockopt = 1;
