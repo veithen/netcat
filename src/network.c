@@ -153,7 +153,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
     /* for speed purposes, skip the authoritative checking if we haven't got
        any verbosity level set.  note that this will cause invalid results
        in the dst struct, but we don't care at this point. (FIXME: ?) */
-    if (!opt_debug && (opt_verbose < 1))
+    if (!is_logging_enabled())
       return TRUE;
 
     /* do inverse lookups in a separated loop for each collected addresses */
@@ -390,8 +390,7 @@ const char *netcat_inet_ntop(int af, const void *src)
 }			/* end of netcat_inet_ntop() */
 
 /* Backend for the socket(2) system call.  This function wraps the creation of
-   new sockets and sets the common SO_REUSEADDR socket option, and the useful
-   SO_LINGER option (if system available) handling eventual errors.
+   new sockets and sets the common SO_REUSEADDR socket option, handling eventual errors.
    Returns -1 if the socket(2) call failed, -2 if the setsockopt() call failed;
    otherwise the return value is a descriptor referencing the new socket. */
 
@@ -399,7 +398,6 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
 		      const nc_sockopts_t *opts)
 {
   int sock, ret, sockdomain, socktype, sockopt;
-  struct linger fix_ling;
 
   if (domain == NETCAT_DOMAIN_IPV4)
     sockdomain = PF_INET;
@@ -420,29 +418,6 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
   sock = socket(sockdomain, socktype, 0);
   if (sock < 0)
     return -1;
-
-  if (proto == NETCAT_PROTO_TCP) {
-    /* don't leave the socket in a TIME_WAIT state if we close the connection */
-    fix_ling.l_onoff = 1;
-    #ifdef __MVS__         /* zosunix01 03.08.2011                                 */
-                           /* The timeout value is set greater than zero to        */
-                           /* prevent discarding of data in the sendbuffer, if     */
-                           /* the socket is shutdowned. This is neccessary, if     */
-                           /* the receiving netcat runs under a slower system      */
-                           /* like z/OS Unix. In the most cases the receiver       */
-                           /* ends with an errno 1121 (EDC8121I Connection reset.) */
-                           /* without receiving data, if the number of sended is   */
-                           /* small.                                               */
-     fix_ling.l_linger = 1;
-    #else
-     fix_ling.l_linger = 0;
-    #endif
-    ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
-    if (ret < 0) {
-      close(sock);		/* anyway the socket was created */
-      return -2;
-    }
-  }
 
   /* fix the socket options */
   sockopt = 1;

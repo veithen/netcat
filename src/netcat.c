@@ -56,7 +56,6 @@ bool commandline_need_newline = FALSE;	/* fancy output handling */
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
 bool opt_eofclose = FALSE;	/* close connection on EOF from stdin */
-bool opt_debug = FALSE;		/* debugging output */
 bool opt_ipv6 = FALSE;		/* using IPv6 protocol */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;	/* use random ports */
@@ -65,7 +64,6 @@ bool opt_telnet = FALSE;	/* answer in telnet mode */
 bool opt_hexdump = FALSE;	/* hexdump traffic */
 bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
 int opt_interval = 0;		/* delay (in seconds) between lines/ports */
-int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
@@ -152,6 +150,8 @@ int main(int argc, char *argv[])
 {
   int c, glob_ret = EXIT_FAILURE;
   int total_ports, left_ports, accept_ret = -1, connect_ret = -1;
+  bool opt_debug = FALSE;
+  int opt_verbose = 0;
   struct sigaction sv;
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
@@ -412,13 +412,12 @@ int main(int argc, char *argv[])
     }
   }
 
+  set_debug(opt_debug);
+  set_verbose(opt_verbose);
+
   if (opt_zero && opt_exec)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-e' and `-z' options are incompatible"));
-
-  /* initialize the flag buffer to keep track of the specified ports */
-  //netcat_flag_init(65535);
-  old_flag = netcat_ports_init();
 
 #ifndef DEBUG
   /* check for debugging support */
@@ -471,7 +470,7 @@ int main(int argc, char *argv[])
 
     if (!q) {
       if (netcat_getport(&port_tmp, parse, 0))
-	netcat_ports_insert(old_flag, port_tmp.num, port_tmp.num);
+	netcat_ports_insert(&old_flag, port_tmp.num, port_tmp.num);
       else
 	goto got_err;
     }
@@ -492,7 +491,7 @@ int main(int argc, char *argv[])
       if (!*parse && !*q)		/* don't accept the form '-' */
 	goto got_err;
 
-      netcat_ports_insert(old_flag, port_lo, port_hi);
+      netcat_ports_insert(&old_flag, port_lo, port_hi);
     }
 
     free(parse);
@@ -532,6 +531,7 @@ int main(int argc, char *argv[])
     memcpy(&listen_sock.local, &local_host, sizeof(listen_sock.local));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
     memcpy(&listen_sock.remote, &remote_host, sizeof(listen_sock.remote));
+    listen_sock.remote_ports = old_flag;
     memcpy(&listen_sock.opts, &sockopts, sizeof(listen_sock.opts));
     accept_ret = core_listen(&listen_sock);
 
@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 	    _("No ports specified for connection"));
 
-  c = 0;			/* must be set to 0 for netcat_flag_next() */
+  c = 0;			/* must be set to 0 for netcat_ports_next() */
   left_ports = total_ports;
   while (left_ports > 0) {
     /* `c' is the port number independently of the sorting method (linear
