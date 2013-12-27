@@ -525,7 +525,7 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 
   /* add the non-blocking flag to this socket */
   if ((ret = fcntl(sock, F_GETFL, 0)) >= 0)
-    ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK); 
+    ret = fcntl(sock, F_SETFL, ret | O_NONBLOCK);
   if (ret < 0) {
     ret = -4;
     goto err;

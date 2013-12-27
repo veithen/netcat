@@ -376,7 +376,7 @@ static int core_tcp_connect(nc_sock_t *ncsock)
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
-	    sock, strerror(errno)); 
+	    sock, strerror(errno));
 
   /* initialize select()'s variables */
   FD_ZERO(&outs);
@@ -962,7 +962,6 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
 	memcpy(my_sendq->head, my_sendq->pos, my_sendq->len);
 	my_sendq->pos = my_sendq->head;
       }
-      
     }				/* end of reading from the socket section */
 
  handle_signal:			/* FIXME: i'm not sure this is the right place */
@@ -975,7 +974,7 @@ int core_readwrite(nc_sock_t *nc_main, nc_sock_t *nc_slave)
   }				/* end of while (inloop) */
 
   /* we've got an EOF from the net, close the sockets */
-  shutdown(fd_sock, SHUT_RDWR);  
+  shutdown(fd_sock, SHUT_RDWR);
   close(fd_sock);
   nc_main->fd = -1;
 
