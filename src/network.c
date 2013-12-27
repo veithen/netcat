@@ -28,13 +28,6 @@
  *                        prevents the caller to finish the main program   *
  *                        in the case of port-scanning.                    *
  ***************************************************************************/
-/***************************************************************************
- *  03.08.2011 zosunix01: The timeout value for the option SO_LINGER in the*
- *                        function 'netcat_socket_new()' is set greater    *
- *                        than zero to prevent discarding of sending data. *
- *                        This is the case, if the receiving netcat runs on*
- *                        a slower system like z/OS Unix.                  *
- ***************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
