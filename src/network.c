@@ -139,7 +139,7 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
     /* for speed purposes, skip the authoritative checking if we haven't got
        any verbosity level set.  note that this will cause invalid results
        in the dst struct, but we don't care at this point. (FIXME: ?) */
-    if (!opt_debug && (opt_verbose < 1))
+    if (!is_logging_enabled())
       return TRUE;
 
     /* do inverse lookups in a separated loop for each collected addresses */
@@ -376,15 +376,14 @@ const char *netcat_inet_ntop(int af, const void *src)
 }			/* end of netcat_inet_ntop() */
 
 /* Backend for the socket(2) system call.  This function wraps the creation of
-   new sockets and sets the common SO_REUSEADDR socket option, and the useful
-   SO_LINGER option (if system available) handling eventual errors.
+   new sockets and sets the common SO_REUSEADDR socket option, handling eventual errors.
    Returns -1 if the socket(2) call failed, -2 if the setsockopt() call failed;
    otherwise the return value is a descriptor referencing the new socket. */
 
-int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
+int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
+		      const nc_sockopts_t *opts)
 {
   int sock, ret, sockdomain, socktype, sockopt;
-  struct linger fix_ling;
 
   debug_v(("netcat_socket_new: (%d, %d)\n", domain, proto));
 
@@ -414,18 +413,6 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
   if (sock < 0)
     return -1;
 
-  /* don't leave the socket in a TIME_WAIT state if we close the connection */
-  fix_ling.l_onoff = 1;
-  fix_ling.l_linger = 0;
-  debug_v(("netcat_socket_new: setsockopt SO_LINGER"));
-  ret = setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
-  debug_v((": ret=%d\n", ret));
-  if (ret < 0 && socktype != SOCK_DGRAM) {
-    /* Under (Open)Solaris it is enforced that lingering is undefined for UDP */
-    close(sock);		/* anyway the socket was created */
-    return -2;
-  }
-
   /* fix the socket options */
   sockopt = 1;
   debug_v(("netcat_socket_new: setsockopt SO_REUSEADDR"));
@@ -433,6 +420,13 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
   debug_v((": ret=%d\n", ret));
   if (ret < 0) {
     close(sock);		/* anyway the socket was created */
+    return -2;
+  }
+
+  sockopt = opts->keepalive;
+  ret = setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &sockopt, sizeof(sockopt));
+  if (ret < 0) {
+    close(sock);
     return -2;
   }
 
@@ -451,7 +445,8 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto)
 
 int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 			      const nc_host_t *addr, const nc_port_t *port,
-			      const nc_host_t *local_addr, const nc_port_t *local_port)
+			      const nc_host_t *local_addr, const nc_port_t *local_port,
+			      const nc_sockopts_t *opts)
 {
   int sock, ret, my_family = AF_UNSPEC;
   struct sockaddr *rem_addr = NULL;
@@ -473,7 +468,7 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
     return -1;		/* unknown domain, assume socket(2) call failed */
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new(domain, proto);
+  sock = netcat_socket_new(domain, proto, opts);
   if (sock < 0)
     return sock;		/* just forward the error code */
 
@@ -599,7 +594,7 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
    call failed. */
 
 int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
-			     const nc_port_t *port)
+			     const nc_port_t *port, const nc_sockopts_t *opts)
 {
   int sock, ret, my_family;
   struct sockaddr *my_addr = NULL;
@@ -618,7 +613,7 @@ int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
     return -1;		/* unknown domain, assume socket(2) call failed */
 
   /* create the socket and fix the options */
-  sock = netcat_socket_new(domain, NETCAT_PROTO_TCP);
+  sock = netcat_socket_new(domain, NETCAT_PROTO_TCP, opts);
   if (sock < 0)
     return sock;		/* forward the error code */
 

@@ -1,0 +1,64 @@
+#!@PYTHON@
+#
+# Copyright (C) 2013  Andreas Veithen <andreas.veithen@gmail.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA or point your web browser to http://www.gnu.org.
+
+import subprocess
+import socket
+import utils
+import errno
+
+listen_port = utils.allocate_tcp_port()
+remote_port_1 = utils.allocate_tcp_port()
+remote_port_2 = utils.allocate_tcp_port()
+if remote_port_2 < remote_port_1:
+  tmp = remote_port_1
+  remote_port_1 = remote_port_2
+  remote_port_2 = tmp
+
+# Start netcat in listen mode with a remote port range that includes remote_port_1, but not
+# remote_port_2:
+p = subprocess.Popen(["../src/netcat", "-l", "-p", "%d" % listen_port, "-c", "localhost", "%d-%d" % (remote_port_1-10, remote_port_1)], stdin=subprocess.PIPE)
+
+# First attempt to connect using a port not in the range.
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(("localhost", remote_port_2))
+s.safe_connect(("localhost", listen_port))
+# Try to read; this should result in a "Connection reset by peer" error
+err = 0
+try:
+  s.recv(4096)
+except socket.error, e:
+  err = e.errno
+assert err == errno.ECONNRESET
+s.close()
+
+# Now attempt to connect using a port in the range.
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.bind(("localhost", remote_port_1))
+s.safe_connect(("localhost", listen_port))
+# Write something to stdin of the netcat process, then close stdin. Since we used the -c option,
+# this should also close the connection.
+p.stdin.write("test")
+p.stdin.close()
+f = s.makefile()
+# Since the connection is closed, readline will not block.
+assert f.readline() == "test"
+f.close()
+s.close()
+
+p.wait()

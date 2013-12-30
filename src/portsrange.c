@@ -28,66 +28,60 @@
 
 #include "netcat.h"
 
-/* private struct */
+/* private struct; invariant: begin < end && end < next->begin */
 struct nc_ports_st {
-  int first;
-  int last;
+  int start;	/* the start of the range, inclusive, i.e. first */
+  int end;	/* the end of the range, exclusive, i.e. last+1 */
   struct nc_ports_st *next;
 };
 
-/* Initializes the flagset to the given len. */
-
-nc_ports_t netcat_ports_init(void)
-{
-  nc_ports_t ret = malloc(sizeof(*ret));
-  memset(ret, 0, sizeof(*ret));
-
-  debug_v(("netcat_ports_init() [p=%p]", (void *)ret));
-
-  return ret;
-}
-
 /* Inserts a new range performing drop-down merging to avoid overlapping */
 
-void netcat_ports_insert(nc_ports_t portsrange, unsigned short first, unsigned short last)
+void netcat_ports_insert(nc_ports_t *portsrange, unsigned short first, unsigned short last)
 {
-  nc_ports_t tmp_prev = portsrange, tmp = portsrange->next;
+  nc_ports_t prev = NULL, next = *portsrange, ins;
+  int start = first, end = last+1;
 
-  debug_v(("netcat_ports_insert(): p=%p  %hu - %hu", portsrange, first, last));
+  debug_v(("netcat_ports_insert(): p=%p  %hu - %hu", *portsrange, first, last));
 
-  /* skip all sub-ranges that doesn't fit with our one */
-  while (tmp && (first > tmp->first)) {
-    tmp_prev = tmp;
-    tmp = tmp->next;
+  /* find tmp_prev and tmp such that prev->start <= start && start < next->start */
+
+  while (next && (start >= next->start)) {
+    prev = next;
+    next = next->next;
   }
 
-  /* the following two lines are a sort of "keep-trying-until-it-works".
-     Actually I had an idea that using `tmp_prev' was the right choice because
-     otherwise there was no way to find out when I'm in the Middle Point. */
+  /* if the range to be inserted overlaps with prev then just modify
+     the existing range */
 
-  if (tmp && (first <= tmp_prev->last)) {
-    tmp_prev->last = MAX(tmp_prev->last, last);
-    tmp = tmp_prev;
+  if (prev && (start <= prev->end)) {
+    prev->end = MAX(prev->end, end);
+    ins = prev;
   }
   else {	/* we are fully after the previous range. add a new one */
-    nc_ports_t tmp_ins = malloc(sizeof(*tmp_ins));
+    ins = malloc(sizeof(*ins));
 
-    tmp_ins->first = first;
-    tmp_ins->last = last;
-    tmp_ins->next = tmp;
-    tmp_prev->next = tmp_ins;
-    tmp = tmp_ins;	/* switch to the latest added */
+    ins->start = start;
+    ins->end = end;
+    ins->next = next;
+    if (prev) {
+      prev->next = ins;
+    } else {
+      /* we insert the range as the first element of the chained list; modify
+         the pointer stored by the caller */
+      *portsrange = ins;
+    }
   }
 
   /* now, either we added a new range or recycled the previous one, we might
      have overlapped one or more of the following ranges.  Check this and
      merge when this happens. */
 
-  while (tmp->next && (tmp->last >= tmp->next->first)) {
-    nc_ports_t tmp_del = tmp->next;
+  while (ins->next && (ins->end >= ins->next->start)) {
+    nc_ports_t tmp_del = ins->next;
 
-    tmp->last = MAX(tmp->last, tmp->next->last);
-    tmp->next = tmp->next->next;
+    ins->end = MAX(ins->end, ins->next->end);
+    ins->next = ins->next->next;
     free(tmp_del);
   }
 }
@@ -102,12 +96,7 @@ int netcat_ports_count(nc_ports_t portsrange)
   debug_v(("netcat_ports_count(): p=%p", portsrange));
 
   while (tmp) {
-    /* Discard the useless initial portrange entry (all zeroes) */
-    if (tmp->first != 0 && tmp->last != 0) {
-      debug_v(("netcat_ports_count(): tmp->last=%d tmp->first=%d tmp->next=%p, incr=%d\n",
-	tmp->last, tmp->first, tmp->next, (tmp->last - tmp->first + 1) ));
-      count += (tmp->last - tmp->first + 1);
-    }
+    count += (tmp->end - tmp->start);
     tmp = tmp->next;
   }
 
@@ -122,8 +111,8 @@ bool netcat_ports_isset(nc_ports_t portsrange, unsigned short port)
 
   debug_v(("netcat_ports_isset(): p=%p port=%hu", portsrange, port));
 
-  while (tmp && (tmp->first <= port)) {
-    if (tmp->last >= port)
+  while (tmp && (tmp->start <= port)) {
+    if (tmp->end > port)
       return TRUE;
     tmp = tmp->next;
   }
@@ -135,27 +124,22 @@ bool netcat_ports_isset(nc_ports_t portsrange, unsigned short port)
 unsigned short netcat_ports_next(nc_ports_t portsrange, unsigned short port)
 {
   nc_ports_t tmp = portsrange;
-  unsigned short min = 0, max = 0;
 
   debug_v(("netcat_ports_next(): p=%p port=%hu", portsrange, port));
 
-  /* find the range inside which is our port, or don't find anything */
-  while (tmp && ((tmp->first > port) || (tmp->last < port))) {
-    if ( min > tmp->first || min == 0 ) { min = tmp->first; }
-    if ( max < tmp->last  || max == 0 ) { max = tmp->last; }
+  if (port == 0)
+    return tmp ? tmp->start : 0;
+
+  while (tmp && ((tmp->start > port) || (tmp->end <= port)))
     tmp = tmp->next;
-  }
 
-  if (!tmp) {
-    if ( port == 0 )
-        return min;
+  if (!tmp)
     return 0;
-  }
 
-  if (port != tmp->last)
+  if (port+1 < tmp->end)
     return (port + 1);
   else if (tmp->next)
-    return tmp->next->first;
+    return tmp->next->start;
 
   return 0;
 }

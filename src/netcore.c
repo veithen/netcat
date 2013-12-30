@@ -43,7 +43,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
   struct sockaddr_in myaddr;
   debug_v(("core_udp_connect(ncsock=%p)", (void *)ncsock));
 
-  sock = netcat_socket_new(ncsock->domain, ncsock->proto);
+  sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP, &ncsock->opts);
   if (sock < 0)
     return -1;
 
@@ -101,7 +101,7 @@ static int core_udp_listen(nc_sock_t *ncsock)
     /* simulates a udphelper_sockets_open() call */
     sockbuf = calloc(2, sizeof(int));
     sockbuf[0] = 1;
-    sockbuf[1] = sock = netcat_socket_new(ncsock->domain, ncsock->proto);
+    sockbuf[1] = sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP, &ncsock->opts);
   }
 #ifndef USE_PKTINFO
   else
@@ -332,7 +332,8 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   sock = netcat_socket_new_connect(ncsock->domain, ncsock->proto,
 	&ncsock->remote, &ncsock->port,
 	(ncsock->local.host.iaddrs[0].s_addr ? &ncsock->local : NULL),
-	&ncsock->local_port);
+	&ncsock->local_port,
+	&ncsock->opts);
 
   if (sock < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT, "Couldn't create connection (err=%d): %s",
@@ -399,6 +400,18 @@ static int core_tcp_connect(nc_sock_t *ncsock)
   return -1;
 }				/* end of core_tcp_connect() */
 
+/* Close the socket by sending a reset (RST) instead of FIN, so that the peer
+   gets a connection reset error. */
+static void close_reset(int sock)
+{
+  struct linger fix_ling;
+
+  fix_ling.l_onoff = 1;
+  fix_ling.l_linger = 0;
+  setsockopt(sock, SOL_SOCKET, SO_LINGER, &fix_ling, sizeof(fix_ling));
+  close(sock);
+}
+
 /* This function loops inside the accept() loop until a VALID connection is
    fetched.  If an unwanted connection arrives, it is immediately closed.
    If zero I/O mode is enabled, ALL connections are refused and the socket
@@ -412,7 +425,7 @@ static int core_tcp_listen(nc_sock_t *ncsock)
   debug_v(("core_tcp_listen(ncsock=%p)", (void *)ncsock));
 
   sock_listen = netcat_socket_new_listen(ncsock->domain, &ncsock->local,
-			&ncsock->local_port);
+			&ncsock->local_port, &ncsock->opts);
   if (sock_listen < 0)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 	    _("Couldn't setup listening socket (err=%d): %s"), sock_listen,
@@ -458,8 +471,8 @@ static int core_tcp_listen(nc_sock_t *ncsock)
 
     if ((ncsock->remote.host.iaddrs[0].s_addr &&
 	 memcmp(&ncsock->remote.host.iaddrs[0], &myaddr.sin_addr,
-		sizeof(ncsock->remote.host.iaddrs[0]))) /* ||
-	(netcat_ports_count() && !netcat_flag_get(ntohs(myaddr.sin_port))) */) {
+		sizeof(ncsock->remote.host.iaddrs[0]))) ||
+	(ncsock->remote_ports != NULL && !netcat_ports_isset(ncsock->remote_ports, ntohs(myaddr.sin_port)))) {
       ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
 	      netcat_inet_ntop(AF_INET, &myaddr.sin_addr), ntohs(myaddr.sin_port));
       goto refuse;
@@ -482,8 +495,7 @@ static int core_tcp_listen(nc_sock_t *ncsock)
     break;
 
  refuse:
-    shutdown(sock_accept, 2);
-    close(sock_accept);
+    close_reset(sock_accept);
     continue;
   }			/* end of infinite accepting loop */
 

@@ -81,8 +81,10 @@
 /* Find out whether we can use the RFC 2292 extensions on this machine
    (I've found out only linux supporting this feature so far) */
 #ifdef HAVE_STRUCT_IN_PKTINFO
-# if defined(SOL_IP) && defined(IP_PKTINFO)
-#  define USE_PKTINFO
+# ifdef HAVE_STRUCT_IN_PKTINFO_IPI_SPEC_DST
+#  if defined(SOL_IP) && defined(IP_PKTINFO)
+#   define USE_PKTINFO
+#  endif
 # endif
 #endif
 
@@ -271,6 +273,13 @@ typedef struct {
 typedef struct nc_ports_st *nc_ports_t;
 
 /**
+ * Socket options.
+ */
+typedef struct {
+  bool keepalive;	/**< Enable TCP keepalive. */
+} nc_sockopts_t;
+
+/**
  * \brief This is the main socket object.
  *
  * This is a more complex struct that holds socket records.
@@ -285,10 +294,14 @@ typedef struct {
   nc_domain_t domain;	/**< Specifies the level 3 domain of the socket */
   nc_proto_t proto;	/**< Specifies the level 4 protocol used by the
 			 * socket */
+  nc_sockopts_t opts;	/**< Socket options */
   nc_host_t local;	/**< Local host information */
   nc_port_t local_port;	/**< Local port information */
   nc_host_t remote;	/**< Remote host information */
   nc_port_t port;	/**< Remote port information */
+  nc_ports_t remote_ports; /**< Specifies the remote ports from which
+			 * connections are allowed; NULL if all ports are
+			 * allowed. */
   nc_buffer_t sendq;	/**< Queue for outgoing data */
   nc_buffer_t recvq;	/**< Queue for incoming data */
 } nc_sock_t;
@@ -297,6 +310,6 @@ typedef struct {
 
 #include "proto.h"
 #include "intl.h"
-#include "misc.h"
+#include "ncprint.h"
 
 #endif	/* !NETCAT_H */

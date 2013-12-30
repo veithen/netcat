@@ -220,6 +220,10 @@ source address for the connecting socket.
 @section Advanced Options
 
 @table @samp
+@item -K
+@itemx --keepalive
+Enable TCP keepalive.
+
 @item -i SECS
 @itemx --interval SECS
 sets the buffering output delay time.  This affects all the current modes and
@@ -246,7 +250,7 @@ a VALID incoming connection (see listen mode).
 
 @item -T
 @itemx --telnet
-Answers the telnet codes as described in RFC0854.  This makes possible to use
+Answers the telnet codes as described in RFC0854.  This makes it possible to use
 netcat to script telnet sessions.  The incoming telnet codes are parsed
 inside the receiving queue and are stripped off before forwarding the data
 as they were never received, so the application doesn't have to parse the
@@ -271,6 +275,14 @@ This option is incompatible with the tunnel mode.
 @node The Connect Mode, The Listen Mode, Invoking, Top
 @chapter The Connect Mode
 @cindex connect
+
+@ignore
+@c man begin DESCRIPTION
+@section Connect mode
+@c man end
+@end ignore
+
+@c man begin DESCRIPTION
 In the connect mode, netcat connects to a remote host and simply links
 his stdin and stdout to the remote data stream.
 
@@ -289,11 +301,19 @@ it should never be specified unless you know what you are doing. The `-w'
 (timeout) option specifies how long to wait for the connection to succeed
 (if the remote host connects but doesn't send any data, the timeout DOESN'T
 apply).
+@c man end
 
 @node The Listen Mode, The Tunnel Mode, The Connect Mode, Top
 @chapter The Listen Mode
 @cindex listen
 
+@ignore
+@c man begin DESCRIPTION
+@section Listen mode
+@c man end
+@end ignore
+
+@c man begin DESCRIPTION
 In listen mode, netcat stays idle listening on a port, specified by the `-p'
 switch, until some remote host connects. At this point, the basic behaviour
 is the same of the connect mode.
@@ -305,6 +325,7 @@ netcat -l -p port [remote_hostname] [remote_ports] @dots{}
 The remote hostname specifies which host is allowed to connect and from which
 ports. Usually these parameters are not specified, but if you want to sort
 out a special connection.
+@c man end
 
 @node The Tunnel Mode, Examples, The Listen Mode, Top
 @chapter The Tunnel Mode

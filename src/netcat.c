@@ -42,16 +42,13 @@ bool commandline_need_newline = FALSE;	/* fancy output handling */
 /* global options flags */
 nc_mode_t netcat_mode = 0;	/* Netcat working modality */
 bool opt_eofclose = FALSE;	/* close connection on EOF from stdin */
-bool opt_debug = FALSE;		/* debugging output */
 bool opt_ipv6 = FALSE;		/* using IPv6 protocol */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;	/* use random ports */
-bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
 bool opt_telnet = FALSE;	/* answer in telnet mode */
 bool opt_hexdump = FALSE;	/* hexdump traffic */
 bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
 int opt_interval = 0;		/* delay (in seconds) between lines/ports */
-int opt_verbose = 0;		/* be verbose (> 1 to be MORE verbose) */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
@@ -138,10 +135,13 @@ int main(int argc, char *argv[])
 {
   int c, glob_ret = EXIT_FAILURE;
   int total_ports, left_ports, accept_ret = -1, connect_ret = -1;
+  bool opt_debug = FALSE;
+  int opt_verbose = 0;
   struct sigaction sv;
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
   nc_host_t remote_host;
+  nc_sockopts_t sockopts;
   nc_sock_t listen_sock;
   nc_sock_t connect_sock;
   nc_sock_t stdio_sock;
@@ -150,6 +150,7 @@ int main(int argc, char *argv[])
   memset(&local_port, 0, sizeof(local_port));
   memset(&local_host, 0, sizeof(local_host));
   memset(&remote_host, 0, sizeof(remote_host));
+  memset(&sockopts, 0, sizeof(sockopts));
   memset(&listen_sock, 0, sizeof(listen_sock));
   memset(&connect_sock, 0, sizeof(connect_sock));
   memset(&stdio_sock, 0, sizeof(stdio_sock));
@@ -193,6 +194,7 @@ int main(int argc, char *argv[])
 	{ "interval",	required_argument,	NULL, 'i' },
 	{ "ipv4",	no_argument,		NULL, '4' },
 	{ "ipv6",	no_argument,		NULL, '6' },
+	{ "keepalive",	no_argument,		NULL, 'K' },
 	{ "listen",	no_argument,		NULL, 'l' },
 	{ "tunnel",	required_argument,	NULL, 'L' },
 	{ "dont-resolve", no_argument,		NULL, 'n' },
@@ -219,7 +221,7 @@ int main(int argc, char *argv[])
 	{ 0, 0, 0, 0 }
     };
 
-    c = getopt_long(argc, argv, "46cde:g:G:hi:lL:no:p:P:rs:S:tTuvVxw:z",
+    c = getopt_long(argc, argv, "46cde:g:G:hi:KlL:no:p:P:rs:S:tTuvVxw:z",
 		    long_options, &option_index);
     if (c == -1)
       break;
@@ -256,6 +258,9 @@ int main(int argc, char *argv[])
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("Invalid interval time \"%s\""), optarg);
       break;
+    case 'K':
+      sockopts.keepalive = TRUE;
+      break;
     case 'l':			/* mode flag: listen mode */
       if (netcat_mode != NETCAT_UNSPEC)
 	ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
@@ -291,9 +296,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* lookup the remote address and the remote port for tunneling */
-	if (!netcat_resolvehost(&connect_sock.remote, optarg))
+	if (!netcat_resolvehost(&connect_sock.remote, pbuf))
 	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
-		  _("Couldn't resolve tunnel target host: %s"), optarg);
+		  _("Couldn't resolve tunnel target host: %s"), pbuf);
 	if (!netcat_getport(&connect_sock.port, div, 0))
 	  ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		  _("Invalid tunnel target port: %s"), div);
@@ -392,13 +397,12 @@ int main(int argc, char *argv[])
     }
   }
 
+  set_debug(opt_debug);
+  set_verbose(opt_verbose);
+
   if (opt_zero && opt_exec)
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 		_("`-e' and `-z' options are incompatible"));
-
-  /* initialize the flag buffer to keep track of the specified ports */
-  //netcat_flag_init(65535);
-  old_flag = netcat_ports_init();
 
 #ifndef DEBUG
   /* check for debugging support */
@@ -451,7 +455,7 @@ int main(int argc, char *argv[])
 
     if (!q) {
       if (netcat_getport(&port_tmp, parse, 0))
-	netcat_ports_insert(old_flag, port_tmp.num, port_tmp.num);
+	netcat_ports_insert(&old_flag, port_tmp.num, port_tmp.num);
       else
 	goto got_err;
     }
@@ -472,7 +476,7 @@ int main(int argc, char *argv[])
       if (!*parse && !*q)		/* don't accept the form '-' */
 	goto got_err;
 
-      netcat_ports_insert(old_flag, port_lo, port_hi);
+      netcat_ports_insert(&old_flag, port_lo, port_hi);
     }
 
     free(parse);
@@ -512,6 +516,8 @@ int main(int argc, char *argv[])
     memcpy(&listen_sock.local, &local_host, sizeof(listen_sock.local));
     memcpy(&listen_sock.local_port, &local_port, sizeof(listen_sock.local_port));
     memcpy(&listen_sock.remote, &remote_host, sizeof(listen_sock.remote));
+    listen_sock.remote_ports = old_flag;
+    memcpy(&listen_sock.opts, &sockopts, sizeof(listen_sock.opts));
     accept_ret = core_listen(&listen_sock);
 
     /* in zero I/O mode the core_tcp_listen() call will always return -1
@@ -536,6 +542,7 @@ int main(int argc, char *argv[])
 	ncexec(&listen_sock);		/* this won't return */
       }
       core_readwrite(&listen_sock, &stdio_sock);
+      glob_ret = EXIT_SUCCESS;
       debug_dv(("Listen: EXIT"));
     }
     else {
@@ -580,7 +587,7 @@ int main(int argc, char *argv[])
     ncprint(NCPRINT_ERROR | NCPRINT_EXIT,
 	    _("No ports specified for connection"));
 
-  c = 0;			/* must be set to 0 for netcat_flag_next() */
+  c = 0;			/* must be set to 0 for netcat_ports_next() */
   left_ports = total_ports;
   while (left_ports > 0) {
     /* `c' is the port number independently of the sorting method (linear
@@ -600,6 +607,7 @@ int main(int argc, char *argv[])
     memcpy(&connect_sock.local_port, &local_port,
 	   sizeof(connect_sock.local_port));
     memcpy(&connect_sock.remote, &remote_host, sizeof(connect_sock.remote));
+    memcpy(&connect_sock.opts, &sockopts, sizeof(connect_sock.opts));
     netcat_getport(&connect_sock.port, NULL, c);
 
     /* FIXME: in udp mode and NETCAT_CONNECT, opt_zero is senseless */
