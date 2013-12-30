@@ -52,7 +52,6 @@ int opt_interval = 0;		/* delay (in seconds) between lines/ports */
 int opt_wait = 0;		/* wait time */
 char *opt_outputfile = NULL;	/* hexdump output file */
 char *opt_exec = NULL;		/* program to exec after connecting */
-nc_domain_t opt_domain = NETCAT_DOMAIN_IPV4;
 nc_proto_t opt_proto = NETCAT_PROTO_TCP; /* protocol to use for connections */
 nc_convert_t opt_ascii_conversion = NETCAT_CONVERT_NONE;
 
@@ -137,6 +136,7 @@ int main(int argc, char *argv[])
   int total_ports, left_ports, accept_ret = -1, connect_ret = -1;
   bool opt_debug = FALSE;
   int opt_verbose = 0;
+  nc_domain_t opt_domain = NETCAT_DOMAIN_IPV4;
   struct sigaction sv;
   nc_port_t local_port;		/* local port specified with -p option */
   nc_host_t local_host;		/* local host for bind()ing operations */
@@ -511,6 +511,7 @@ int main(int argc, char *argv[])
     }
 
     /* prepare the socket var and start listening */
+    listen_sock.domain = opt_domain;
     listen_sock.proto = opt_proto;
     listen_sock.timeout = opt_wait;
     memcpy(&listen_sock.local, &local_host, sizeof(listen_sock.local));
@@ -606,6 +607,7 @@ int main(int argc, char *argv[])
 
     /* since we are nonblocking now, we can start as many connections as we want
        but it's not a great idea connecting more than one host at time */
+    connect_sock.domain = opt_domain;
     connect_sock.proto = opt_proto;
     connect_sock.timeout = opt_wait;
     memcpy(&connect_sock.local, &local_host, sizeof(connect_sock.local));
