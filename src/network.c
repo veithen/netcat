@@ -423,6 +423,82 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
   return sock;
 }
 
+static void prepare_sockaddr(nc_domain_t domain, const nc_host_t *addr, const nc_port_t *port,
+			     struct sockaddr **saddr, unsigned int *saddr_len)
+{
+  if (domain == NETCAT_DOMAIN_IPV4) {
+    struct sockaddr_in *saddr4 = malloc(sizeof(*saddr4));
+
+    *saddr = (struct sockaddr *)saddr4;
+    *saddr_len = sizeof(*saddr4);
+
+    memset(saddr4, 0, sizeof(*saddr4));
+    saddr4->sin_family = AF_INET;
+    saddr4->sin_port = port->netnum;
+
+    /* this parameter is not mandatory.  if it's not present, it's assumed to be
+       INADDR_ANY, and the behaviour is the same */
+    if (addr)
+      memcpy(&saddr4->sin_addr, &addr->host.iaddrs[0],
+	     sizeof(saddr4->sin_addr));
+  }
+#ifdef USE_IPV6
+  else if (domain == NETCAT_DOMAIN_IPV6) {
+    struct sockaddr_in6 *saddr6 = malloc(sizeof(*saddr6));
+
+    *saddr = (struct sockaddr *)saddr6;
+    *saddr_len = sizeof(*saddr6);
+
+    memset(saddr6, 0, sizeof(*saddr6));
+    saddr6->sin6_family = AF_INET6;
+    saddr6->sin6_port = port->netnum;
+
+    /* this parameter is not mandatory.  if it's not present, it's assumed to be
+       INADDR_ANY, and the behaviour is the same */
+    if (addr)
+        memcpy(&saddr6->sin6_addr, &addr->host6.iaddrs[0],
+	       sizeof(saddr6->sin6_addr));
+  }
+#endif
+  else
+    abort();		/* unknown domain */
+}
+
+/* Performs a bind(2) call based on the provided information. The host is optional
+ * (if it is not given, INADDR_ANY is assumed). The port is mandatory.
+ */
+int netcat_bind(int sock, nc_domain_t domain, const nc_host_t *addr, const nc_port_t *port)
+{
+  struct sockaddr *my_addr;
+  unsigned int my_addr_len;
+  int ret;
+
+  prepare_sockaddr(domain, addr, port, &my_addr, &my_addr_len);
+
+  /* bind it to the specified address (can be INADDY_ANY) */
+  ret = bind(sock, my_addr, my_addr_len);
+  free(my_addr);
+  return ret;
+}
+
+/* Performs a connect(2) call based on the provided information. Host and port
+ * are both mandatory.
+ */
+int netcat_connect(int sock, nc_domain_t domain, const nc_host_t *addr, const nc_port_t *port)
+{
+  struct sockaddr *rem_addr;
+  unsigned int rem_addr_len;
+  int ret;
+
+  assert(addr);
+
+  prepare_sockaddr(domain, addr, port, &rem_addr, &rem_addr_len);
+
+  ret = connect(sock, rem_addr, rem_addr_len);
+  free(rem_addr);
+  return ret;
+}
+
 /* Creates a full outgoing async socket connection in the specified `domain'
    and `type' to the specified `addr' and `port'.  The connection is
    originated using the optionally specified `local_addr' and `local_port'.
@@ -437,24 +513,12 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 			      const nc_host_t *local_addr, const nc_port_t *local_port,
 			      const nc_sockopts_t *opts)
 {
-  int sock, ret, my_family = AF_UNSPEC;
-  struct sockaddr *rem_addr = NULL;
-  unsigned int rem_addr_len;
+  int sock, ret;
   assert(addr);
 
   debug_dv(("netcat_socket_new_connect(domain=%d, addr=%p, port=%hu, "
 	    "local_addr=%p, local_port=%hu)", domain, (void *)addr, port->num,
 	    (void *)local_addr, local_port->num));
-
-  /* selects address family with currently supported domains */
-  if (domain == NETCAT_DOMAIN_IPV4)
-    my_family = AF_INET;
-#ifdef USE_IPV6
-  else if (domain == NETCAT_DOMAIN_IPV6)
-    my_family = AF_INET6;
-#endif
-  else
-    return -1;		/* unknown domain, assume socket(2) call failed */
 
   /* create the socket and fix the options */
   sock = netcat_socket_new(domain, proto, opts);
@@ -463,46 +527,7 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 
   /* only if needed, bind it to a local address */
   if (local_addr || local_port->num) {
-    struct sockaddr *my_addr;
-    unsigned int my_addr_len;
-
-    if (domain == NETCAT_DOMAIN_IPV4) {
-      struct sockaddr_in *my4_addr = malloc(sizeof(*my4_addr));
-
-      my_addr = (struct sockaddr *)my4_addr;
-      my_addr_len = sizeof(*my4_addr);
-
-      memset(my4_addr, 0, sizeof(*my4_addr));
-      my4_addr->sin_family = my_family;
-      my4_addr->sin_port = local_port->netnum;
-
-      /* local_addr may not be specified because the user may want to only
-         enforce the local source port */
-      if (local_addr)
-        memcpy(&my4_addr->sin_addr, &local_addr->host.iaddrs[0],
-	       sizeof(my4_addr->sin_addr));
-    }
-#ifdef USE_IPV6
-    else if (domain == NETCAT_DOMAIN_IPV6) {
-      struct sockaddr_in6 *my6_addr = malloc(sizeof(*my6_addr));
-
-      my_addr = (struct sockaddr *)my6_addr;
-      my_addr_len = sizeof(*my6_addr);
-
-      memset(my6_addr, 0, sizeof(*my6_addr));
-      my6_addr->sin6_family = my_family;
-      my6_addr->sin6_port = local_port->netnum;
-
-      /* local_addr may not be specified because the user may want to only
-         enforce the local source port */
-      if (local_addr)
-        memcpy(&my6_addr->sin6_addr, &local_addr->host6.iaddrs[0],
-	       sizeof(my6_addr->sin6_addr));
-    }
-#endif
-
-    ret = bind(sock, my_addr, my_addr_len);
-    free(my_addr);
+    ret = netcat_bind(sock, domain, local_addr, local_port);
     if (ret < 0) {
       ret = -3;
       goto err;
@@ -517,38 +542,10 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
     goto err;
   }
 
-  if (domain == NETCAT_DOMAIN_IPV4) {
-    struct sockaddr_in *rem4_addr = malloc(sizeof(*rem4_addr));
-
-    rem_addr = (struct sockaddr *)rem4_addr;
-    rem_addr_len = sizeof(*rem4_addr);
-
-    memset(rem4_addr, 0, sizeof(*rem4_addr));
-    rem4_addr->sin_family = my_family;
-    rem4_addr->sin_port = port->netnum;
-    memcpy(&rem4_addr->sin_addr, &addr->host.iaddrs[0], sizeof(rem4_addr->sin_addr));
-  }
-#ifdef USE_IPV6
-  else if (domain == NETCAT_DOMAIN_IPV6) {
-    struct sockaddr_in6 *rem6_addr = malloc(sizeof(*rem6_addr));
-
-    rem_addr = (struct sockaddr *)rem6_addr;
-    rem_addr_len = sizeof(*rem6_addr);
-
-    memset(rem6_addr, 0, sizeof(*rem6_addr));
-    rem6_addr->sin6_family = my_family;
-    rem6_addr->sin6_port = port->netnum;
-    memcpy(&rem6_addr->sin6_addr, &addr->host6.iaddrs[0], sizeof(rem6_addr->sin6_addr));
-  }
-#endif
-  else
-    abort();
-
   /* now launch the real connection.  Since we are in non-blocking mode, this
      call will return -1 in MOST cases (on some systems, a connect() to a local
      address may immediately return successfully) */
-  ret = connect(sock, rem_addr, rem_addr_len);
-  free(rem_addr);
+  ret = netcat_connect(sock, domain, addr, port);
   if ((ret < 0) && (errno != EINPROGRESS)) {
     ret = -5;
     goto err;
@@ -585,66 +582,17 @@ int netcat_socket_new_connect(nc_domain_t domain, nc_proto_t proto,
 int netcat_socket_new_listen(nc_domain_t domain, const nc_host_t *addr,
 			     const nc_port_t *port, const nc_sockopts_t *opts)
 {
-  int sock, ret, my_family;
-  struct sockaddr *my_addr = NULL;
-  unsigned int my_addr_len;
+  int sock, ret;
 
   debug_dv(("netcat_socket_new_listen(addr=%p, port=(%hu))", (void *)addr, port->num));
-
-  /* selects address family with currently supported domains */
-  if (domain == NETCAT_DOMAIN_IPV4)
-    my_family = AF_INET;
-#ifdef USE_IPV6
-  else if (domain == NETCAT_DOMAIN_IPV6)
-    my_family = AF_INET6;
-#endif
-  else
-    return -1;		/* unknown domain, assume socket(2) call failed */
 
   /* create the socket and fix the options */
   sock = netcat_socket_new(domain, NETCAT_PROTO_TCP, opts);
   if (sock < 0)
     return sock;		/* forward the error code */
 
-  /* reset local sockaddr structure for bind(2), based on the domain */
-  if (domain == NETCAT_DOMAIN_IPV4) {
-    struct sockaddr_in *my4_addr = malloc(sizeof(*my4_addr));
-
-    my_addr = (struct sockaddr *)my4_addr;
-    my_addr_len = sizeof(*my4_addr);
-
-    memset(my4_addr, 0, sizeof(*my4_addr));
-    my4_addr->sin_family = my_family;
-    my4_addr->sin_port = port->netnum;
-
-    /* this parameter is not mandatory.  if it's not present, it's assumed to be
-       INADDR_ANY, and the behaviour is the same */
-    if (addr)
-      memcpy(&my4_addr->sin_addr, &addr->host.iaddrs[0],
-	     sizeof(my4_addr->sin_addr));
-  }
-#ifdef USE_IPV6
-  else if (domain == NETCAT_DOMAIN_IPV6) {
-    struct sockaddr_in6 *my6_addr = malloc(sizeof(*my6_addr));
-
-    my_addr = (struct sockaddr *)my6_addr;
-    my_addr_len = sizeof(*my6_addr);
-
-    memset(my6_addr, 0, sizeof(*my6_addr));
-    my6_addr->sin6_family = my_family;
-    my6_addr->sin6_port = port->netnum;
-
-    /* this parameter is not mandatory.  if it's not present, it's assumed to be
-       INADDR_ANY, and the behaviour is the same */
-    if (addr)
-        memcpy(&my6_addr->sin6_addr, &addr->host6.iaddrs[0],
-	       sizeof(my6_addr->sin6_addr));
-  }
-#endif
-
   /* bind it to the specified address (can be INADDY_ANY) */
-  ret = bind(sock, my_addr, my_addr_len);
-  free(my_addr);
+  ret = netcat_bind(sock, domain, addr, port);
   if (ret < 0) {
     ret = -3;
     goto err;
