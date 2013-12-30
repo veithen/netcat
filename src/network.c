@@ -41,11 +41,9 @@
 bool netcat_resolvehost(nc_host_t *dst, const char *name)
 {
   int i;
-  struct hostent *hostent;
-  struct in_addr res_addr;
-#ifdef USE_IPV6
-  struct in6_addr res6_addr;
-#endif
+  struct addrinfo hints;
+  struct addrinfo *result;
+  struct addrinfo *ai;
 
   assert(name && name[0]);
   debug_v(("netcat_resolvehost(dst=%p, name=\"%s\")", (void *)dst, name));
@@ -54,60 +52,57 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
   memset(dst, 0, sizeof(*dst));
 
   /* try to see if `name' is a numeric address, in case try reverse lookup */
-  if (netcat_inet_pton(AF_INET, name, &res_addr)) {
-    memcpy(&dst->host.iaddrs[0], &res_addr, sizeof(dst->host.iaddrs[0]));
-    strncpy(dst->host.addrs[0], netcat_inet_ntop(AF_INET, &res_addr), sizeof(dst->host.addrs[0]));
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_flags = AI_NUMERICHOST;
+  // Note that we have to use getaddrinfo (instead of inet_pton) here in order to
+  // support IPv6 addresses with scope IDs.
+  if (getaddrinfo(name, NULL, &hints, &result) == 0) {
+    memcpy(&dst->addrs[0].saddr, result->ai_addr, result->ai_addrlen);
+    dst->addrs[0].saddr_len = result->ai_addrlen;
+    freeaddrinfo(result);
+
+    getnameinfo(&dst->addrs[0].saddr, dst->addrs[0].saddr_len, dst->addrs[0].addrstr, sizeof(dst->addrs[0].addrstr), NULL, 0, NI_NUMERICHOST);
 
     /* if opt_numeric is set or we don't require verbosity, we are done */
     if (opt_numeric)
       return TRUE;
 
     /* failures to look up a PTR record are *not* considered fatal */
-    hostent = gethostbyaddr((char *)&res_addr, sizeof(res_addr), AF_INET);
-    if (!hostent)
+    if (getnameinfo(&dst->addrs[0].saddr, dst->addrs[0].saddr_len, dst->name, MAXHOSTNAMELEN - 2, NULL, 0, NI_NAMEREQD) != 0)
       ncprint(NCPRINT_VERB2 | NCPRINT_WARNING,
 	      _("Inverse name lookup failed for `%s'"), name);
     else {
-      strncpy(dst->host.name, hostent->h_name, MAXHOSTNAMELEN - 2);
-      /* now do the direct lookup to see if the PTR was authoritative */
-      hostent = gethostbyname(dst->host.name);
+      char buffer[64];
 
+      /* now do the direct lookup to see if the PTR was authoritative */
       /* Any kind of failure in this section results in a host not auth
          warning, and the dst->host.name field cleaned (I don't care if there is a
          PTR, if it's unauthoritative). */
-      if (!hostent || !hostent->h_addr_list[0]) {
+      memset(&hints, 0, sizeof(hints));
+      if (getaddrinfo(name, NULL, &hints, &result) != 0) {
 	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
 		_("Host %s isn't authoritative! (direct lookup failed)"),
-		dst->host.addrs[0]);
+		dst->addrs[0].addrstr);
 	goto check_failed;
       }
-      for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++)
-	if (!memcmp(&dst->host.iaddrs[0], hostent->h_addr_list[i],
-		    sizeof(dst->host.iaddrs[0])))
+      for (ai = result; ai; ai = ai->ai_next)
+	if (!memcmp(&dst->addrs[0].saddr, ai->ai_addr, ai->ai_addrlen)) {
+	  freeaddrinfo(result);
 	  return TRUE;		/* resolving verified, it's AUTH */
+	}
 
       ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
 	      _("Host %s isn't authoritative! (direct lookup mismatch)"),
-	      dst->host.addrs[0]);
+	      dst->addrs[0].addrstr);
+      getnameinfo(result->ai_addr, result->ai_addrlen, buffer, sizeof(buffer), NULL, 0, NI_NUMERICHOST);
       ncprint(NCPRINT_VERB1, _("  %s -> %s  BUT  %s -> %s"),
-	      dst->host.addrs[0], dst->host.name, dst->host.name,
-	      netcat_inet_ntop(AF_INET, hostent->h_addr_list[0]));
+	      dst->addrs[0].addrstr, dst->name, dst->name, buffer);
 
  check_failed:
-      memset(dst->host.name, 0, sizeof(dst->host.name));
+      memset(dst->name, 0, sizeof(dst->name));
+      freeaddrinfo(result);
     }				/* if hostent */
   }
-#ifdef USE_IPV6
-  /* same as above, but check for an IPv6 address notation */
-  else if (netcat_inet_pton(AF_INET6, name, &res6_addr)) {
-    memcpy(&dst->host6.iaddrs[0], &res6_addr, sizeof(dst->host6.iaddrs[0]));
-    strncpy(dst->host6.addrs[0], netcat_inet_ntop(AF_INET6, &res_addr), sizeof(dst->host6.addrs[0]));
-
-    /* if opt_numeric is set or we don't require verbosity, we are done */
-    if (opt_numeric)
-      return TRUE;
-  }
-#endif
   else {			/* couldn't translate: it must be a name! */
     bool host_auth_taken = FALSE;
 
@@ -116,7 +111,9 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
       return FALSE;
 
     /* failures to look up a name are reported to the calling function */
-    if (!(hostent = gethostbyname(name)))
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = AI_CANONNAME;
+    if (getaddrinfo(name, NULL, &hints, &result) != 0)
       return FALSE;
 
     /* now I need to handle the host aliases (CNAME).  If we lookup host
@@ -126,15 +123,22 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
        type.  So assume the lookup name as the "official" name and fetch the
        ips for the reverse lookup. */
     debug(("(lookup) lookup=\"%s\" official=\"%s\" (should match)\n", name,
-	  hostent->h_name));
-    strncpy(dst->host.name, name, MAXHOSTNAMELEN - 1);
+	  result->ai_canonname));
+    strncpy(dst->name, name, MAXHOSTNAMELEN - 1);
 
     /* now save all the available ip addresses (no more than MAXINETADDRS) */
-    for (i = 0; hostent->h_addr_list[i] && (i < MAXINETADDRS); i++) {
-      memcpy(&dst->host.iaddrs[i], hostent->h_addr_list[i], sizeof(dst->host.iaddrs[0]));
-      strncpy(dst->host.addrs[i], netcat_inet_ntop(AF_INET, &dst->host.iaddrs[i]),
-	      sizeof(dst->host.addrs[0]));
+    for (i = 0, ai = result; ai && (i < MAXINETADDRS); ai = ai->ai_next) {
+      // Since we specified no protocol in the hints, getaddrinfo actually returns
+      // 3 entries for each address: one for TCP, one for UDP and one with
+      // unspecified protocol (0).
+      if (ai->ai_protocol == 0) {
+	memcpy(&dst->addrs[i].saddr, ai->ai_addr, ai->ai_addrlen);
+	dst->addrs[i].saddr_len = ai->ai_addrlen;
+	getnameinfo(ai->ai_addr, ai->ai_addrlen, dst->addrs[i].addrstr, sizeof(dst->addrs[i].addrstr), NULL, 0, NI_NUMERICHOST);
+	i++;
+      }
     }				/* end of foreach addr, part A */
+    freeaddrinfo(result);
 
     /* for speed purposes, skip the authoritative checking if we haven't got
        any verbosity level set.  note that this will cause invalid results
@@ -143,13 +147,12 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
       return TRUE;
 
     /* do inverse lookups in a separated loop for each collected addresses */
-    for (i = 0; dst->host.iaddrs[i].s_addr && (i < MAXINETADDRS); i++) {
-      hostent = gethostbyaddr((char *)&dst->host.iaddrs[i], sizeof(dst->host.iaddrs[0]),
-			      AF_INET);
+    for (i = 0; dst->addrs[i].saddr_len && (i < MAXINETADDRS); i++) {
+      char h_name[MAXHOSTNAMELEN];
 
-      if (!hostent || !hostent->h_name) {
+      if (getnameinfo(&dst->addrs[i].saddr, dst->addrs[i].saddr_len, h_name, sizeof(h_name), NULL, 0, NI_NAMEREQD) != 0) {
 	ncprint(NCPRINT_VERB1 | NCPRINT_WARNING,
-		_("Inverse name lookup failed for `%s'"), dst->host.addrs[i]);
+		_("Inverse name lookup failed for `%s'"), dst->addrs[i].addrstr);
 	continue;
       }
 
@@ -158,14 +161,9 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
          previous reason we may want to keep the user typed case, but this time
          we are going to override it because this tool is a "network exploration
          tool", thus it's good to see the case they chose for this host. */
-      if (strcasecmp(dst->host.name, hostent->h_name)) {
-	int xcmp;
-	char savedhost[MAXHOSTNAMELEN];
-
+      if (strcasecmp(dst->name, h_name)) {
 	/* refering to the flowchart (see the drafts directory contained in
 	   this package), try to guess the real hostname */
-	strncpy(savedhost, hostent->h_name, sizeof(savedhost));
-	savedhost[sizeof(savedhost) - 1] = 0;
 
 	/* ok actually the given host and the reverse-resolved address doesn't
 	   match, so try to see if we can find the real machine name.  In order to
@@ -173,30 +171,33 @@ bool netcat_resolvehost(nc_host_t *dst, const char *name)
 	   found hostname directly resolved.  If this doesn't, or if this resolve
 	   fails, then fall back to the original warning message: they have a DNS
 	   misconfigured! */
-	hostent = gethostbyname(savedhost);
-	if (!hostent)
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_CANONNAME;
+	if (getaddrinfo(h_name, NULL, &hints, &result) != 0)
 	  continue;		/* FIXME: missing information analysis */
 
-	for (xcmp = 0; hostent->h_addr_list[xcmp] &&
-		(xcmp < MAXINETADDRS); xcmp++) {
-	  if (!memcmp(&dst->host.iaddrs[i], hostent->h_addr_list[xcmp],
-		     sizeof(dst->host.iaddrs[0])))
+	for (ai = result; ai; ai = ai->ai_next) {
+	  if (dst->addrs[i].saddr_len == ai->ai_addrlen
+	      && !memcmp(&dst->addrs[i].saddr, ai->ai_addr, ai->ai_addrlen))
 	    goto found_real_host;
 	}
 
 	ncprint(NCPRINT_WARNING | NCPRINT_VERB1,
 		_("This host's reverse DNS doesn't match! %s -- %s"),
-		hostent->h_name, dst->host.name);
-	continue;
+		result->ai_canonname, dst->name);
+	goto free_and_continue;
 
  found_real_host:
 	ncprint(NCPRINT_NOTICE | NCPRINT_VERB2,
 		_("Real hostname for %s [%s] is %s"),
-		dst->host.name, dst->host.addrs[i], savedhost);
+		dst->name, dst->addrs[i].addrstr, h_name);
+
+ free_and_continue:
+	freeaddrinfo(result);
 	continue;
       }
       else if (!host_auth_taken) {	/* case: take only the first one as auth */
-	strncpy(dst->host.name, hostent->h_name, sizeof(dst->host.name));
+	strncpy(dst->name, h_name, sizeof(dst->name));
 	host_auth_taken = TRUE;
       }
     }				/* end of foreach addr, part B */
@@ -294,20 +295,20 @@ const char *netcat_strid(nc_domain_t domain, const nc_host_t *host,
   assert(host && port);
 
 
-  if ((domain == NETCAT_DOMAIN_IPV4) && (host->host.iaddrs[0].s_addr)) {
-    if (host->host.name[0])
-      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->host.name,
-		    host->host.addrs[0]);
+  if ((domain == NETCAT_DOMAIN_IPV4) && (host->addrs[0].saddr_in.sin_addr.s_addr)) {
+    if (host->name[0])
+      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->name,
+		    host->addrs[0].addrstr);
     else
-      p += snprintf(p, sizeof(buf) + buf - p, "%s", host->host.addrs[0]);
+      p += snprintf(p, sizeof(buf) + buf - p, "%s", host->addrs[0].addrstr);
   }
 #ifdef USE_IPV6
-  else if ((domain == NETCAT_DOMAIN_IPV6) && (host->host6.iaddrs[0].s6_addr32[0])) {
-    if (host->host6.name[0])  /* FIXME: s6_addr32[0] is only one part! not enough */
-      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->host6.name,
-		    host->host6.addrs[0]);
+  else if ((domain == NETCAT_DOMAIN_IPV6) && (host->addrs[0].saddr_in6.sin6_addr.s6_addr32[0])) {
+    if (host->name[0])  /* FIXME: s6_addr32[0] is only one part! not enough */
+      p += snprintf(p, sizeof(buf) + buf - p, "%s [%s]", host->name,
+		    host->addrs[0].addrstr);
     else
-      p += snprintf(p, sizeof(buf) + buf - p, "%s", host->host6.addrs[0]);
+      p += snprintf(p, sizeof(buf) + buf - p, "%s", host->addrs[0].addrstr);
   }
 #endif
   else
@@ -426,38 +427,42 @@ int netcat_socket_new(nc_domain_t domain, nc_proto_t proto,
 static void prepare_sockaddr(nc_domain_t domain, const nc_host_t *addr, const nc_port_t *port,
 			     struct sockaddr **saddr, unsigned int *saddr_len)
 {
-  if (domain == NETCAT_DOMAIN_IPV4) {
+  if (addr && !addr->addrs[0].saddr_len)
+    addr = NULL;
+
+  // Note: the address family of the host doesn't necessarily match the address family
+  // of the socket
+  if ((addr == NULL && domain == NETCAT_DOMAIN_IPV4)
+      || (addr != NULL && addr->addrs[0].saddr.sa_family == AF_INET)) {
     struct sockaddr_in *saddr4 = malloc(sizeof(*saddr4));
 
     *saddr = (struct sockaddr *)saddr4;
     *saddr_len = sizeof(*saddr4);
 
-    memset(saddr4, 0, sizeof(*saddr4));
-    saddr4->sin_family = AF_INET;
+    if (addr == NULL) {
+      memset(saddr4, 0, sizeof(*saddr4));
+      saddr4->sin_family = AF_INET;
+    } else {
+      memcpy(saddr4, &addr->addrs[0].saddr_in, sizeof(*saddr4));
+    }
     saddr4->sin_port = port->netnum;
-
-    /* this parameter is not mandatory.  if it's not present, it's assumed to be
-       INADDR_ANY, and the behaviour is the same */
-    if (addr)
-      memcpy(&saddr4->sin_addr, &addr->host.iaddrs[0],
-	     sizeof(saddr4->sin_addr));
   }
 #ifdef USE_IPV6
-  else if (domain == NETCAT_DOMAIN_IPV6) {
+  else if ((addr == NULL && domain == NETCAT_DOMAIN_IPV6)
+	   || (addr != NULL && addr->addrs[0].saddr.sa_family == AF_INET6)) {
     struct sockaddr_in6 *saddr6 = malloc(sizeof(*saddr6));
 
     *saddr = (struct sockaddr *)saddr6;
     *saddr_len = sizeof(*saddr6);
 
-    memset(saddr6, 0, sizeof(*saddr6));
-    saddr6->sin6_family = AF_INET6;
+    if (addr == NULL) {
+      memset(saddr6, 0, sizeof(*saddr6));
+      saddr6->sin6_family = AF_INET6;
+    } else {
+      // This not only copies the IPv6 address, but also the scope ID
+      memcpy(saddr6, &addr->addrs[0].saddr_in6, sizeof(*saddr6));
+    }
     saddr6->sin6_port = port->netnum;
-
-    /* this parameter is not mandatory.  if it's not present, it's assumed to be
-       INADDR_ANY, and the behaviour is the same */
-    if (addr)
-        memcpy(&saddr6->sin6_addr, &addr->host6.iaddrs[0],
-	       sizeof(saddr6->sin6_addr));
   }
 #endif
   else

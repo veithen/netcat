@@ -574,12 +574,7 @@ int main(int argc, char *argv[])
   netcat_mode = NETCAT_CONNECT;
 
   /* first check that a host parameter was given */
-  // TODO: find a more elegant way to check the IPv6 address
-  if (!remote_host.host.iaddrs[0].s_addr &&
-      !remote_host.host6.iaddrs[0].__in6_u.__u6_addr32[0] &&
-      !remote_host.host6.iaddrs[0].__in6_u.__u6_addr32[1] &&
-      !remote_host.host6.iaddrs[0].__in6_u.__u6_addr32[2] &&
-      !remote_host.host6.iaddrs[0].__in6_u.__u6_addr32[3]) {
+  if (!remote_host.addrs[0].saddr_len) {
     /* FIXME: The Networking specifications state that host address "0" is a
        valid host to connect to but this broken check will assume as not
        specified. */

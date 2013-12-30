@@ -47,7 +47,7 @@ static int core_udp_connect(nc_sock_t *ncsock)
     return -1;
 
   /* only call bind if it is really needed */
-  if (ncsock->local_port.netnum || ncsock->local.host.iaddrs[0].s_addr) {
+  if (ncsock->local_port.netnum || ncsock->local.addrs[0].saddr_len) {
     ret = netcat_bind(sock, ncsock->domain, &ncsock->local, &ncsock->local_port);
     if (ret < 0)
       goto err;
@@ -256,9 +256,10 @@ static int core_udp_listen(nc_sock_t *ncsock)
 	memset(&dup_socket, 0, sizeof(dup_socket));
 	dup_socket.domain = ncsock->domain;
 	dup_socket.proto = ncsock->proto;
-	memcpy(&dup_socket.local.host.iaddrs[0], &local_addr.sin_addr,
+	// FIXME: only correct for IPv4
+	memcpy(&dup_socket.local.addrs[0].saddr_in.sin_addr, &local_addr.sin_addr,
 	       sizeof(local_addr));
-	memcpy(&dup_socket.remote.host.iaddrs[0], &rem_addr.sin_addr,
+	memcpy(&dup_socket.remote.addrs[0].saddr_in.sin_addr, &rem_addr.sin_addr,
 	       sizeof(local_addr));
 	dup_socket.local_port.netnum = local_addr.sin_port;
 	dup_socket.local_port.num = ntohs(local_addr.sin_port);
@@ -315,7 +316,7 @@ static int core_tcp_connect(nc_sock_t *ncsock)
      avoid one bind(2) call. */
   sock = netcat_socket_new_connect(ncsock->domain, ncsock->proto,
 	&ncsock->remote, &ncsock->port,
-	(ncsock->local.host.iaddrs[0].s_addr ? &ncsock->local : NULL),
+	(ncsock->local.addrs[0].saddr_len ? &ncsock->local : NULL),
 	&ncsock->local_port,
 	&ncsock->opts);
 
@@ -453,9 +454,10 @@ static int core_tcp_listen(nc_sock_t *ncsock)
        they are assumed to be the only IP and port(s) allowed to connect to
        this socket. See documentation for more information. */
 
-    if ((ncsock->remote.host.iaddrs[0].s_addr &&
-	 memcmp(&ncsock->remote.host.iaddrs[0], &myaddr.sin_addr,
-		sizeof(ncsock->remote.host.iaddrs[0]))) ||
+    // FIXME: IPv4 only
+    if ((ncsock->remote.addrs[0].saddr.sa_family == AF_INET &&
+	 memcmp(&ncsock->remote.addrs[0].saddr_in.sin_addr, &myaddr.sin_addr,
+		sizeof(ncsock->remote.addrs[0].saddr_in.sin_addr))) ||
 	(ncsock->remote_ports != NULL && !netcat_ports_isset(ncsock->remote_ports, ntohs(myaddr.sin_port)))) {
       ncprint(NCPRINT_VERB2, _("Unwanted connection from %s:%hu (refused)"),
 	      netcat_inet_ntop(AF_INET, &myaddr.sin_addr), ntohs(myaddr.sin_port));
@@ -469,7 +471,7 @@ static int core_tcp_listen(nc_sock_t *ncsock)
     //netcat_resolvehost(&ncsock->remote, NULL, &myaddr.sin_addr);
 
     ncprint(NCPRINT_VERB1, _("Connection from %s:%hu"),
-	    ncsock->remote.host.name, ncsock->port.num);
+	    ncsock->remote.name, ncsock->port.num);
 
     /* with zero I/O mode we don't really accept any connection */
     if (opt_zero)

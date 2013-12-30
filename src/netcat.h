@@ -65,11 +65,13 @@
 
 /* This must be defined to the longest possible internet address length in
    string notation.
-   Bugfix: Looks like Solaris 7 doesn't define this standard. It's ok to use
-   the following workaround since this is going to change to introduce IPv6
-   support. */
-#ifdef INET_ADDRSTRLEN
-# define NETCAT_ADDRSTRLEN INET_ADDRSTRLEN
+   Note: in.h normally defines INET_ADDRSTRLEN and INET6_ADDRSTRLEN, but they
+   are not available on all platforms and don't take into account scope IDs. */
+#ifdef USE_IPV6
+// INET6_ADDRSTRLEN is defined as 46 to accomodate for IPv6 addresses such as
+// 0000:0000:0000:0000:0000:0000:192.168.100.201. In addition, we need some space
+// for the optional scope ID.
+# define NETCAT_ADDRSTRLEN 64
 #else
 # define NETCAT_ADDRSTRLEN 16
 #endif
@@ -208,44 +210,43 @@ typedef struct {
 } nc_buffer_t;
 
 /**
+ * Standard Netcat address record.
+ *
+ * It represents an IPv4 or IPv6 address. The address is stored as a socket address
+ * because in IPv6 we need to store the scope ID as well (the scope ID is part of
+ * the sockaddr_in6 structure, not the in6_addr structure). By definition, the port
+ * in the socket address is undefined (and typically 0). It is stored separately
+ * from the host address.
+ *
+ * A string representation of the address (including the scope ID for IPv6) is also
+ * included.
+ */
+
+typedef struct {
+  /** Ascii-format IP address. */
+  char addrstr[NETCAT_ADDRSTRLEN];
+  /** Socket address (IPv4 or IPv6). */
+  union {
+    struct sockaddr saddr;
+    struct sockaddr_in saddr_in;
+#ifdef USE_IPV6
+    struct sockaddr_in6 saddr_in6;
+#endif
+  };
+  /** Socket address length. */
+  socklen_t saddr_len;
+} nc_addr_t;
+
+/**
  * Standard Netcat hosts record.
  *
  * This is the standard netcat hosts record.  It contains an "authoritative"
- * `name' field, which may be empty, and a list of IP addresses in the network
- * notation and in the dotted string notation.
+ * `name' field, which may be empty, and a list of addresses.
  */
 
 typedef struct {
-  char name[MAXHOSTNAMELEN];			/**< Dns name. */
-  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/**< Ascii-format IP
-						 * addresses. */
-  struct in_addr iaddrs[MAXINETADDRS];		/**< Real addresses. */
-} nc_host4_t;
-
-#ifdef USE_IPV6
-
-/**
- * Standard Netcat hosts record for IPv6 domain.
- *
- * This is the host record for IPv6 hosts, which have a slightly different
- * structure.  For example they are 128 bits long while IPv4 addresses are
- * just 32 bits long.
- */
-
-typedef struct {
-  char name[MAXHOSTNAMELEN];			/**< Dns name. */
-  char addrs[MAXINETADDRS][NETCAT_ADDRSTRLEN];	/**< Ascii-format IP
-						 * addresses. */
-  struct in6_addr iaddrs[MAXINETADDRS];		/**< Real addresses. */
-} nc_host6_t;
-
-#endif
-
-typedef struct { /* FIXME: shouldn't become an union??? */
-  nc_host4_t host;
-#ifdef USE_IPV6
-  nc_host6_t host6;
-#endif
+  char name[MAXHOSTNAMELEN];		/**< Dns name. */
+  nc_addr_t addrs[MAXINETADDRS];	/**< IP addresses. */
 } nc_host_t;
 
 /**
