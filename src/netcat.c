@@ -45,7 +45,6 @@ bool opt_eofclose = FALSE;	/* close connection on EOF from stdin */
 bool opt_ipv6 = FALSE;		/* using IPv6 protocol */
 bool opt_numeric = FALSE;	/* don't resolve hostnames */
 bool opt_random = FALSE;	/* use random ports */
-bool opt_udpmode = FALSE;	/* use udp protocol instead of tcp */
 bool opt_telnet = FALSE;	/* answer in telnet mode */
 bool opt_hexdump = FALSE;	/* hexdump traffic */
 bool opt_zero = FALSE;		/* zero I/O mode (don't expect anything) */
