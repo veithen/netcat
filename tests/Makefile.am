@@ -24,4 +24,8 @@ endif
 if HAVE_PYTHON
 TESTS += exec-with-close-after-write.py remote-port-range.py
 check_SCRIPTS = exec-with-close-after-write.py remote-port-range.py
+if HAVE_IPV6
+TESTS += ipv6-connect.py
+check_SCRIPTS += ipv6-connect.py
+endif
 endif

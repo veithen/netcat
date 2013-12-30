@@ -92,7 +92,10 @@ esac
     
 
 # check if we can support IPv6
-AC_CHECK_TYPES([struct in6_addr], AC_DEFINE(USE_IPV6, , [use IPv6]), , [#include <netinet/in.h>])
+AC_CHECK_TYPES([struct in6_addr],
+               AC_DEFINE(USE_IPV6, , [use IPv6]) AM_CONDITIONAL([HAVE_IPV6], [true]),
+               AM_CONDITIONAL([HAVE_IPV6], [false]),
+               [#include <netinet/in.h>])
 
 # Check that Check is installed
 PKG_CHECK_MODULES([CHECK], [check >= 0.8.2], AM_CONDITIONAL([HAVE_CHECK], [true]),
@@ -194,6 +197,7 @@ AC_CONFIG_FILES(doc/texi2pod.pl, chmod +x doc/texi2pod.pl)
 AS_IF([test "$PYTHON" != :], [
     AC_CONFIG_FILES([tests/exec-with-close-after-write.py], [chmod +x tests/exec-with-close-after-write.py])
     AC_CONFIG_FILES([tests/remote-port-range.py], [chmod +x tests/remote-port-range.py])
+    AC_CONFIG_FILES([tests/ipv6-connect.py], [chmod +x tests/ipv6-connect.py])
 ])
 
 AC_OUTPUT

@@ -1,0 +1,52 @@
+#!@PYTHON@
+#
+# Copyright (C) 2013  Andreas Veithen <andreas.veithen@gmail.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA or point your web browser to http://www.gnu.org.
+
+import subprocess
+import socket
+import utils
+
+# Start listening to a random TCP port on the IPv6 loopback address (::1). Note that listening on ::1
+# effectively checks that netcat is using IPv6.
+listen_sock = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+listen_sock.bind(("::1", 0))
+port = listen_sock.getsockname()[1]
+listen_sock.listen(1)
+
+# Start netcat in connect mode with IPv6 enabled.
+p = subprocess.Popen(["../src/netcat", "-6", "-c", "::1", "%d" % port], stdin=subprocess.PIPE)
+
+# Accept the connection from netcat (with timeout so that the test doesn't hang if netcat fails to connect).
+listen_sock.settimeout(2)
+(sock, address) = listen_sock.accept()
+# If netcat incorrectly uses IPv4, we would get ::ffff:127.0.0.1 here.
+assert address[0] == "::1"
+
+# Send some data and close stdin so that netcat closes the connection (see the -c option).
+p.stdin.write("test")
+p.stdin.close()
+
+# Read the data received from netcat.
+f = sock.makefile()
+assert f.readline() == "test"
+f.close()
+
+# Clean up.
+sock.close()
+listen_sock.close()
+p.wait()
