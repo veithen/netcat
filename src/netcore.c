@@ -40,30 +40,20 @@ unsigned long bytes_recv = 0;		/* total bytes sent */
 static int core_udp_connect(nc_sock_t *ncsock)
 {
   int ret, sock;
-  struct sockaddr_in myaddr;
   debug_v(("core_udp_connect(ncsock=%p)", (void *)ncsock));
 
   sock = netcat_socket_new(ncsock->domain, NETCAT_PROTO_UDP, &ncsock->opts);
   if (sock < 0)
     return -1;
 
-  /* prepare myaddr for the bind() call */
-  myaddr.sin_family = AF_INET;
-  myaddr.sin_port = ncsock->local_port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->local.host.iaddrs[0],
-	 sizeof(myaddr.sin_addr));
   /* only call bind if it is really needed */
-  if (myaddr.sin_port || myaddr.sin_addr.s_addr) {
-    ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+  if (ncsock->local_port.netnum || ncsock->local.host.iaddrs[0].s_addr) {
+    ret = netcat_bind(sock, ncsock->domain, &ncsock->local, &ncsock->local_port);
     if (ret < 0)
       goto err;
   }
 
-  /* now prepare myaddr for the connect() call */
-  myaddr.sin_family = AF_INET;
-  myaddr.sin_port = ncsock->port.netnum;
-  memcpy(&myaddr.sin_addr, &ncsock->remote.host.iaddrs[0], sizeof(myaddr.sin_addr));
-  ret = connect(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+  ret = netcat_connect(sock, ncsock->domain, &ncsock->remote, &ncsock->port);
   if (ret < 0)
     goto err;
 
@@ -85,7 +75,6 @@ static int core_udp_listen(nc_sock_t *ncsock)
 #ifdef USE_PKTINFO
   int sockopt = 1;
 #endif
-  struct sockaddr_in myaddr;
   struct timeval tt;		/* needed by the select() call */
   debug_v(("core_udp_listen(ncsock=%p)", (void *)ncsock));
 
@@ -115,14 +104,9 @@ static int core_udp_listen(nc_sock_t *ncsock)
   sock_max = sock + 1;
 
   if (!need_udphelper) {
-    /* prepare myaddr for the bind() call */
-    myaddr.sin_family = AF_INET;
-    myaddr.sin_port = ncsock->local_port.netnum;
-    memcpy(&myaddr.sin_addr, &ncsock->local.host.iaddrs[0],
-	   sizeof(myaddr.sin_addr));
     /* bind() MUST be called in this function, since it's the final call for
        this type of socket. FIXME: I heard that UDP port 0 is illegal. true? */
-    ret = bind(sock, (struct sockaddr *)&myaddr, sizeof(myaddr));
+    ret = netcat_bind(sock, ncsock->domain, &ncsock->local, &ncsock->local_port);
     if (ret < 0)
       goto err;
   }
@@ -223,8 +207,8 @@ static int core_udp_listen(nc_sock_t *ncsock)
 
 #ifdef USE_PKTINFO
       ret = udphelper_ancillary_read(&my_hdr, &local_addr);
-      local_addr.sin_port = myaddr.sin_port;
-      local_addr.sin_family = myaddr.sin_family;
+      local_addr.sin_port = ncsock->local_port.netnum;
+      local_addr.sin_family = AF_INET;
 #else
       ret = sizeof(local_addr);
       ret = getsockname(sock, (struct sockaddr *)&local_addr, &ret);
